@@ -51,6 +51,26 @@ pub struct NiceElapsed {
 	len: usize,
 }
 
+impl AsRef<[u8]> for NiceElapsed {
+	#[inline]
+	fn as_ref(&self) -> &[u8] { self }
+}
+
+impl AsRef<str> for NiceElapsed {
+	#[inline]
+	fn as_ref(&self) -> &str { self.as_str() }
+}
+
+impl std::borrow::Borrow<[u8]> for NiceElapsed {
+	#[inline]
+	fn borrow(&self) -> &[u8] { self }
+}
+
+impl std::borrow::Borrow<str> for NiceElapsed {
+	#[inline]
+	fn borrow(&self) -> &str { self.as_str() }
+}
+
 impl Default for NiceElapsed {
 	#[inline]
 	fn default() -> Self {

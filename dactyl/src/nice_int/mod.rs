@@ -22,6 +22,26 @@ macro_rules! impl_nice_int {
 			fn deref(&self) -> &Self::Target { &self.inner[self.from..] }
 		}
 
+		impl AsRef<[u8]> for $lhs {
+			#[inline]
+			fn as_ref(&self) -> &[u8] { self }
+		}
+
+		impl AsRef<str> for $lhs {
+			#[inline]
+			fn as_ref(&self) -> &str { self.as_str() }
+		}
+
+		impl std::borrow::Borrow<[u8]> for $lhs {
+			#[inline]
+			fn borrow(&self) -> &[u8] { self }
+		}
+
+		impl std::borrow::Borrow<str> for $lhs {
+			#[inline]
+			fn borrow(&self) -> &str { self.as_str() }
+		}
+
 		impl std::fmt::Display for $lhs {
 			fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 				f.write_str(self.as_str())
