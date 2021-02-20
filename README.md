@@ -1,5 +1,8 @@
 # Dactyl
 
+[![Documentation](https://docs.rs/dactyl/badge.svg)](https://docs.rs/dactyl/)
+[![crates.io](https://img.shields.io/crates/v/dactyl.svg)](https://crates.io/crates/dactyl)
+
 This crate provides a fast interface to "stringify" unsigned integers, formatted with commas at each thousand. It prioritizes speed and simplicity over configurability.
 
 If your application just wants to quickly turn `1010` into `"1,010"`, `Dactyl` is a great choice. If your application requires locale awareness or other options, something like [`num-format`](https://crates.io/crates/num-format) would probably make more sense.
@@ -31,9 +34,8 @@ assert_eq!(NiceU16::from(11234_u16).as_bytes(), b"11,234");
 Add `dactyl` to your `dependencies` in `Cargo.toml`, like:
 
 ```
-[dependencies.dactyl]
-git = "https://github.com/Blobfolio/dactyl.git"
-tag = "v0.1.*"
+[dependencies]
+dactyl = "0.1.*"
 ```
 
 

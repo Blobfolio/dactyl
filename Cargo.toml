@@ -1,11 +1,12 @@
 [package]
 name = "dactyl"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Blobfolio, LLC. <hello@blobfolio.com>"]
 edition = "2018"
 description = "A small library to quickly stringify integers with basic formatting."
 license = "WTFPL"
 repository = "https://github.com/Blobfolio/dactyl"
+readme = "README.md"
 exclude = [
 	".gitignore",
 	".righteous-sandbox.json",
@@ -19,12 +20,9 @@ exclude = [
 num-integer = "0.1.*"
 
 [dev-dependencies]
+brunch = "0.1.*"
 num-format = "0.4.*"
 rand = "0.8.*"
-
-[dev-dependencies.brunch]
-git = "https://github.com/Blobfolio/brunch.git"
-tag = "v0.1.0"
 
 [[bench]]
 name = "fn_nice_elapsed"
