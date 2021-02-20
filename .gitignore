@@ -1,4 +1,5 @@
 **.1.gz
-/dactyl/target/
 /Cargo.lock
+/dactyl/target/
+/doc/
 /target/

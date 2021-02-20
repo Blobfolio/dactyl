@@ -49,6 +49,10 @@ macro_rules! elapsed_from {
 ///     "1 minute and 1 second"
 /// );
 /// ```
+///
+/// ## Note
+///
+/// This module is "in development". It is subject to change, and will eventually be moved to its own crate.
 pub struct NiceElapsed {
 	inner: [u8; 36],
 	len: usize,
