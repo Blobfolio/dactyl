@@ -1,6 +1,6 @@
 [package]
 name = "dactyl"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Blobfolio, LLC. <hello@blobfolio.com>"]
 edition = "2018"
 description = "A small library to quickly stringify integers with basic formatting."
