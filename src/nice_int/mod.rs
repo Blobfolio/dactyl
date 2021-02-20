@@ -1,5 +1,7 @@
 /*!
-# Dactyl: "Nice" Integer
+# Dactyl: "Nice" Integers
+
+See the main crate documentation for details.
 */
 
 pub(super) mod nice_u8;
@@ -12,14 +14,38 @@ use crate::DOUBLE;
 use std::ptr;
 
 
+
+#[doc(hidden)]
 #[macro_export]
 /// # Helper: Generic NiceU* traits.
+///
+/// This is not intended for use outside the crate.
 macro_rules! impl_nice_int {
 	($lhs:ty) => {
 		impl std::ops::Deref for $lhs {
 			type Target = [u8];
 			#[inline]
 			fn deref(&self) -> &Self::Target { &self.inner[self.from..] }
+		}
+
+		impl AsRef<[u8]> for $lhs {
+			#[inline]
+			fn as_ref(&self) -> &[u8] { self }
+		}
+
+		impl AsRef<str> for $lhs {
+			#[inline]
+			fn as_ref(&self) -> &str { self.as_str() }
+		}
+
+		impl std::borrow::Borrow<[u8]> for $lhs {
+			#[inline]
+			fn borrow(&self) -> &[u8] { self }
+		}
+
+		impl std::borrow::Borrow<str> for $lhs {
+			#[inline]
+			fn borrow(&self) -> &str { self.as_str() }
 		}
 
 		impl std::fmt::Display for $lhs {
@@ -56,6 +82,7 @@ macro_rules! impl_nice_int {
 
 
 
+#[doc(hidden)]
 /// # Write `u8` x 3
 ///
 /// ## Safety
@@ -69,6 +96,7 @@ pub(super) unsafe fn write_u8_3(buf: *mut u8, num: usize) {
 	ptr::copy_nonoverlapping(ptr.add(rem << 1), buf.add(1), 2);
 }
 
+#[doc(hidden)]
 /// # Write `u8` x 2
 ///
 /// ## Safety
@@ -79,6 +107,7 @@ pub(super) unsafe fn write_u8_2(buf: *mut u8, num: usize) {
 	ptr::copy_nonoverlapping(DOUBLE.as_ptr().add(num << 1), buf, 2);
 }
 
+#[doc(hidden)]
 /// # Write `u8` x 1
 ///
 /// ## Safety

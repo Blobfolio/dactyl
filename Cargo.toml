@@ -1,12 +1,51 @@
-[workspace]
-members = [ "dactyl" ]
+[package]
+name = "dactyl"
+version = "0.1.1"
+authors = ["Blobfolio, LLC. <hello@blobfolio.com>"]
+edition = "2018"
+description = "A small library to quickly stringify integers with basic formatting."
+license = "WTFPL"
+repository = "https://github.com/Blobfolio/dactyl"
+exclude = [
+	".gitignore",
+	".righteous-sandbox.json",
+	"about.toml",
+	"doc",
+	"justfile",
+	"release",
+]
 
-[profile.bench]
-lto = true
-codegen-units = 1
-opt-level = 3
+[dependencies]
+num-integer = "0.1.*"
 
-[profile.release]
-lto = true
-codegen-units = 1
-opt-level = 3
+[dev-dependencies]
+num-format = "0.4.*"
+rand = "0.8.*"
+
+[dev-dependencies.brunch]
+git = "https://github.com/Blobfolio/brunch.git"
+tag = "v0.1.0"
+
+[[bench]]
+name = "fn_nice_elapsed"
+harness = false
+
+[[bench]]
+name = "fn_nice_percent"
+harness = false
+
+[[bench]]
+name = "fn_nice_u8"
+harness = false
+
+[[bench]]
+name = "fn_nice_u16"
+harness = false
+
+[[bench]]
+name = "fn_nice_u32"
+harness = false
+
+[[bench]]
+name = "fn_nice_u64"
+harness = false

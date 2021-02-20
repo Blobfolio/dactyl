@@ -1,5 +1,7 @@
 /*!
 # Dactyl: Nice Percent.
+
+Note: this module is "in development". It is subject to change, and will eventually be moved to its own crate.
 */
 
 
@@ -30,6 +32,10 @@ const IDX_PERCENT_DECIMAL: usize = SIZE - 3;
 /// use dactyl::NicePercent;
 /// assert_eq!(NicePercent::from(0.321).as_str(), "32.10%");
 /// ```
+///
+/// ## Note
+///
+/// This module is "in development". It is subject to change, and will eventually be moved to its own crate.
 pub struct NicePercent {
 	inner: [u8; SIZE],
 	from: usize,

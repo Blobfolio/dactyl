@@ -1,26 +1,31 @@
 /*!
 # Dactyl
 
-This crate contains helpers to format unsigned integers as "pretty" byte strings with commas marking each thousand. To that singular end, they are much faster than using the `format!` macro or an external crate like [`num_format`].
+This crate provides a fast interface to "stringify" unsigned integers, formatted with commas at each thousand. It prioritizes speed and simplicity over configurability.
 
-To minimize unnecessary allocation, structs are split up by type:
+If your application just wants to turn `1010` into `"1,010"`, `Dactyl` is a great choice. If your application requires locale awareness or other options, something like [`num-format`](https://crates.io/crates/num-format) would probably make more sense.
+
+Similar to [`itoa`](https://crates.io/crates/itoa), Dactyl writes ASCII conversions to a temporary buffer, but does so using fixed arrays sized for each type's maximum value, minimizing the allocation overhead for, say, tiny little `u8`s.
+
+Each type has its own struct, each of which works exactly the same way:
 
 * [`NiceU8`]
 * [`NiceU16`]
 * [`NiceU32`]
 * [`NiceU64`]
 
-Note: [`NiceU64`] implements both `from<u64>` and `from<usize>`, so can be used for either type.
+(Note: support for `usize` values is folded into [`NiceU64`].)
 
-Working on a similar idea, there is also [`NicePercent`], which implements `from<f32>` and `from<f64>` to convert values between `0..=1` to a "pretty" percent byte string, like `75.66%`.
+The intended use case is to simply call the appropriate `from()` for the type, then use either the `as_str()` or `as_bytes()` struct methods to retrieve the output in the desired format. Each struct also implements traits like `Deref`, `Display`, `AsRef<str>`, `AsRef<[u8]>`, etc., if you prefer those.
 
-Last but not least, there is [`NiceElapsed`], which converts numerical time into a human-readable, oxford-joined byte string, like `1 hour, 2 minutes, and 3 seconds`.
+```
+use dactyl::NiceU16;
 
+assert_eq!(NiceU16::from(11234_u16).as_str(), "11,234");
+assert_eq!(NiceU16::from(11234_u16).as_bytes(), b"11,234");
+```
 
-
-## Stability
-
-Release versions of this library should be in a working state, but as this project is under perpetual development, code might change from version to version.
+This crate also contains two "in development" structs — [`NicePercent`] and [`NiceElapsed`] — that can be useful for formatting percentages and durations, however their implementations are subject to change and they will be spun off into their own dedicated crates once Dactyl reaches `0.2`.
 */
 
 #![warn(clippy::filetype_is_file)]
@@ -83,7 +88,8 @@ pub(crate) static DOUBLE: &[u8; 200] = b"\
 ///
 /// ## Safety
 ///
-/// The pointer must have enough space for the value, i.e. 1-3 digits.
+/// The pointer must have enough space for the value, i.e. 1-3 digits, or
+/// undefined things will happen.
 pub unsafe fn write_u8(buf: *mut u8, num: u8) {
 	use std::ptr;
 
@@ -104,6 +110,11 @@ pub unsafe fn write_u8(buf: *mut u8, num: u8) {
 /// # Write Time.
 ///
 /// This writes HH:MM:SS to the provided pointer.
+///
+/// ## Panics
+///
+/// This method is only intended to cover values that fit in a day and will
+/// panic if `h`, `m`, or `s` is outside the range of `0..60`.
 ///
 /// ## Safety
 ///
