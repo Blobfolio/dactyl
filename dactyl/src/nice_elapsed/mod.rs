@@ -1,10 +1,13 @@
 /*!
 # Dactyl: "Nice" Elapsed
+
+Note: this module is "in development". It is subject to change, and will eventually be moved to its own crate.
 */
 
 use std::{
 	fmt,
 	ops::Deref,
+	time::Duration,
 };
 
 
@@ -97,16 +100,25 @@ impl fmt::Debug for NiceElapsed {
 }
 
 impl fmt::Display for NiceElapsed {
+	#[inline]
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		f.write_str(self.as_str())
 	}
+}
+
+impl From<Duration> for NiceElapsed {
+	#[inline]
+	fn from(src: Duration) -> Self { Self::from(src.as_secs()) }
 }
 
 impl From<[u8; 3]> for NiceElapsed {
 	/// # From HMS.
 	///
 	/// This is meant to be a slice of pre-parsed hours, minutes, and seconds.
-	/// It is not intended to be used directly, but if it is, values must be
+	///
+	/// ## Panics
+	///
+	/// This is not intended to be used directly, but if it is, values must be
 	/// under 100 or it will panic.
 	fn from(num: [u8; 3]) -> Self {
 		let mut buf = [0_u8; 36];
@@ -313,12 +325,12 @@ impl ElapsedKind {
 /// This will quickly write a `u8` number as a UTF-8 byte slice to the provided
 /// pointer.
 ///
-/// ## Panics.
+/// ## Panics
 ///
 /// This method is not intended to write the full `u8` spectrum; it will panic
 /// if a value is greater than 99.
 ///
-/// ## Safety.
+/// ## Safety
 ///
 /// The pointer must have enough space for the value, i.e. 1-2 digits. This
 /// isn't a problem given the method calls from this scope.
