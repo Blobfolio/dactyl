@@ -20,7 +20,7 @@ Each type has its own struct, each of which works exactly the same way:
 
 The intended use case is to simply call the appropriate `from()` for the type, then use either the `as_str()` or `as_bytes()` struct methods to retrieve the output in the desired format. Each struct also implements traits like `Deref`, `Display`, `AsRef<str>`, `AsRef<[u8]>`, etc., if you prefer those.
 
-```
+```rust
 use dactyl::NiceU16;
 
 assert_eq!(NiceU16::from(11234_u16).as_str(), "11,234");
