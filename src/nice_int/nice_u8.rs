@@ -83,7 +83,7 @@ impl NiceU8 {
 	#[inline]
 	/// # Triple Digit Bytes.
 	///
-	/// This method will return return a byte slice that is *at least* two
+	/// This method will return return a byte slice that is *at least* three
 	/// bytes long, left padding the value with a zero if its natural length is
 	/// shorter. (In other words, this has no effect if the value is >= 100.)
 	///
