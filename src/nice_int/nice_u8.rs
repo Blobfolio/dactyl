@@ -81,7 +81,7 @@ impl NiceU8 {
 
 	#[must_use]
 	#[inline]
-	/// # Double Digit Bytes.
+	/// # Triple Digit Bytes.
 	///
 	/// This method will return return a byte slice that is *at least* two
 	/// bytes long, left padding the value with a zero if its natural length is
@@ -118,7 +118,7 @@ impl NiceU8 {
 	#[allow(clippy::missing_const_for_fn)] // Doesn't work with unsafe.
 	#[must_use]
 	#[inline]
-	/// # Double Digit Str.
+	/// # Triple Digit Str.
 	///
 	/// This method will return return a string slice that is *at least* three
 	/// chars long, left padding the value with zeroes if its natural length is
