@@ -42,7 +42,7 @@ dactyl = "0.1.*"
 
 ## Other
 
-This crate also contains two "in development" structs — [`NicePercent`] and [`NiceElapsed`] — that can be useful for formatting percentages and durations, however their implementations are subject to change and they will be spun off into their own dedicated crates once Dactyl reaches `0.2`.
+This crate also contains two "in development" structs — [`NicePercent`] and [`NiceElapsed`] — that can be useful for formatting percentages and durations, however their implementations are subject to change and they might eventually be split off into their own crates.
 
 
 

@@ -25,7 +25,7 @@ assert_eq!(NiceU16::from(11234_u16).as_str(), "11,234");
 assert_eq!(NiceU16::from(11234_u16).as_bytes(), b"11,234");
 ```
 
-This crate also contains two "in development" structs — [`NicePercent`] and [`NiceElapsed`] — that can be useful for formatting percentages and durations, however their implementations are subject to change and they will be spun off into their own dedicated crates once Dactyl reaches `0.2`.
+This crate also contains two "in development" structs — [`NicePercent`] and [`NiceElapsed`] — that can be useful for formatting percentages and durations, however their implementations are subject to change and they might eventually be split off into their own crates.
 */
 
 #![warn(clippy::filetype_is_file)]
