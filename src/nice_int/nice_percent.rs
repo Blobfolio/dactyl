@@ -1,7 +1,7 @@
 /*!
 # Dactyl: Nice Percent.
 
-Note: this module is "in development". It is subject to change, and will eventually be moved to its own crate.
+Note: this module is "in development". It is subject to change, and may eventually be spun off into its own crate.
 */
 
 
@@ -35,7 +35,7 @@ const IDX_PERCENT_DECIMAL: usize = SIZE - 3;
 ///
 /// ## Note
 ///
-/// This module is "in development". It is subject to change, and will eventually be moved to its own crate.
+/// This module is "in development". It is subject to change, and may eventually be spun off into its own crate.
 pub struct NicePercent {
 	inner: [u8; SIZE],
 	from: usize,

@@ -34,7 +34,7 @@ impl Default for NiceU8 {
 	#[inline]
 	fn default() -> Self {
 		Self {
-			inner: [0, 0, 0],
+			inner: [48, 48, 48],
 			from: SIZE,
 		}
 	}
@@ -61,6 +61,81 @@ impl From<u8> for NiceU8 {
 	}
 }
 
+impl NiceU8 {
+	#[must_use]
+	#[inline]
+	/// # Double Digit Bytes.
+	///
+	/// This method will return return a byte slice that is *at least* two
+	/// bytes long, left padding the value with a zero if its natural length is
+	/// shorter. (In other words, this has no effect if the value is >= 10.)
+	///
+	/// ## Examples
+	///
+	/// ```no_run
+	/// assert_eq(dactyl::NiceU8::from(3).as_bytes2(), b"02");
+	/// assert_eq(dactyl::NiceU8::from(50).as_bytes2(), b"50");
+	/// assert_eq(dactyl::NiceU8::from(113).as_bytes2(), b"113");
+	/// ```
+	pub fn as_bytes2(&self) -> &[u8] { &self.inner[1.min(self.from)..] }
+
+	#[must_use]
+	#[inline]
+	/// # Double Digit Bytes.
+	///
+	/// This method will return return a byte slice that is *at least* two
+	/// bytes long, left padding the value with a zero if its natural length is
+	/// shorter. (In other words, this has no effect if the value is >= 100.)
+	///
+	/// ## Examples
+	///
+	/// ```no_run
+	/// assert_eq(dactyl::NiceU8::from(3).as_bytes3(), b"002");
+	/// assert_eq(dactyl::NiceU8::from(50).as_bytes3(), b"050");
+	/// assert_eq(dactyl::NiceU8::from(113).as_bytes3(), b"113");
+	/// ```
+	pub const fn as_bytes3(&self) -> &[u8] { &self.inner }
+
+	#[must_use]
+	#[inline]
+	/// # Double Digit Str.
+	///
+	/// This method will return return a string slice that is *at least* two
+	/// chars long, left padding the value with a zero if its natural length is
+	/// shorter. (In other words, this has no effect if the value is >= 10.)
+	///
+	/// ## Examples
+	///
+	/// ```no_run
+	/// assert_eq(dactyl::NiceU8::from(3).as_str2(), "02");
+	/// assert_eq(dactyl::NiceU8::from(50).as_str2(), "50");
+	/// assert_eq(dactyl::NiceU8::from(113).as_str2(), "113");
+	/// ```
+	pub fn as_str2(&self) -> &str {
+		unsafe { std::str::from_utf8_unchecked(self.as_bytes2()) }
+	}
+
+	#[allow(clippy::missing_const_for_fn)] // Doesn't work with unsafe.
+	#[must_use]
+	#[inline]
+	/// # Double Digit Str.
+	///
+	/// This method will return return a string slice that is *at least* three
+	/// chars long, left padding the value with zeroes if its natural length is
+	/// shorter. (In other words, this has no effect if the value is >= 100.)
+	///
+	/// ## Examples
+	///
+	/// ```no_run
+	/// assert_eq(dactyl::NiceU8::from(3).as_str3(), "002");
+	/// assert_eq(dactyl::NiceU8::from(50).as_str3(), "050");
+	/// assert_eq(dactyl::NiceU8::from(113).as_str3(), "113");
+	/// ```
+	pub fn as_str3(&self) -> &str {
+		unsafe { std::str::from_utf8_unchecked(self.as_bytes3()) }
+	}
+}
+
 
 
 #[cfg(test)]
@@ -69,11 +144,45 @@ mod tests {
 
 	#[test]
 	fn t_nice_u8() {
+		// Strings come from bytes, so this implicitly tests both.
 		for i in 0..=u8::MAX {
 			assert_eq!(
 				NiceU8::from(i).as_str(),
 				format!("{}", i),
 			);
 		}
+
+		// Test the defaults too.
+		let empty: &[u8] = &[];
+		assert_eq!(NiceU8::default().as_bytes(), empty);
+		assert_eq!(NiceU8::default().as_str(), "");
+	}
+
+	#[test]
+	fn t_nice_u8_pad2() {
+		// Strings come from bytes, so this implicitly tests both.
+		for i in 0..=u8::MAX {
+			assert_eq!(
+				NiceU8::from(i).as_str2(),
+				format!("{:02}", i),
+			);
+		}
+
+		// Test the default.
+		assert_eq!(NiceU8::default().as_str2(), "00");
+	}
+
+	#[test]
+	fn t_nice_u8_pad3() {
+		// Strings come from bytes, so this implicitly tests both.
+		for i in 0..=u8::MAX {
+			assert_eq!(
+				NiceU8::from(i).as_str3(),
+				format!("{:03}", i),
+			);
+		}
+
+		// Test the default.
+		assert_eq!(NiceU8::default().as_str3(), "000");
 	}
 }

@@ -1,7 +1,7 @@
 /*!
 # Dactyl: "Nice" Elapsed
 
-Note: this module is "in development". It is subject to change, and will eventually be moved to its own crate.
+Note: this module is "in development". It is subject to change, and may eventually be spun off into its own crate.
 */
 
 use std::{
@@ -52,7 +52,7 @@ macro_rules! elapsed_from {
 ///
 /// ## Note
 ///
-/// This module is "in development". It is subject to change, and will eventually be moved to its own crate.
+/// This module is "in development". It is subject to change, and may eventually be spun off into its own crate.
 pub struct NiceElapsed {
 	inner: [u8; 36],
 	len: usize,
@@ -337,7 +337,7 @@ impl ElapsedKind {
 /// ## Safety
 ///
 /// The pointer must have enough space for the value, i.e. 1-2 digits. This
-/// isn't a problem given the method calls from this scope.
+/// isn't a problem in practice given the method calls are all private.
 unsafe fn write_u8_advance(buf: *mut u8, num: u8) -> *mut u8 {
 	assert!(num < 100);
 

@@ -20,7 +20,7 @@ Each type has its own struct, each of which works exactly the same way:
 
 The intended use case is to simply call the appropriate `from()` for the type, then use either the `as_str()` or `as_bytes()` struct methods to retrieve the output in the desired format. Each struct also implements traits like `Deref`, `Display`, `AsRef<str>`, `AsRef<[u8]>`, etc., if you prefer those.
 
-```
+```rust
 use dactyl::NiceU16;
 
 assert_eq!(NiceU16::from(11234_u16).as_str(), "11,234");
@@ -42,7 +42,7 @@ dactyl = "0.1.*"
 
 ## Other
 
-This crate also contains two "in development" structs — [`NicePercent`] and [`NiceElapsed`] — that can be useful for formatting percentages and durations, however their implementations are subject to change and they will be spun off into their own dedicated crates once Dactyl reaches `0.2`.
+This crate also contains two "in development" structs — [`NicePercent`] and [`NiceElapsed`] — that can be useful for formatting percentages and durations, however their implementations are subject to change and they might eventually be split off into their own crates.
 
 
 
