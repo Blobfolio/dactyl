@@ -43,7 +43,6 @@ impl Default for NiceU64 {
 impl From<usize> for NiceU64 {
 	fn from(mut num: usize) -> Self {
 		let mut out = Self::default();
-
 		let ptr = out.inner.as_mut_ptr();
 
 		while num >= 1000 {
@@ -80,7 +79,6 @@ impl From<u64> for NiceU64 {
 	#[cfg(not(target_pointer_width = "64"))]
 	fn from(mut num: u64) -> Self {
 		let mut out = Self::default();
-
 		let ptr = out.inner.as_mut_ptr();
 
 		while num >= 1000 {
