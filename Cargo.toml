@@ -47,3 +47,7 @@ harness = false
 [[bench]]
 name = "fn_nice_u64"
 harness = false
+
+[[bench]]
+name = "fn_saturating_from_u8"
+harness = false
