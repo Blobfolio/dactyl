@@ -41,31 +41,28 @@ impl Default for NiceU32 {
 }
 
 impl From<u32> for NiceU32 {
-	fn from(num: u32) -> Self {
-		// Recast as usize to avoid all the subsequent index casts.
-		let mut num = num as usize;
+	fn from(mut num: u32) -> Self {
 		let mut out = Self::default();
-
 		let ptr = out.inner.as_mut_ptr();
 
 		while num >= 1000 {
 			let (div, rem) = num_integer::div_mod_floor(num, 1000);
-			unsafe { super::write_u8_3(ptr.add(out.from - 3), rem); }
+			unsafe { super::write_u8_3(ptr.add(out.from - 3), rem as usize); }
 			num = div;
 			out.from -= 4;
 		}
 
 		if num >= 100 {
 			out.from -= 3;
-			unsafe { super::write_u8_3(ptr.add(out.from), num); }
+			unsafe { super::write_u8_3(ptr.add(out.from), num as usize); }
 		}
 		else if num >= 10 {
 			out.from -= 2;
-			unsafe { super::write_u8_2(ptr.add(out.from), num); }
+			unsafe { super::write_u8_2(ptr.add(out.from), num as usize); }
 		}
 		else {
 			out.from -= 1;
-			unsafe { super::write_u8_1(ptr.add(out.from), num); }
+			unsafe { super::write_u8_1(ptr.add(out.from), num as usize); }
 		}
 
 		out

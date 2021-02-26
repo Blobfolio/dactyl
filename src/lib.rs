@@ -59,6 +59,7 @@ This crate also contains two "in development" structs — [`NicePercent`] and [`
 
 mod nice_elapsed;
 mod nice_int;
+pub mod traits;
 
 pub use nice_elapsed::NiceElapsed;
 pub use nice_int::{
