@@ -77,6 +77,7 @@ make_impls!(u64, 18_446_744_073_709_551_615, u128); // from<usize> is manual, be
 
 impl SaturatingFrom<usize> for u32 {
 	#[cfg(any(target_pointer_width = "64", target_pointer_width = "128"))]
+	#[allow(clippy::cast_possible_truncation)] // We've already asserted pointer widths.
 	#[inline]
 	/// # Saturating From `usize`
 	fn saturating_from(src: usize) -> Self {
@@ -138,6 +139,7 @@ impl SaturatingFrom<u64> for usize {
 	}
 
 	#[cfg(any(target_pointer_width = "64", target_pointer_width = "128"))]
+	#[allow(clippy::cast_possible_truncation)] // We've already asserted pointer widths.
 	#[inline]
 	/// # Saturating From `u64`
 	fn saturating_from(src: u64) -> Self { src as Self }
