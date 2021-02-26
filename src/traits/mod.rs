@@ -3,7 +3,8 @@
 
 The `SaturatingFrom` trait allows large primitives to be downcast into smaller
 types with values capped at the smaller type's `::MAX` value, avoiding any
-possible overflow or wrapping issues.
+possible overflow or wrapping issues. It's a clamp, basically, except all uints
+share the same bottom.
 
 It is implemented for `u8`, `u16`, `u32`, and `u64` for all types larger than
 said type, up to `u128`.
@@ -228,9 +229,7 @@ mod tests {
 	fn t_u32_from() {
 		for (i, t) in (0..=u64::from(u32::MAX)).zip(0..=u32::MAX) {
 			assert_eq!(u32::saturating_from(i), t);
-		}
-		for (i, t) in (0..=u128::from(u32::MAX)).zip(0..=u32::MAX) {
-			assert_eq!(u32::saturating_from(i), t);
+			assert_eq!(u32::saturating_from(u128::from(i)), t);
 		}
 
 		assert_eq!(u32::saturating_from(u64::MAX), u32::MAX);
