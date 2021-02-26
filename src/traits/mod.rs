@@ -76,16 +76,16 @@ make_impls!(u64, 18_446_744_073_709_551_615, u128); // from<usize> is manual, be
 
 
 impl SaturatingFrom<usize> for u32 {
-	#[cfg(target_pointer_width = "64")]
+	#[cfg(any(target_pointer_width = "64", target_pointer_width = "128"))]
 	#[inline]
 	/// # Saturating From `usize`
 	fn saturating_from(src: usize) -> Self {
-		// 64-bit pointers have to be saturated down.
+		// 64-bit and 128-bit pointers have to be saturated down.
 		if src >= 4_294_967_295 { 4_294_967_295 }
 		else { src as Self }
 	}
 
-	#[cfg(not(target_pointer_width = "64"))]
+	#[cfg(any(target_pointer_width = "16", target_pointer_width = "32"))]
 	#[inline]
 	/// # Saturating From `usize`
 	fn saturating_from(src: usize) -> Self { src as Self }
@@ -137,7 +137,7 @@ impl SaturatingFrom<u64> for usize {
 		else { src as Self }
 	}
 
-	#[cfg(target_pointer_width = "64")]
+	#[cfg(any(target_pointer_width = "64", target_pointer_width = "128"))]
 	#[inline]
 	/// # Saturating From `u64`
 	fn saturating_from(src: u64) -> Self { src as Self }
@@ -170,6 +170,11 @@ impl SaturatingFrom<u128> for usize {
 		if src >= 18_446_744_073_709_551_615 { 18_446_744_073_709_551_615 }
 		else { src as Self }
 	}
+
+	#[cfg(target_pointer_width = "128")]
+	#[inline]
+	/// # Saturating From `u128`
+	fn saturating_from(src: u128) -> Self { src as Self }
 }
 
 
