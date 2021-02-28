@@ -61,17 +61,11 @@ macro_rules! impl_from {
 		impl From<$type> for NicePercent {
 			fn from(mut num: $type) -> Self {
 				// Shortcut for overflowing values.
-				if num <= 0.0 {
-					return Self {
-						inner: *b"000.00%",
-						from: SIZE - 5,
-					};
+				if num <= 0.0 || ! num.is_normal() {
+					return Self::min();
 				}
 				else if 1.0 <= num {
-					return Self {
-						inner: *b"100.00%",
-						from: SIZE - 7,
-					};
+					return Self::max();
 				}
 
 				// Start with the bits we know.
@@ -111,6 +105,30 @@ macro_rules! impl_from {
 
 impl_from!(f32);
 impl_from!(f64);
+
+impl NicePercent {
+	#[must_use]
+	/// # Minimum value.
+	///
+	/// This reads: `0.00%`.
+	pub const fn min() -> Self {
+		Self {
+			inner: *b"000.00%",
+			from: SIZE - 5,
+		}
+	}
+
+	#[must_use]
+	/// # Maximum value.
+	///
+	/// This reads: `100.00%`.
+	pub const fn max() -> Self {
+		Self {
+			inner: *b"100.00%",
+			from: SIZE - 7,
+		}
+	}
+}
 
 
 
