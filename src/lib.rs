@@ -48,12 +48,7 @@ This crate also contains two "in development" structs — [`NicePercent`] and [`
 #![warn(unused_extern_crates)]
 #![warn(unused_import_braces)]
 
-#![allow(clippy::cast_possible_truncation)]
-#![allow(clippy::cast_precision_loss)]
-#![allow(clippy::cast_sign_loss)]
-#![allow(clippy::map_err_ignore)]
-#![allow(clippy::missing_errors_doc)]
-#![allow(clippy::module_name_repetitions)]
+#![allow(clippy::module_name_repetitions)] // This is fine.
 
 
 
@@ -69,6 +64,7 @@ pub use nice_int::{
 	nice_u64::NiceU64,
 	nice_percent::NicePercent,
 };
+use num_traits::cast::AsPrimitive;
 
 
 
@@ -81,6 +77,25 @@ pub(crate) static DOUBLE: &[u8; 200] = b"\
 	8081828384858687888990919293949596979899";
 
 
+
+#[must_use]
+/// # Integer to Float Division.
+///
+/// This uses [`num_traits::cast`](https://docs.rs/num-traits/latest/num_traits/cast/index.html) to convert primitives to `f64` as accurately
+/// as possible, then performs the division. For very large numbers, some
+/// rounding may occur.
+///
+/// If the result is invalid, NaN, or infinite, `None` is returned.
+pub fn int_div_float<T>(e: T, d: T) -> Option<f64>
+where T: AsPrimitive<f64> {
+	let d: f64 = d.as_();
+
+	// The denominator can't be zero.
+	if d == 0.0 { None }
+	else {
+		Some(e.as_() / d).filter(|x| x.is_finite())
+	}
+}
 
 /// # Write u8.
 ///
@@ -139,6 +154,14 @@ pub unsafe fn write_time(buf: *mut u8, h: u8, m: u8, s: u8) {
 mod tests {
 	use super::*;
 	use brunch as _;
+
+	#[test]
+	fn t_int_div_float() {
+		assert_eq!(int_div_float(4_000_000_000_u64, 8_000_000_000_u64), Some(0.5));
+		assert_eq!(int_div_float(400_000_000_000_u64, 800_000_000_000_u64), Some(0.5));
+		assert_eq!(int_div_float(400_000_000_000_u64, 0_u64), None);
+		assert_eq!(int_div_float(4_u8, 8_u8), Some(0.5));
+	}
 
 	#[test]
 	fn t_write_u8() {

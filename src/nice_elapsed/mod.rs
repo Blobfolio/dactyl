@@ -116,6 +116,8 @@ impl From<Duration> for NiceElapsed {
 }
 
 impl From<[u8; 3]> for NiceElapsed {
+	#[allow(clippy::cast_possible_truncation)] // The max is 3.
+	#[allow(clippy::cast_sign_loss)] // The value is >= 0.
 	/// # From HMS.
 	///
 	/// This is meant to be a slice of pre-parsed hours, minutes, and seconds.
@@ -194,6 +196,7 @@ impl NiceElapsed {
 		}
 	}
 
+	#[allow(clippy::cast_possible_truncation)] // Size is previously asserted.
 	#[must_use]
 	/// # Time Chunks.
 	///

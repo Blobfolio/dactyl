@@ -1,6 +1,6 @@
 [package]
 name = "dactyl"
-version = "0.1.4"
+version = "0.1.5"
 authors = ["Blobfolio, LLC. <hello@blobfolio.com>"]
 edition = "2018"
 description = "A small library to quickly stringify integers with basic formatting."
@@ -18,6 +18,7 @@ exclude = [
 
 [dependencies]
 num-integer = "0.1.*"
+num-traits = "0.2.*"
 
 [dev-dependencies]
 brunch = "0.1.*"

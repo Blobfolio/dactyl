@@ -70,7 +70,8 @@ impl From<usize> for NiceU64 {
 }
 
 impl From<u64> for NiceU64 {
-	#[cfg(target_pointer_width = "64")]
+	#[cfg(any(target_pointer_width = "64", target_pointer_width = "128"))]
+	#[allow(clippy::cast_possible_truncation)] // We've already asserted pointer widths.
 	fn from(num: u64) -> Self {
 		// Skip all the index casts.
 		Self::from(num as usize)
