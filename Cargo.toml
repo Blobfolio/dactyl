@@ -18,6 +18,7 @@ exclude = [
 
 [dependencies]
 num-integer = "0.1.*"
+num-traits = "0.2.*"
 
 [dev-dependencies]
 brunch = "0.1.*"
