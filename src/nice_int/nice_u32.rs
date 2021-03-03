@@ -75,36 +75,30 @@ impl From<u32> for NiceU32 {
 mod tests {
 	use super::*;
 	use num_format::{ToFormattedString, Locale};
-	use rand::Rng;
 
 	#[test]
-	#[ignore] // This takes a very long time to run.
 	fn t_nice_u32() {
-		for i in 0..=u32::MAX {
-			assert_eq!(
-				NiceU32::from(i).as_str(),
-				i.to_formatted_string(&Locale::en),
-			);
-		}
-	}
-
-	#[test]
-	fn t_nice_u32_sample() {
-		let mut rng = rand::thread_rng();
-
-		for _ in 0..1_000_000 {
-			let num: u32 = rng.gen();
-			assert_eq!(
-				NiceU32::from(num).as_str(),
-				num.to_formatted_string(&Locale::en),
-			);
-		}
-
+		// Check the min and max.
 		assert_eq!(NiceU32::from(0).as_str(), "0");
-
 		assert_eq!(
 			NiceU32::from(u32::MAX).as_str(),
 			u32::MAX.to_formatted_string(&Locale::en),
 		);
+
+		// Check a subset of everything else.
+		let mut step = 1_u32;
+		let mut i = 0_u32;
+		loop {
+			for _ in 0..10 {
+				if u32::MAX - i < step { return; }
+				i += step;
+				assert_eq!(
+					NiceU32::from(i).as_str(),
+					i.to_formatted_string(&Locale::en),
+				);
+			}
+
+			step *= 10;
+		}
 	}
 }

@@ -232,16 +232,36 @@ mod tests {
 	}
 
 	#[test]
-	#[ignore] // This takes a very long time to run.
 	fn t_u32_from() {
-		for (i, t) in (0..=u64::from(u32::MAX)).zip(0..=u32::MAX) {
-			assert_eq!(u32::saturating_from(i), t);
-			assert_eq!(u32::saturating_from(u128::from(i)), t);
+		// Test a reasonable subset of the u32 range.
+		let mut i = 0_u32;
+		let mut step = 0_u32;
+		while u32::MAX - i > step {
+			i += step;
+			assert_eq!(u32::saturating_from(u64::from(i)), i);
+			assert_eq!(u32::saturating_from(u128::from(i)), i);
+			step += 1;
 		}
 
+		// Test obvious overflows.
 		assert_eq!(u32::saturating_from(u64::MAX), u32::MAX);
 		assert_eq!(u32::saturating_from(u128::MAX), u32::MAX);
 		assert!(u32::saturating_from(usize::MAX) <= u32::MAX);
+	}
+
+	#[test]
+	fn t_u64_from() {
+		// Test a reasonable subset of the u64 range.
+		let mut i = 0_u64;
+		let mut step = 0_u64;
+		while u64::MAX - i > step {
+			i += step;
+			assert_eq!(u64::saturating_from(u128::from(i)), i);
+			step += 1;
+		}
+
+		// Test obvious overflows.
+		assert_eq!(u64::saturating_from(u128::MAX), u64::MAX);
 	}
 
 	#[test]
