@@ -93,9 +93,19 @@ impl SaturatingFrom<usize> for u32 {
 }
 
 impl SaturatingFrom<usize> for u64 {
+	#[cfg(not(target_pointer_width = "128"))]
 	#[inline]
 	/// # Saturating From `usize`
 	fn saturating_from(src: usize) -> Self { src as Self }
+
+	#[cfg(target_pointer_width = "128")]
+	#[inline]
+	/// # Saturating From `usize`
+	fn saturating_from(src: usize) -> Self {
+		// 128-bit pointers have to be saturated down.
+		if src >= 18_446_744_073_709_551_615 { 18_446_744_073_709_551_615 }
+		else { src as Self }
+	}
 }
 
 
