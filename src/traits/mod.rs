@@ -26,32 +26,103 @@ assert_eq!(u8::saturating_from(99_u16), 99_u8);
 
 
 
+/// # Helper: Title/Description.
+///
+/// This generates a formatted title and description for the documentation.
+macro_rules! impl_meta {
+	// Title/Desc.
+	($to:ty, $from:ty) => (
+		concat!(
+			"# Saturating From `",
+			stringify!($from),
+			"`\n",
+			"This method will safely recast any `",
+			stringify!($from),
+			"` into a `",
+			stringify!($to),
+			"`, capping the values at `0` or `",
+			stringify!($to),
+			"::MAX` to prevent overflow or wrapping."
+		)
+	);
+}
+
 /// # Helper: Generate Trait Implementations.
-macro_rules! make_impls {
-	($title:expr, $desc:expr, $from:ty, $to:ty, $MAX:literal) => {
+///
+/// This generates implementations for unsigned sources, with or without an
+/// upper cap.
+macro_rules! unsigned_to_unsigned {
+	// Cap to max.
+	($meta:expr, $from:ty, $to:ty, $MAX:literal) => (
 		impl SaturatingFrom<$from> for $to {
 			#[doc(inline)]
-			#[doc = $title]
-			///
-			#[doc = $desc]
+			#[doc = $meta]
 			fn saturating_from(src: $from) -> Self {
 				if src >= $MAX { $MAX }
 				else { src as Self }
 			}
 		}
-	};
+	);
 
-	($to:ty, $MAX:literal, $($from:ty),+) => {
-		$(
-			make_impls!(
-				concat!("# Saturating From `", stringify!($from), "`"),
-				concat!("This method will safely downcast any `", stringify!($from), "` into a `", stringify!($to), "`, capping the value to `", stringify!($to), "::MAX` to prevent overflow or wrapping."),
-				$from,
-				$to,
-				$MAX
-			);
-		)+
-	}
+	// Direct cast.
+	($meta:expr, $from:ty, $to:ty) => (
+		impl SaturatingFrom<$from> for $to {
+			#[doc(inline)]
+			#[doc = $meta]
+			fn saturating_from(src: $from) -> Self { src as Self }
+		}
+	);
+
+	// Cap to max.
+	($to:ty, $MAX:literal, ($($from:ty),+)) => (
+		$( unsigned_to_unsigned!(impl_meta!($to, $from), $from, $to, $MAX); )+
+	);
+
+	// Direct cast.
+	($to:ty, ($($from:ty),+)) => (
+		$( unsigned_to_unsigned!(impl_meta!($to, $from), $from, $to); )+
+	);
+}
+
+/// # Helper: Generate Trait Implementations (Signed).
+///
+/// This generates implementations for signed sources, with or without an
+/// upper cap. All signed types have a lower cap of zero.
+macro_rules! signed_to_unsigned {
+	// Cap to min/max.
+	($meta:expr, $from:ty, $to:ty, $MAX:literal) => (
+		impl SaturatingFrom<$from> for $to {
+			#[doc(inline)]
+			#[doc = $meta]
+			fn saturating_from(src: $from) -> Self {
+				if src <= 0 { 0 }
+				else if src >= $MAX { Self::MAX }
+				else { src as Self }
+			}
+		}
+	);
+
+	// Cap to min.
+	($meta:expr, $from:ty, $to:ty) => (
+		impl SaturatingFrom<$from> for $to {
+			#[doc(inline)]
+			#[doc = $meta]
+			fn saturating_from(src: $from) -> Self {
+				if src <= 0 { 0 }
+				else { src as Self }
+			}
+		}
+	);
+
+	// Cap to min/max.
+	($to:ty, $MAX:literal, ($($from:ty),+)) => (
+		$( signed_to_unsigned!(impl_meta!($to, $from), $from, $to, $MAX); )+
+	);
+
+	// Cap to min.
+	($to:ty, ($($from:ty),+)) => (
+		$( signed_to_unsigned!(impl_meta!($to, $from), $from, $to); )+
+	);
 }
 
 
@@ -67,127 +138,86 @@ pub trait SaturatingFrom<T> {
 
 
 
-// Most conversions work nice and neat.
-make_impls!(u8, 255, u16, u32, u64, u128, usize);
-make_impls!(u16, 65_535, u32, u64, u128, usize);
-make_impls!(u32, 4_294_967_295, u64, u128); // from<usize> is manual, below.
-make_impls!(u64, 18_446_744_073_709_551_615, u128); // from<usize> is manual, below.
+// These three are always the same.
+unsigned_to_unsigned!(u8, 255, (u16, u32, u64, u128, usize));
+unsigned_to_unsigned!(u16, 65_535, (u32, u64, u128, usize));
+unsigned_to_unsigned!(u32, 4_294_967_295, (u64, u128)); // Usize conditional, below.
+unsigned_to_unsigned!(u64, 18_446_744_073_709_551_615, (u128)); // Usize conditional, below.
+unsigned_to_unsigned!(u128, (usize));
+
+// usize-to-u32 varies by pointer.
+#[cfg(any(target_pointer_width = "16", target_pointer_width="32"))] // 16/32 fit.
+unsigned_to_unsigned!(u32, (usize));
+#[cfg(any(target_pointer_width = "64", target_pointer_width="128"))] // 64/128 don't.
+unsigned_to_unsigned!(u32, 4_294_967_295, (usize));
+
+// usize-to-u64 varies by pointer.
+#[cfg(not(target_pointer_width = "128"))] // 16/32/64 fit.
+unsigned_to_unsigned!(u64, (usize));
+#[cfg(target_pointer_width = "128")] // 128 doesn't.
+unsigned_to_unsigned!(u64, 18_446_744_073_709_551_615, (usize));
+
+// Usize varies by pointer.
+#[cfg(target_pointer_width = "16")] // 32/64/128 don't fit.
+unsigned_to_unsigned!(usize, 65_535, (u32, u64, u128));
+
+#[cfg(target_pointer_width = "32")] // 32 fits.
+unsigned_to_unsigned!(usize, (u32));
+#[cfg(target_pointer_width = "32")] // 64, 128 don't.
+unsigned_to_unsigned!(usize, 4_294_967_295, (u64, u128));
+
+#[cfg(target_pointer_width = "64")] // 32/64 fits.
+unsigned_to_unsigned!(usize, (u32, u64));
+#[cfg(target_pointer_width = "64")] // 128 doesn't.
+unsigned_to_unsigned!(usize, 18_446_744_073_709_551_615, (u128));
+
+#[cfg(target_pointer_width = "128")]
+unsigned_to_unsigned!(usize, (u32, u64, u128));
 
 
 
-impl SaturatingFrom<usize> for u32 {
-	#[cfg(any(target_pointer_width = "64", target_pointer_width = "128"))]
-	#[allow(clippy::cast_possible_truncation)] // We've already asserted pointer widths.
-	#[inline]
-	/// # Saturating From `usize`
-	fn saturating_from(src: usize) -> Self {
-		// 64-bit and 128-bit pointers have to be saturated down.
-		if src >= 4_294_967_295 { 4_294_967_295 }
-		else { src as Self }
-	}
+// Converting from signed types. These are straight conversions.
+signed_to_unsigned!(u8, (i8));
+signed_to_unsigned!(u16, (i8, i16));
+signed_to_unsigned!(u32, (i8, i16, i32));
+signed_to_unsigned!(u64, (i8, i16, i32, i64));
+signed_to_unsigned!(u128, (i8, i16, i32, i64, i128, isize));
+signed_to_unsigned!(usize, (i8, i16, isize));
 
-	#[cfg(any(target_pointer_width = "16", target_pointer_width = "32"))]
-	#[inline]
-	/// # Saturating From `usize`
-	fn saturating_from(src: usize) -> Self { src as Self }
-}
+// These require max capping.
+signed_to_unsigned!(u8, 255, (i16, i32, i64, i128, isize));
+signed_to_unsigned!(u16, 65_535, (i32, i64, i128, isize));
+signed_to_unsigned!(u32, 4_294_967_295, (i64, i128));
+signed_to_unsigned!(u64, 18_446_744_073_709_551_615, (i128));
 
-impl SaturatingFrom<usize> for u64 {
-	#[cfg(not(target_pointer_width = "128"))]
-	#[inline]
-	/// # Saturating From `usize`
-	fn saturating_from(src: usize) -> Self { src as Self }
+// U32/isize varies by pointer.
+#[cfg(any(target_pointer_width = "16", target_pointer_width="32"))]
+signed_to_unsigned!(u32, (isize));
+#[cfg(any(target_pointer_width = "64", target_pointer_width="128"))]
+signed_to_unsigned!(u32, 4_294_967_295, (isize));
 
-	#[cfg(target_pointer_width = "128")]
-	#[inline]
-	/// # Saturating From `usize`
-	fn saturating_from(src: usize) -> Self {
-		// 128-bit pointers have to be saturated down.
-		if src >= 18_446_744_073_709_551_615 { 18_446_744_073_709_551_615 }
-		else { src as Self }
-	}
-}
+// U64/isize varies by pointer.
+#[cfg(not(target_pointer_width = "128"))]
+signed_to_unsigned!(u64, (isize));
+#[cfg(target_pointer_width = "128")]
+signed_to_unsigned!(u64, 18_446_744_073_709_551_615, (isize));
 
+// All other usize conversions vary by pointer.
+#[cfg(target_pointer_width = "16")]
+signed_to_unsigned!(usize, 65_535, (i32, i64, i128));
 
+#[cfg(target_pointer_width = "32")]
+signed_to_unsigned!(usize, (i32));
+#[cfg(target_pointer_width = "32")]
+signed_to_unsigned!(usize, 4_294_967_295, (i64, i128));
 
-// The conversion traits for `u32`, `u64`, and `u128` have to be handled
-// manually to account for `usize`'s variable width.
+#[cfg(target_pointer_width = "64")]
+signed_to_unsigned!(usize, (i32, i64));
+#[cfg(target_pointer_width = "64")]
+signed_to_unsigned!(usize, 18_446_744_073_709_551_615, (i128));
 
-impl SaturatingFrom<u32> for usize {
-	#[cfg(target_pointer_width = "16")]
-	#[inline]
-	/// # Saturating From `u32`
-	fn saturating_from(src: u32) -> Self {
-		// 16-bit pointers have to be saturated down.
-		if src >= 65_535 { 65_535 }
-		else { src as Self }
-	}
-
-	#[cfg(not(target_pointer_width = "16"))]
-	#[inline]
-	/// # Saturating From `u32`
-	fn saturating_from(src: u32) -> Self { src as Self }
-}
-
-impl SaturatingFrom<u64> for usize {
-	#[cfg(target_pointer_width = "16")]
-	#[inline]
-	/// # Saturating From `u64`
-	fn saturating_from(src: u64) -> Self {
-		// 16-bit pointers have to be saturated down.
-		if src >= 65_535 { 65_535 }
-		else { src as Self }
-	}
-
-	#[cfg(target_pointer_width = "32")]
-	#[inline]
-	/// # Saturating From `u64`
-	fn saturating_from(src: u64) -> Self {
-		// 32-bit pointers have to be saturated down.
-		if src >= 4_294_967_295 { 4_294_967_295 }
-		else { src as Self }
-	}
-
-	#[cfg(any(target_pointer_width = "64", target_pointer_width = "128"))]
-	#[allow(clippy::cast_possible_truncation)] // We've already asserted pointer widths.
-	#[inline]
-	/// # Saturating From `u64`
-	fn saturating_from(src: u64) -> Self { src as Self }
-}
-
-impl SaturatingFrom<u128> for usize {
-	#[cfg(target_pointer_width = "16")]
-	#[inline]
-	/// # Saturating From `u128`
-	fn saturating_from(src: u128) -> Self {
-		// 16-bit pointers have to be saturated down.
-		if src >= 65_535 { 65_535 }
-		else { src as Self }
-	}
-
-	#[cfg(target_pointer_width = "32")]
-	#[inline]
-	/// # Saturating From `u128`
-	fn saturating_from(src: u128) -> Self {
-		// 32-bit pointers have to be saturated down.
-		if src >= 4_294_967_295 { 4_294_967_295 }
-		else { src as Self }
-	}
-
-	#[cfg(target_pointer_width = "64")]
-	#[inline]
-	/// # Saturating From `u128`
-	fn saturating_from(src: u128) -> Self {
-		// 64-bit pointers have to be saturated down.
-		if src >= 18_446_744_073_709_551_615 { 18_446_744_073_709_551_615 }
-		else { src as Self }
-	}
-
-	#[cfg(target_pointer_width = "128")]
-	#[inline]
-	/// # Saturating From `u128`
-	fn saturating_from(src: u128) -> Self { src as Self }
-}
+#[cfg(target_pointer_width = "128")]
+signed_to_unsigned!(usize, (i32, i64, i128));
 
 
 
@@ -195,89 +225,133 @@ impl SaturatingFrom<u128> for usize {
 mod tests {
 	use super::*;
 
-	#[test]
-	fn t_u8_from() {
-		for (i, t) in (0..=u16::from(u8::MAX)).zip(0..=u8::MAX) {
-			assert_eq!(u8::saturating_from(i), t);
-		}
-		for (i, t) in (0..=u32::from(u8::MAX)).zip(0..=u8::MAX) {
-			assert_eq!(u8::saturating_from(i), t);
-		}
-		for (i, t) in (0..=u64::from(u8::MAX)).zip(0..=u8::MAX) {
-			assert_eq!(u8::saturating_from(i), t);
-		}
-		for (i, t) in (0..=u128::from(u8::MAX)).zip(0..=u8::MAX) {
-			assert_eq!(u8::saturating_from(i), t);
-		}
-		for (i, t) in (0..=usize::from(u8::MAX)).zip(0..=u8::MAX) {
-			assert_eq!(u8::saturating_from(i), t);
-		}
+	/// # Test Flooring.
+	macro_rules! test_impl {
+		($type:ty, ($($val:literal),+)) => (
+			$( assert_eq!(<$type>::saturating_from($val), <$type>::MIN); )+
+		);
 
-		assert_eq!(u8::saturating_from(u16::MAX), u8::MAX);
-		assert_eq!(u8::saturating_from(u32::MAX), u8::MAX);
-		assert_eq!(u8::saturating_from(u64::MAX), u8::MAX);
-		assert_eq!(u8::saturating_from(u128::MAX), u8::MAX);
-		assert_eq!(u8::saturating_from(usize::MAX), u8::MAX);
+		// SaturatingFrom is implemented for all signed types.
+		($type:ty) => {
+			test_impl!($type, (-1_i8, -1_i16, -1_i32, -1_i64, -1_i128, -1_isize));
+			test_impl!($type, (0_i8, 0_i16, 0_i32, 0_i64, 0_i128, 0_isize));
+		};
+	}
+
+	/// # Test Ceiling.
+	macro_rules! test_impl_max {
+		($type:ty, ($($from:ty),+)) => (
+			$( assert_eq!(<$type>::saturating_from(<$from>::MAX), <$type>::MAX); )+
+		);
+	}
+
+	/// # Range Testing.
+	macro_rules! test_impl_range {
+		($type:ty, ($($from:ty),+)) => {
+			for i in 0..=<$type>::MAX {
+				$( assert_eq!(<$type>::saturating_from(i as $from), i); )+
+			}
+		};
+	}
+
+	/// # Range Testing (subset).
+	///
+	/// This computes casting for a subset of the total type range; this allows
+	/// testing large types to finish in a reasonable amount of time.
+	macro_rules! test_impl_subrange {
+		($type:ty, ($($from:ty),+)) => {
+			let mut i = <$type>::MIN;
+			let mut step: $type = 0;
+			while <$type>::MAX - i > step {
+				i += step;
+				$( assert_eq!(<$type>::saturating_from(i as $from), i); )+
+				step += 1;
+			}
+		};
+	}
+
+	#[test]
+	/// # Test Implementations
+	///
+	/// This makes sure we've actually implemented all the expected type-to-
+	/// type conversions, as well as making sure negative/zero signed integer
+	/// conversions work as expected.
+	fn t_impls() {
+		test_impl!(u8, (0_u16, 0_u32, 0_u64, 0_u128, 0_usize));
+		test_impl!(u8);
+
+		test_impl!(u16, (0_u32, 0_u64, 0_u128, 0_usize));
+		test_impl!(u16);
+
+		test_impl!(u32, (0_u64, 0_u128, 0_usize));
+		test_impl!(u32);
+
+		test_impl!(u64, (0_u128, 0_usize));
+		test_impl!(u64);
+
+		test_impl!(u128, (0_usize));
+		test_impl!(u128);
+
+		test_impl!(usize, (0_u32, 0_u64, 0_u128));
+		test_impl!(usize);
+	}
+
+	#[test]
+	/// # Test u8
+	///
+	/// Make sure larger ints correctly saturate to u8.
+	fn t_u8_from() {
+		test_impl_range!(u8, (u16, u32, u64, u128, usize));
+		test_impl_max!(u8, (u16, u32, u64, u128, usize));
 	}
 
 	#[test]
 	fn t_u16_from() {
-		for (i, t) in (0..=u32::from(u16::MAX)).zip(0..=u16::MAX) {
-			assert_eq!(u16::saturating_from(i), t);
-		}
-		for (i, t) in (0..=u64::from(u16::MAX)).zip(0..=u16::MAX) {
-			assert_eq!(u16::saturating_from(i), t);
-		}
-		for (i, t) in (0..=u128::from(u16::MAX)).zip(0..=u16::MAX) {
-			assert_eq!(u16::saturating_from(i), t);
-		}
-		for (i, t) in (0..=usize::from(u16::MAX)).zip(0..=u16::MAX) {
-			assert_eq!(u16::saturating_from(i), t);
-		}
-
-		assert_eq!(u16::saturating_from(u32::MAX), u16::MAX);
-		assert_eq!(u16::saturating_from(u64::MAX), u16::MAX);
-		assert_eq!(u16::saturating_from(u128::MAX), u16::MAX);
-		assert_eq!(u16::saturating_from(usize::MAX), u16::MAX);
+		test_impl_range!(u16, (u32, u64, u128, usize));
+		test_impl_max!(u16, (u32, u64, u128, usize));
 	}
 
 	#[test]
 	fn t_u32_from() {
-		// Test a reasonable subset of the u32 range.
-		let mut i = 0_u32;
-		let mut step = 0_u32;
-		while u32::MAX - i > step {
-			i += step;
-			assert_eq!(u32::saturating_from(u64::from(i)), i);
-			assert_eq!(u32::saturating_from(u128::from(i)), i);
-			step += 1;
-		}
-
-		// Test obvious overflows.
-		assert_eq!(u32::saturating_from(u64::MAX), u32::MAX);
-		assert_eq!(u32::saturating_from(u128::MAX), u32::MAX);
-		assert!(u32::saturating_from(usize::MAX) <= u32::MAX);
+		test_impl_subrange!(u32, (u64, u128));
+		test_impl_max!(u32, (u64, u128));
 	}
 
 	#[test]
 	fn t_u64_from() {
-		// Test a reasonable subset of the u64 range.
-		let mut i = 0_u64;
-		let mut step = 0_u64;
-		while u64::MAX - i > step {
-			i += step;
-			assert_eq!(u64::saturating_from(u128::from(i)), i);
-			step += 1;
-		}
-
-		// Test obvious overflows.
-		assert_eq!(u64::saturating_from(u128::MAX), u64::MAX);
+		test_impl_subrange!(u64, (u128));
+		test_impl_max!(u64, (u128));
 	}
 
+	#[cfg(target_pointer_width = "16")]
 	#[test]
 	fn t_usize_from() {
-		assert!(usize::saturating_from(u32::MAX) <= usize::MAX);
-		assert!(usize::saturating_from(u64::MAX) <= usize::MAX);
-		assert_eq!(usize::saturating_from(u128::MAX), usize::MAX);
+		test_impl_range!(usize, (u32, u64, u128));
+		test_impl_max!(usize, (u32, u64, u128));
+	}
+
+	#[cfg(target_pointer_width = "32")]
+	#[test]
+	fn t_usize_from() {
+		test_impl_subrange!(usize, (u32, u64, u128));
+		test_impl_max!(usize, (u32, u64, u128));
+		test_impl_max!(u32, (usize));
+	}
+
+	#[cfg(target_pointer_width = "64")]
+	#[test]
+	fn t_usize_from() {
+		test_impl_subrange!(usize, (u64, u128));
+		assert_eq!(u32::saturating_from(usize::MAX), u32::MAX);
+		test_impl_max!(u64, (usize));
+	}
+
+	#[cfg(target_pointer_width = "128")]
+	#[test]
+	fn t_usize_from() {
+		test_impl_subrange!(usize, (u128));
+		assert_eq!(u32::saturating_from(usize::MAX), u32::MAX);
+		assert_eq!(u64::saturating_from(usize::MAX), u64::MAX);
+		test_impl_max!(u128, (usize));
 	}
 }
