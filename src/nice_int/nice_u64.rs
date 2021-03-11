@@ -112,36 +112,30 @@ impl From<u64> for NiceU64 {
 mod tests {
 	use super::*;
 	use num_format::{ToFormattedString, Locale};
-	use rand::Rng;
 
 	#[test]
-	#[ignore] // This takes a very long time to run.
 	fn t_nice_u64() {
-		for i in 0..=u64::MAX {
-			assert_eq!(
-				NiceU64::from(i).as_str(),
-				i.to_formatted_string(&Locale::en),
-			);
-		}
-	}
-
-	#[test]
-	fn t_nice_u64_sample() {
-		let mut rng = rand::thread_rng();
-
-		for _ in 0..1_000_000 {
-			let num: u64 = rng.gen();
-			assert_eq!(
-				NiceU64::from(num).as_str(),
-				num.to_formatted_string(&Locale::en),
-			);
-		}
-
+		// Check the min and max.
 		assert_eq!(NiceU64::from(0_u64).as_str(), "0");
-
 		assert_eq!(
 			NiceU64::from(u64::MAX).as_str(),
 			u64::MAX.to_formatted_string(&Locale::en),
 		);
+
+		// Check a subset of everything else.
+		let mut step = 1_u64;
+		let mut i = 0_u64;
+		loop {
+			for _ in 0..10 {
+				if u64::MAX - i < step { return; }
+				i += step;
+				assert_eq!(
+					NiceU64::from(i).as_str(),
+					i.to_formatted_string(&Locale::en),
+				);
+			}
+
+			step *= 10;
+		}
 	}
 }
