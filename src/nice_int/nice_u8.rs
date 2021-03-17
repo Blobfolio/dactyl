@@ -2,6 +2,8 @@
 # Dactyl: Nice u8.
 */
 
+use std::num::NonZeroU8;
+
 
 
 /// # Total Buffer Size.
@@ -28,13 +30,11 @@ pub struct NiceU8 {
 	from: usize,
 }
 
-crate::impl_nice_int!(NiceU8);
-
 impl Default for NiceU8 {
 	#[inline]
 	fn default() -> Self {
 		Self {
-			inner: [48, 48, 48],
+			inner: [b'0', b'0', b'0'],
 			from: SIZE,
 		}
 	}
@@ -61,7 +61,23 @@ impl From<u8> for NiceU8 {
 	}
 }
 
+// A few Macro traits.
+crate::impl_nice_nonzero_int!(NonZeroU8, NiceU8);
+crate::impl_nice_int!(NiceU8);
+
 impl NiceU8 {
+	#[must_use]
+	#[inline]
+	/// # Min.
+	///
+	/// This is equivalent to zero.
+	pub const fn min() -> Self {
+		Self {
+			inner: [b'0', b'0', b'0'],
+			from: SIZE - 1,
+		}
+	}
+
 	#[must_use]
 	#[inline]
 	/// # Double Digit Bytes.
@@ -144,6 +160,8 @@ mod tests {
 
 	#[test]
 	fn t_nice_u8() {
+		assert_eq!(NiceU8::min(), NiceU8::from(0));
+
 		// Strings come from bytes, so this implicitly tests both.
 		for i in 0..=u8::MAX {
 			assert_eq!(
@@ -156,6 +174,13 @@ mod tests {
 		let empty: &[u8] = &[];
 		assert_eq!(NiceU8::default().as_bytes(), empty);
 		assert_eq!(NiceU8::default().as_str(), "");
+	}
+
+	#[test]
+	fn t_nice_nonzero_u8() {
+		assert_eq!(NiceU8::min(), NiceU8::from(NonZeroU8::new(0)));
+		assert_eq!(NiceU8::from(50_u8), NiceU8::from(NonZeroU8::new(50)));
+		assert_eq!(NiceU8::from(50_u8), NiceU8::from(NonZeroU8::new(50).unwrap()));
 	}
 
 	#[test]

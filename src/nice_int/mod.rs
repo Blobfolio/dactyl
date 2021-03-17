@@ -21,7 +21,7 @@ use std::ptr;
 ///
 /// This is not intended for use outside the crate.
 macro_rules! impl_nice_int {
-	($lhs:ty) => {
+	($lhs:ty) => (
 		impl std::ops::Deref for $lhs {
 			type Target = [u8];
 			#[inline]
@@ -77,7 +77,28 @@ macro_rules! impl_nice_int {
 				unsafe { std::str::from_utf8_unchecked(self) }
 			}
 		}
-	};
+	);
+}
+
+#[doc(hidden)]
+#[macro_export]
+/// # Helper: Generic NiceU*::From<NonZero*>.
+///
+/// This is not intended for use outside the crate.
+macro_rules! impl_nice_nonzero_int {
+	($from:ty, $to:ty) => (
+		impl From<$from> for $to {
+			#[inline]
+			fn from(src: $from) -> Self { Self::from(src.get()) }
+		}
+
+		impl From<Option<$from>> for $to {
+			#[inline]
+			fn from(src: Option<$from>) -> Self {
+				src.map_or_else(Self::min, |s| Self::from(s.get()))
+			}
+		}
+	);
 }
 
 

@@ -2,6 +2,11 @@
 # Dactyl: Nice u64.
 */
 
+use std::num::{
+	NonZeroU64,
+	NonZeroUsize,
+};
+
 
 
 /// # Total Buffer Size.
@@ -28,13 +33,11 @@ pub struct NiceU64 {
 	from: usize,
 }
 
-crate::impl_nice_int!(NiceU64);
-
 impl Default for NiceU64 {
 	#[inline]
 	fn default() -> Self {
 		Self {
-			inner: [0, 0, b',', 0, 0, 0, b',', 0, 0, 0, b',', 0, 0, 0, b',', 0, 0, 0, b',', 0, 0, 0, b',', 0, 0, 0],
+			inner: [b'0', b'0', b',', b'0', b'0', b'0', b',', b'0', b'0', b'0', b',', b'0', b'0', b'0', b',', b'0', b'0', b'0', b',', b'0', b'0', b'0', b',', b'0', b'0', b'0'],
 			from: SIZE,
 		}
 	}
@@ -106,6 +109,25 @@ impl From<u64> for NiceU64 {
 	}
 }
 
+impl NiceU64 {
+	#[must_use]
+	#[inline]
+	/// # Min.
+	///
+	/// This is equivalent to zero.
+	pub const fn min() -> Self {
+		Self {
+			inner: [b'0', b'0', b',', b'0', b'0', b'0', b',', b'0', b'0', b'0', b',', b'0', b'0', b'0', b',', b'0', b'0', b'0', b',', b'0', b'0', b'0', b',', b'0', b'0', b'0'],
+			from: SIZE - 1,
+		}
+	}
+}
+
+// A few Macro traits.
+crate::impl_nice_nonzero_int!(NonZeroU64, NiceU64);
+crate::impl_nice_nonzero_int!(NonZeroUsize, NiceU64);
+crate::impl_nice_int!(NiceU64);
+
 
 
 #[cfg(test)]
@@ -117,6 +139,8 @@ mod tests {
 	fn t_nice_u64() {
 		// Check the min and max.
 		assert_eq!(NiceU64::from(0_u64).as_str(), "0");
+		assert_eq!(NiceU64::min(), NiceU64::from(0_u64));
+		assert_eq!(NiceU64::min(), NiceU64::from(0_usize));
 		assert_eq!(
 			NiceU64::from(u64::MAX).as_str(),
 			u64::MAX.to_formatted_string(&Locale::en),
@@ -137,5 +161,16 @@ mod tests {
 
 			step *= 10;
 		}
+	}
+
+	#[test]
+	fn t_nice_nonzero_u64() {
+		assert_eq!(NiceU64::min(), NiceU64::from(NonZeroU64::new(0)));
+		assert_eq!(NiceU64::from(50_u64), NiceU64::from(NonZeroU64::new(50)));
+		assert_eq!(NiceU64::from(50_u64), NiceU64::from(NonZeroU64::new(50).unwrap()));
+
+		assert_eq!(NiceU64::min(), NiceU64::from(NonZeroUsize::new(0)));
+		assert_eq!(NiceU64::from(50_u64), NiceU64::from(NonZeroUsize::new(50)));
+		assert_eq!(NiceU64::from(50_u64), NiceU64::from(NonZeroUsize::new(50).unwrap()));
 	}
 }
