@@ -2,6 +2,8 @@
 # Dactyl: Nice u32.
 */
 
+use std::num::NonZeroU32;
+
 
 
 /// # Total Buffer Size.
@@ -28,13 +30,11 @@ pub struct NiceU32 {
 	from: usize,
 }
 
-crate::impl_nice_int!(NiceU32);
-
 impl Default for NiceU32 {
 	#[inline]
 	fn default() -> Self {
 		Self {
-			inner: [0, b',', 0, 0, 0, b',', 0, 0, 0, b',', 0, 0, 0],
+			inner: [b'0', b',', b'0', b'0', b'0', b',', b'0', b'0', b'0', b',', b'0', b'0', b'0'],
 			from: SIZE,
 		}
 	}
@@ -69,6 +69,24 @@ impl From<u32> for NiceU32 {
 	}
 }
 
+impl NiceU32 {
+	#[must_use]
+	#[inline]
+	/// # Min.
+	///
+	/// This is equivalent to zero.
+	pub const fn min() -> Self {
+		Self {
+			inner: [b'0', b',', b'0', b'0', b'0', b',', b'0', b'0', b'0', b',', b'0', b'0', b'0'],
+			from: SIZE - 1,
+		}
+	}
+}
+
+// A few Macro traits.
+crate::impl_nice_nonzero_int!(NonZeroU32, NiceU32);
+crate::impl_nice_int!(NiceU32);
+
 
 
 #[cfg(test)]
@@ -80,6 +98,7 @@ mod tests {
 	fn t_nice_u32() {
 		// Check the min and max.
 		assert_eq!(NiceU32::from(0).as_str(), "0");
+		assert_eq!(NiceU32::min(), NiceU32::from(0));
 		assert_eq!(
 			NiceU32::from(u32::MAX).as_str(),
 			u32::MAX.to_formatted_string(&Locale::en),
@@ -100,5 +119,13 @@ mod tests {
 
 			step *= 10;
 		}
+	}
+
+
+	#[test]
+	fn t_nice_nonzero_u32() {
+		assert_eq!(NiceU32::min(), NiceU32::from(NonZeroU32::new(0)));
+		assert_eq!(NiceU32::from(50_u32), NiceU32::from(NonZeroU32::new(50)));
+		assert_eq!(NiceU32::from(50_u32), NiceU32::from(NonZeroU32::new(50).unwrap()));
 	}
 }

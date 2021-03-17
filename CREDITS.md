@@ -227,7 +227,7 @@ limitations under the License.
 
 **Used By:**
 
-* [dactyl 0.1.6](https://github.com/Blobfolio/dactyl)
+* [dactyl 0.1.7](https://github.com/Blobfolio/dactyl)
 
 
 ```

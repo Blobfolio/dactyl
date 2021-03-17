@@ -2,6 +2,8 @@
 # Dactyl: Nice u16.
 */
 
+use std::num::NonZeroU16;
+
 
 
 /// # Total Buffer Size.
@@ -28,13 +30,11 @@ pub struct NiceU16 {
 	from: usize,
 }
 
-crate::impl_nice_int!(NiceU16);
-
 impl Default for NiceU16 {
 	#[inline]
 	fn default() -> Self {
 		Self {
-			inner: [0, 0, b',', 0, 0, 0],
+			inner: [b'0', b'0', b',', b'0', b'0', b'0'],
 			from: SIZE,
 		}
 	}
@@ -70,6 +70,24 @@ impl From<u16> for NiceU16 {
 	}
 }
 
+impl NiceU16 {
+	#[must_use]
+	#[inline]
+	/// # Min.
+	///
+	/// This is equivalent to zero.
+	pub const fn min() -> Self {
+		Self {
+			inner: [b'0', b'0', b',', b'0', b'0', b'0'],
+			from: SIZE - 1,
+		}
+	}
+}
+
+// A few Macro traits.
+crate::impl_nice_nonzero_int!(NonZeroU16, NiceU16);
+crate::impl_nice_int!(NiceU16);
+
 
 
 #[cfg(test)]
@@ -79,11 +97,20 @@ mod tests {
 
 	#[test]
 	fn t_nice_u16() {
+		assert_eq!(NiceU16::min(), NiceU16::from(0));
+
 		for i in 0..=u16::MAX {
 			assert_eq!(
 				NiceU16::from(i).as_str(),
 				i.to_formatted_string(&Locale::en),
 			);
 		}
+	}
+
+	#[test]
+	fn t_nice_nonzero_u16() {
+		assert_eq!(NiceU16::min(), NiceU16::from(NonZeroU16::new(0)));
+		assert_eq!(NiceU16::from(50_u16), NiceU16::from(NonZeroU16::new(50)));
+		assert_eq!(NiceU16::from(50_u16), NiceU16::from(NonZeroU16::new(50).unwrap()));
 	}
 }
