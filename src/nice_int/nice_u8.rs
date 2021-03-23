@@ -89,9 +89,9 @@ impl NiceU8 {
 	/// ## Examples
 	///
 	/// ```no_run
-	/// assert_eq(dactyl::NiceU8::from(3).as_bytes2(), b"02");
-	/// assert_eq(dactyl::NiceU8::from(50).as_bytes2(), b"50");
-	/// assert_eq(dactyl::NiceU8::from(113).as_bytes2(), b"113");
+	/// assert_eq!(dactyl::NiceU8::from(3).as_bytes2(), b"02");
+	/// assert_eq!(dactyl::NiceU8::from(50).as_bytes2(), b"50");
+	/// assert_eq!(dactyl::NiceU8::from(113).as_bytes2(), b"113");
 	/// ```
 	pub fn as_bytes2(&self) -> &[u8] { &self.inner[1.min(self.from)..] }
 
@@ -106,9 +106,9 @@ impl NiceU8 {
 	/// ## Examples
 	///
 	/// ```no_run
-	/// assert_eq(dactyl::NiceU8::from(3).as_bytes3(), b"002");
-	/// assert_eq(dactyl::NiceU8::from(50).as_bytes3(), b"050");
-	/// assert_eq(dactyl::NiceU8::from(113).as_bytes3(), b"113");
+	/// assert_eq!(dactyl::NiceU8::from(3).as_bytes3(), b"002");
+	/// assert_eq!(dactyl::NiceU8::from(50).as_bytes3(), b"050");
+	/// assert_eq!(dactyl::NiceU8::from(113).as_bytes3(), b"113");
 	/// ```
 	pub const fn as_bytes3(&self) -> &[u8] { &self.inner }
 
@@ -123,9 +123,9 @@ impl NiceU8 {
 	/// ## Examples
 	///
 	/// ```no_run
-	/// assert_eq(dactyl::NiceU8::from(3).as_str2(), "02");
-	/// assert_eq(dactyl::NiceU8::from(50).as_str2(), "50");
-	/// assert_eq(dactyl::NiceU8::from(113).as_str2(), "113");
+	/// assert_eq!(dactyl::NiceU8::from(3).as_str2(), "02");
+	/// assert_eq!(dactyl::NiceU8::from(50).as_str2(), "50");
+	/// assert_eq!(dactyl::NiceU8::from(113).as_str2(), "113");
 	/// ```
 	pub fn as_str2(&self) -> &str {
 		unsafe { std::str::from_utf8_unchecked(self.as_bytes2()) }
@@ -143,9 +143,9 @@ impl NiceU8 {
 	/// ## Examples
 	///
 	/// ```no_run
-	/// assert_eq(dactyl::NiceU8::from(3).as_str3(), "002");
-	/// assert_eq(dactyl::NiceU8::from(50).as_str3(), "050");
-	/// assert_eq(dactyl::NiceU8::from(113).as_str3(), "113");
+	/// assert_eq!(dactyl::NiceU8::from(3).as_str3(), "002");
+	/// assert_eq!(dactyl::NiceU8::from(50).as_str3(), "050");
+	/// assert_eq!(dactyl::NiceU8::from(113).as_str3(), "113");
 	/// ```
 	pub fn as_str3(&self) -> &str {
 		unsafe { std::str::from_utf8_unchecked(self.as_bytes3()) }
