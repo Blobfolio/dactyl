@@ -1,0 +1,10 @@
+language: rust
+os:
+  - linux
+  - osx
+  - windows
+rust:
+  - beta
+script:
+  - cargo test --all-features --verbose
+  - cargo test --all-features --verbose -- --ignored
