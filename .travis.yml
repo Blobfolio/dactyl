@@ -4,7 +4,7 @@ os:
   - osx
   - windows
 rust:
-  - beta
+  - stable
 script:
   - cargo test --all-features --verbose
   - cargo test --all-features --verbose -- --ignored
