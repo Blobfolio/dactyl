@@ -131,7 +131,7 @@ impl NiceU8 {
 		unsafe { std::str::from_utf8_unchecked(self.as_bytes2()) }
 	}
 
-	#[allow(clippy::missing_const_for_fn)] // Doesn't work with unsafe.
+	#[allow(clippy::missing_const_for_fn)] // Can't const unsafe yet.
 	#[must_use]
 	#[inline]
 	/// # Triple Digit Str.
