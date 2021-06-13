@@ -110,20 +110,12 @@ bench BENCH="":
 
 
 # Unit tests!
-test:
-	#!/usr/bin/env bash
-
+@test:
 	clear
-
 	cargo test \
-		--tests \
 		--release \
-		--all-features \
 		--target x86_64-unknown-linux-gnu \
-		--target-dir "{{ cargo_dir }}" -- \
-			--format terse
-
-	exit 0
+		--target-dir "{{ cargo_dir }}"
 
 
 # Get/Set version.

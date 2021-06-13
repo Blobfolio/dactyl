@@ -19,12 +19,13 @@ const SIZE: usize = 3;
 ///
 /// ## Examples
 ///
-/// ```no_run
+/// ```
 /// use dactyl::NiceU8;
 /// assert_eq!(
 ///     NiceU8::from(231).as_str(),
 ///     "231"
 /// );
+/// ```
 pub struct NiceU8 {
 	inner: [u8; SIZE],
 	from: usize,
@@ -88,8 +89,8 @@ impl NiceU8 {
 	///
 	/// ## Examples
 	///
-	/// ```no_run
-	/// assert_eq!(dactyl::NiceU8::from(3).as_bytes2(), b"02");
+	/// ```
+	/// assert_eq!(dactyl::NiceU8::from(3).as_bytes2(), b"03");
 	/// assert_eq!(dactyl::NiceU8::from(50).as_bytes2(), b"50");
 	/// assert_eq!(dactyl::NiceU8::from(113).as_bytes2(), b"113");
 	/// ```
@@ -105,8 +106,8 @@ impl NiceU8 {
 	///
 	/// ## Examples
 	///
-	/// ```no_run
-	/// assert_eq!(dactyl::NiceU8::from(3).as_bytes3(), b"002");
+	/// ```
+	/// assert_eq!(dactyl::NiceU8::from(3).as_bytes3(), b"003");
 	/// assert_eq!(dactyl::NiceU8::from(50).as_bytes3(), b"050");
 	/// assert_eq!(dactyl::NiceU8::from(113).as_bytes3(), b"113");
 	/// ```
@@ -122,8 +123,8 @@ impl NiceU8 {
 	///
 	/// ## Examples
 	///
-	/// ```no_run
-	/// assert_eq!(dactyl::NiceU8::from(3).as_str2(), "02");
+	/// ```
+	/// assert_eq!(dactyl::NiceU8::from(3).as_str2(), "03");
 	/// assert_eq!(dactyl::NiceU8::from(50).as_str2(), "50");
 	/// assert_eq!(dactyl::NiceU8::from(113).as_str2(), "113");
 	/// ```
@@ -131,7 +132,7 @@ impl NiceU8 {
 		unsafe { std::str::from_utf8_unchecked(self.as_bytes2()) }
 	}
 
-	#[allow(clippy::missing_const_for_fn)] // Doesn't work with unsafe.
+	#[allow(clippy::missing_const_for_fn)] // Can't const unsafe yet.
 	#[must_use]
 	#[inline]
 	/// # Triple Digit Str.
@@ -142,8 +143,8 @@ impl NiceU8 {
 	///
 	/// ## Examples
 	///
-	/// ```no_run
-	/// assert_eq!(dactyl::NiceU8::from(3).as_str3(), "002");
+	/// ```
+	/// assert_eq!(dactyl::NiceU8::from(3).as_str3(), "003");
 	/// assert_eq!(dactyl::NiceU8::from(50).as_str3(), "050");
 	/// assert_eq!(dactyl::NiceU8::from(113).as_str3(), "113");
 	/// ```

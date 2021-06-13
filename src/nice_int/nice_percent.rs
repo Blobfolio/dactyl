@@ -28,7 +28,7 @@ const IDX_PERCENT_DECIMAL: usize = SIZE - 3;
 ///
 /// ## Examples
 ///
-/// ```no_run
+/// ```
 /// use dactyl::NicePercent;
 /// assert_eq!(NicePercent::from(0.321).as_str(), "32.10%");
 /// ```

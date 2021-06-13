@@ -16,8 +16,8 @@ low as `u16::MAX` or as high as `u64::MAX`).
 
 ## Examples
 
-```no_run
-pub use dactyl::traits::SaturatingFrom;
+```
+use dactyl::traits::SaturatingFrom;
 
 assert_eq!(u8::saturating_from(1026_u16), 255_u8);
 assert_eq!(u8::saturating_from(99_u16), 99_u8);

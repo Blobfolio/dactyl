@@ -19,12 +19,13 @@ const SIZE: usize = 6;
 ///
 /// ## Examples
 ///
-/// ```no_run
+/// ```
 /// use dactyl::NiceU16;
 /// assert_eq!(
 ///     NiceU16::from(33231).as_str(),
 ///     "33,231"
 /// );
+/// ```
 pub struct NiceU16 {
 	inner: [u8; SIZE],
 	from: usize,
@@ -47,7 +48,7 @@ impl From<u16> for NiceU16 {
 
 		// For `u16` this can only trigger once.
 		if num >= 1000 {
-			let (div, rem) = num_integer::div_mod_floor(num, 1000);
+			let (div, rem) = crate::div_mod_u16(num, 1000);
 			unsafe { super::write_u8_3(ptr.add(out.from - 3), usize::from(rem)); }
 			num = div;
 			out.from -= 4;

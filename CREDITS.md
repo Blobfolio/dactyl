@@ -14,7 +14,6 @@ License details for project dependencies are listed below.
 
 **Used By:**
 
-* [num-integer 0.1.44](https://github.com/rust-num/num-integer)
 * [num-traits 0.2.14](https://github.com/rust-num/num-traits)
 
 
@@ -227,7 +226,7 @@ limitations under the License.
 
 **Used By:**
 
-* [dactyl 0.1.7](https://github.com/Blobfolio/dactyl)
+* [dactyl 0.1.8](https://github.com/Blobfolio/dactyl)
 
 
 ```

@@ -22,12 +22,13 @@ const SIZE: usize = 26;
 ///
 /// ## Examples
 ///
-/// ```no_run
+/// ```
 /// use dactyl::NiceU64;
 /// assert_eq!(
 ///     NiceU64::from(33231_u64).as_str(),
 ///     "33,231"
 /// );
+/// ```
 pub struct NiceU64 {
 	inner: [u8; SIZE],
 	from: usize,
@@ -49,7 +50,7 @@ impl From<usize> for NiceU64 {
 		let ptr = out.inner.as_mut_ptr();
 
 		while num >= 1000 {
-			let (div, rem) = num_integer::div_mod_floor(num, 1000);
+			let (div, rem) = crate::div_mod_usize(num, 1000);
 			unsafe { super::write_u8_3(ptr.add(out.from - 3), rem); }
 			num = div;
 			out.from -= 4;
@@ -86,7 +87,7 @@ impl From<u64> for NiceU64 {
 		let ptr = out.inner.as_mut_ptr();
 
 		while num >= 1000 {
-			let (div, rem) = num_integer::div_mod_floor(num, 1000);
+			let (div, rem) = crate::div_mod_u64(num, 1000);
 			unsafe { super::write_u8_3(ptr.add(out.from - 3), rem as usize); }
 			num = div;
 			out.from -= 4;
