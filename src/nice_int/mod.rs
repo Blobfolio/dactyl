@@ -112,7 +112,7 @@ macro_rules! impl_nice_nonzero_int {
 /// The destination pointer must have at least 3 bytes free or undefined
 /// things may happen!
 pub(super) unsafe fn write_u8_3(buf: *mut u8, num: usize) {
-	let (div, rem) = num_integer::div_mod_floor(num, 100);
+	let (div, rem) = crate::div_mod_usize(num, 100);
 	let ptr = DOUBLE.as_ptr();
 	ptr::copy_nonoverlapping(ptr.add((div << 1) + 1), buf, 1);
 	ptr::copy_nonoverlapping(ptr.add(rem << 1), buf.add(1), 2);

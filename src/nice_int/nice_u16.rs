@@ -48,7 +48,7 @@ impl From<u16> for NiceU16 {
 
 		// For `u16` this can only trigger once.
 		if num >= 1000 {
-			let (div, rem) = num_integer::div_mod_floor(num, 1000);
+			let (div, rem) = crate::div_mod_u16(num, 1000);
 			unsafe { super::write_u8_3(ptr.add(out.from - 3), usize::from(rem)); }
 			num = div;
 			out.from -= 4;

@@ -70,6 +70,36 @@ use num_traits::cast::AsPrimitive;
 
 
 
+/// # Helper: Generate Div/Mod Methods.
+macro_rules! div_mod_fn {
+	($fn:ident, $ty:ty) => (
+		#[allow(clippy::integer_division)]
+		#[must_use]
+		#[inline]
+		/// # Floored Div/Mod.
+		///
+		/// This is like `num_integer::div_mod_floor`.
+		pub const fn $fn(lhs: $ty, rhs: $ty) -> ($ty, $ty) {
+			(lhs / rhs, lhs % rhs)
+		}
+	);
+}
+
+/// # Helper: Generate Div Methods.
+macro_rules! div_fn {
+	($fn:ident, $ty:ty) => (
+		#[allow(clippy::integer_division)]
+		#[must_use]
+		#[inline]
+		/// # Floored Division.
+		///
+		/// This is like `num_integer::div_floor`.
+		pub const fn $fn(lhs: $ty, rhs: $ty) -> $ty { lhs / rhs }
+	);
+}
+
+
+
 /// # Decimals, 00-99.
 pub(crate) static DOUBLE: &[u8; 200] = b"\
 	0001020304050607080910111213141516171819\
@@ -79,6 +109,22 @@ pub(crate) static DOUBLE: &[u8; 200] = b"\
 	8081828384858687888990919293949596979899";
 
 
+
+// Set up div/mod helper methods.
+div_mod_fn!(div_mod_u128, u128);
+div_mod_fn!(div_mod_u16, u16);
+div_mod_fn!(div_mod_u32, u32);
+div_mod_fn!(div_mod_u64, u64);
+div_mod_fn!(div_mod_u8, u8);
+div_mod_fn!(div_mod_usize, usize);
+
+// And division methods.
+div_fn!(div_u128, u128);
+div_fn!(div_u16, u16);
+div_fn!(div_u32, u32);
+div_fn!(div_u64, u64);
+div_fn!(div_u8, u8);
+div_fn!(div_usize, usize);
 
 #[must_use]
 /// # Integer to Float Division.
@@ -112,7 +158,7 @@ pub unsafe fn write_u8(buf: *mut u8, num: u8) {
 	use std::ptr;
 
 	if num > 99 {
-		let (div, rem) = num_integer::div_mod_floor(usize::from(num), 100);
+		let (div, rem) = div_mod_usize(usize::from(num), 100);
 		let ptr = DOUBLE.as_ptr();
 		ptr::copy_nonoverlapping(ptr.add((div << 1) + 1), buf, 1);
 		ptr::copy_nonoverlapping(ptr.add(rem << 1), buf.add(1), 2);
