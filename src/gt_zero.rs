@@ -70,7 +70,7 @@ use std::{
 ///
 /// ## Examples
 ///
-/// ```no_run
+/// ```
 /// use dactyl::GreaterThanZero;
 ///
 /// let gt0 = GreaterThanZero::from(-3_isize);

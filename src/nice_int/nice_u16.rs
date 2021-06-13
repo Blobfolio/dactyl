@@ -19,12 +19,13 @@ const SIZE: usize = 6;
 ///
 /// ## Examples
 ///
-/// ```no_run
+/// ```
 /// use dactyl::NiceU16;
 /// assert_eq!(
 ///     NiceU16::from(33231).as_str(),
 ///     "33,231"
 /// );
+/// ```
 pub struct NiceU16 {
 	inner: [u8; SIZE],
 	from: usize,

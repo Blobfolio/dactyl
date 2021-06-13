@@ -49,6 +49,7 @@ macro_rules! impl_nice_int {
 		}
 
 		impl std::fmt::Display for $lhs {
+			#[inline]
 			fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 				f.write_str(self.as_str())
 			}
