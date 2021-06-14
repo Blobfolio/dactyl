@@ -54,11 +54,11 @@ jobs:
 
     - name: Build
       run: |
-        cargo build --all --target ${{ matrix.target }}
+        cargo build --target ${{ matrix.target }}
 
     - name: Clippy
       run: |
-        cargo --all --all-features --target ${{ matrix.target }}
+        cargo clippy --all-features --target ${{ matrix.target }}
 
     - name: Tests
       run: |
