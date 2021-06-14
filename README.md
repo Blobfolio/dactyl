@@ -2,6 +2,7 @@
 
 [![Documentation](https://docs.rs/dactyl/badge.svg)](https://docs.rs/dactyl/)
 [![crates.io](https://img.shields.io/crates/v/dactyl.svg)](https://crates.io/crates/dactyl)
+[![Build Status](https://github.com/Blobfolio/dactyl/workflows/Build/badge.svg)](https://github.com/Blobfolio/dactyl/actions)
 
 This crate provides a fast interface to "stringify" unsigned integers, formatted with commas at each thousand. It prioritizes speed and simplicity over configurability.
 
