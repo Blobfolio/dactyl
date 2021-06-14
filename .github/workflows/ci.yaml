@@ -54,13 +54,13 @@ jobs:
 
     - name: Build
       run: |
-        cargo build --target ${{ matrix.target }}
+        cargo build --release --target ${{ matrix.target }}
 
     - name: Clippy
       run: |
-        cargo clippy --all-features --target ${{ matrix.target }}
+        cargo clippy --release --all-features --target ${{ matrix.target }}
 
     - name: Tests
       run: |
-        cargo test --all-features --verbose --target ${{ matrix.target }}
-        cargo test --all-features --verbose --target ${{ matrix.target }} -- --ignored
+        cargo test --release --all-features --verbose --target ${{ matrix.target }}
+        cargo test --release --all-features --verbose --target ${{ matrix.target }} -- --ignored
