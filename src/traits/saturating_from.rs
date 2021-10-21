@@ -57,7 +57,6 @@ macro_rules! unsigned_to_unsigned {
 	// Cap to max.
 	($meta:expr, $from:ty, $to:ty, $MAX:literal) => (
 		impl SaturatingFrom<$from> for $to {
-			#[doc(inline)]
 			#[doc = $meta]
 			fn saturating_from(src: $from) -> Self {
 				if src >= $MAX { $MAX }
@@ -69,7 +68,6 @@ macro_rules! unsigned_to_unsigned {
 	// Direct cast.
 	($meta:expr, $from:ty, $to:ty) => (
 		impl SaturatingFrom<$from> for $to {
-			#[doc(inline)]
 			#[doc = $meta]
 			fn saturating_from(src: $from) -> Self { src as Self }
 		}
@@ -94,7 +92,6 @@ macro_rules! signed_to_unsigned {
 	// Cap to min/max.
 	($meta:expr, $from:ty, $to:ty, $MAX:literal) => (
 		impl SaturatingFrom<$from> for $to {
-			#[doc(inline)]
 			#[doc = $meta]
 			fn saturating_from(src: $from) -> Self {
 				if src >= $MAX { Self::MAX }
@@ -107,7 +104,6 @@ macro_rules! signed_to_unsigned {
 	// Cap to min.
 	($meta:expr, $from:ty, $to:ty) => (
 		impl SaturatingFrom<$from> for $to {
-			#[doc(inline)]
 			#[doc = $meta]
 			fn saturating_from(src: $from) -> Self {
 				if src.is_gt_zero() { src as Self }
@@ -136,7 +132,6 @@ macro_rules! float_to_unsigned {
 	// Cap to min/max.
 	($meta:expr, $from:ty, $to:ty, $MAX:literal) => (
 		impl SaturatingFrom<$from> for $to {
-			#[doc(inline)]
 			#[doc = $meta]
 			fn saturating_from(src: $from) -> Self {
 				if ! src.is_gt_zero() { 0 }
@@ -149,7 +144,6 @@ macro_rules! float_to_unsigned {
 	// Cap to min.
 	($meta:expr, $from:ty, $to:ty) => (
 		impl SaturatingFrom<$from> for $to {
-			#[doc(inline)]
 			#[doc = $meta]
 			fn saturating_from(src: $from) -> Self {
 				if src.is_gt_zero() { src as Self }
