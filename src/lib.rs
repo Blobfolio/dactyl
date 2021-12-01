@@ -88,13 +88,13 @@ macro_rules! div_mod_fn {
 /// # Helper: Generate Div Methods.
 macro_rules! div_fn {
 	($fn:ident, $ty:ty) => (
-		#[allow(clippy::integer_division)]
 		#[must_use]
 		#[inline]
+		#[deprecated(since="0.2.1", note="please use `wrapping_div` instead")]
 		/// # Floored Division.
 		///
 		/// This is like `num_integer::div_floor`.
-		pub const fn $fn(lhs: $ty, rhs: $ty) -> $ty { lhs / rhs }
+		pub const fn $fn(lhs: $ty, rhs: $ty) -> $ty { lhs.wrapping_div(rhs) }
 	);
 }
 
