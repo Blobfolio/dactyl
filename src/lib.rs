@@ -78,7 +78,9 @@ macro_rules! div_mod_fn {
 		#[inline]
 		/// # Floored Div/Mod.
 		///
-		/// This is like `num_integer::div_mod_floor`.
+		/// This is a convenience method like `num_integer::div_mod_floor` that
+		/// performs division and mod in one go, returning both results as a
+		/// tuple.
 		pub const fn $fn(lhs: $ty, rhs: $ty) -> ($ty, $ty) {
 			(lhs / rhs, lhs % rhs)
 		}
@@ -88,13 +90,13 @@ macro_rules! div_mod_fn {
 /// # Helper: Generate Div Methods.
 macro_rules! div_fn {
 	($fn:ident, $ty:ty) => (
-		#[allow(clippy::integer_division)]
 		#[must_use]
 		#[inline]
+		#[deprecated(since="0.2.1", note="please use `wrapping_div` instead")]
 		/// # Floored Division.
 		///
-		/// This is like `num_integer::div_floor`.
-		pub const fn $fn(lhs: $ty, rhs: $ty) -> $ty { lhs / rhs }
+		/// This is a simple division wrapper like `num_integer::div_floor`.
+		pub const fn $fn(lhs: $ty, rhs: $ty) -> $ty { lhs.wrapping_div(rhs) }
 	);
 }
 
