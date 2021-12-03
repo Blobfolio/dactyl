@@ -22,6 +22,12 @@ exclude = [
 [package.metadata.docs.rs]
 default-target = "x86_64-unknown-linux-gnu"
 
+[package.metadata.bashman]
+name = "Dactyl"
+bash-dir = "./"
+man-dir = "./"
+credits-dir = "./"
+
 [dependencies]
 num-traits = "0.2.*"
 
