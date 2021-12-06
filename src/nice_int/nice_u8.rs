@@ -132,7 +132,6 @@ impl NiceU8 {
 		unsafe { std::str::from_utf8_unchecked(self.as_bytes2()) }
 	}
 
-	#[allow(clippy::missing_const_for_fn)] // Can't const unsafe yet.
 	#[must_use]
 	#[inline]
 	/// # Triple Digit Str.
@@ -148,7 +147,7 @@ impl NiceU8 {
 	/// assert_eq!(dactyl::NiceU8::from(50).as_str3(), "050");
 	/// assert_eq!(dactyl::NiceU8::from(113).as_str3(), "113");
 	/// ```
-	pub fn as_str3(&self) -> &str {
+	pub const fn as_str3(&self) -> &str {
 		unsafe { std::str::from_utf8_unchecked(self.as_bytes3()) }
 	}
 }

@@ -280,7 +280,6 @@ impl ElapsedKind {
 		}
 	}
 
-	#[allow(clippy::missing_const_for_fn)] // Can't const unsafe yet.
 	/// # Write Label.
 	fn write_label(self, dst: *mut u8, singular: bool) -> *mut u8 {
 		let (mut len, label) = self.label();
@@ -292,7 +291,6 @@ impl ElapsedKind {
 		}
 	}
 
-	#[allow(clippy::missing_const_for_fn)] // Can't const unsafe yet.
 	/// # Write Joiner.
 	///
 	/// This will add commas and/or ands as necessary.

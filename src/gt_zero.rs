@@ -224,7 +224,6 @@ from_nonzero!(
 	(NonZeroIsize, isize)
 );
 
-#[allow(clippy::use_self)] // Self<U> doesn't work here.
 impl<T: GtZero> GreaterThanZero<T> {
 	/// # Filter.
 	///
