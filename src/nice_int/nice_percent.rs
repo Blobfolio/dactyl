@@ -14,7 +14,7 @@ const IDX_PERCENT_DECIMAL: usize = SIZE - 3;
 
 
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq)]
+#[derive(Debug, Clone, Copy)]
 /// `NicePercent` provides a quick way to convert an `f32` or `f64` into a
 /// formatted byte string for e.g. printing.
 ///
@@ -41,7 +41,7 @@ pub struct NicePercent {
 	from: usize,
 }
 
-crate::impl_nice_int!(NicePercent);
+super::impl_nice_int!(NicePercent);
 
 impl Default for NicePercent {
 	#[inline]

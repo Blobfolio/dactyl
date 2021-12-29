@@ -53,6 +53,7 @@ This crate also contains two "in development" structs — [`NicePercent`] and [`
 
 
 mod gt_zero;
+pub(crate) mod macros;
 mod nice_elapsed;
 mod nice_int;
 pub mod traits;
@@ -72,7 +73,7 @@ use num_traits::cast::AsPrimitive;
 
 /// # Helper: Generate Div/Mod Methods.
 macro_rules! div_mod_fn {
-	($fn:ident, $ty:ty) => (
+	($($fn:ident $ty:ty),+ $(,)?) => ($(
 		#[allow(clippy::integer_division)]
 		#[must_use]
 		#[inline]
@@ -84,12 +85,12 @@ macro_rules! div_mod_fn {
 		pub const fn $fn(lhs: $ty, rhs: $ty) -> ($ty, $ty) {
 			(lhs / rhs, lhs % rhs)
 		}
-	);
+	)+);
 }
 
 /// # Helper: Generate Div Methods.
 macro_rules! div_fn {
-	($fn:ident, $ty:ty) => (
+	($($fn:ident $ty:ty),+ $(,)?) => ($(
 		#[must_use]
 		#[inline]
 		#[deprecated(since="0.2.1", note="please use `wrapping_div` instead")]
@@ -97,7 +98,7 @@ macro_rules! div_fn {
 		///
 		/// This is a simple division wrapper like `num_integer::div_floor`.
 		pub const fn $fn(lhs: $ty, rhs: $ty) -> $ty { lhs.wrapping_div(rhs) }
-	);
+	)+);
 }
 
 
@@ -113,20 +114,24 @@ pub(crate) static DOUBLE: &[u8; 200] = b"\
 
 
 // Set up div/mod helper methods.
-div_mod_fn!(div_mod_u128, u128);
-div_mod_fn!(div_mod_u16, u16);
-div_mod_fn!(div_mod_u32, u32);
-div_mod_fn!(div_mod_u64, u64);
-div_mod_fn!(div_mod_u8, u8);
-div_mod_fn!(div_mod_usize, usize);
+div_mod_fn!(
+	div_mod_u128 u128,
+	div_mod_u16 u16,
+	div_mod_u32 u32,
+	div_mod_u64 u64,
+	div_mod_u8 u8,
+	div_mod_usize usize,
+);
 
 // And division methods.
-div_fn!(div_u128, u128);
-div_fn!(div_u16, u16);
-div_fn!(div_u32, u32);
-div_fn!(div_u64, u64);
-div_fn!(div_u8, u8);
-div_fn!(div_usize, usize);
+div_fn!(
+	div_u128 u128,
+	div_u16 u16,
+	div_u32 u32,
+	div_u64 u64,
+	div_u8 u8,
+	div_usize usize,
+);
 
 #[must_use]
 /// # Integer to Float Division.

@@ -16,42 +16,49 @@ use std::ptr;
 
 
 #[doc(hidden)]
-#[macro_export]
 /// # Helper: Generic NiceU* traits.
 ///
 /// This is not intended for use outside the crate.
 macro_rules! impl_nice_int {
 	($lhs:ty) => (
-		impl std::ops::Deref for $lhs {
+		impl ::std::ops::Deref for $lhs {
 			type Target = [u8];
 			#[inline]
-			fn deref(&self) -> &Self::Target { &self.inner[self.from..] }
+			fn deref(&self) -> &Self::Target { self.as_bytes() }
 		}
 
-		impl AsRef<[u8]> for $lhs {
+		$crate::macros::as_ref_borrow_cast!(
+			$lhs:
+				as_bytes [u8],
+				as_str str,
+		);
+
+		$crate::macros::display_str!(as_str $lhs);
+
+		impl Eq for $lhs {}
+
+		impl ::std::hash::Hash for $lhs {
 			#[inline]
-			fn as_ref(&self) -> &[u8] { self }
+			fn hash<H: ::std::hash::Hasher>(&self, state: &mut H) {
+				self.as_bytes().hash(state);
+			}
 		}
 
-		impl AsRef<str> for $lhs {
-			#[inline]
-			fn as_ref(&self) -> &str { self.as_str() }
+		impl Ord for $lhs {
+			fn cmp(&self, other: &Self) -> ::std::cmp::Ordering {
+				self.as_bytes().cmp(other.as_bytes())
+			}
 		}
 
-		impl std::borrow::Borrow<[u8]> for $lhs {
+		impl PartialEq for $lhs {
 			#[inline]
-			fn borrow(&self) -> &[u8] { self }
+			fn eq(&self, other: &Self) -> bool { self.as_bytes() == other.as_bytes() }
 		}
 
-		impl std::borrow::Borrow<str> for $lhs {
+		impl PartialOrd for $lhs {
 			#[inline]
-			fn borrow(&self) -> &str { self.as_str() }
-		}
-
-		impl std::fmt::Display for $lhs {
-			#[inline]
-			fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-				f.write_str(self.as_str())
+			fn partial_cmp(&self, other: &Self) -> Option<::std::cmp::Ordering> {
+				Some(self.cmp(other))
 			}
 		}
 
@@ -67,7 +74,7 @@ macro_rules! impl_nice_int {
 			/// # As Bytes.
 			///
 			/// Return the value as a byte string.
-			pub fn as_bytes(&self) -> &[u8] { self }
+			pub fn as_bytes(&self) -> &[u8] { &self.inner[self.from..] }
 
 			#[must_use]
 			#[inline]
@@ -75,23 +82,19 @@ macro_rules! impl_nice_int {
 			///
 			/// Return the value as a string slice.
 			pub fn as_str(&self) -> &str {
-				unsafe { std::str::from_utf8_unchecked(self) }
+				unsafe { ::std::str::from_utf8_unchecked(self.as_bytes()) }
 			}
 		}
 	);
 }
 
 #[doc(hidden)]
-#[macro_export]
 /// # Helper: Generic NiceU*::From<NonZero*>.
 ///
 /// This is not intended for use outside the crate.
 macro_rules! impl_nice_nonzero_int {
-	($from:ty, $to:ty) => (
-		impl From<$from> for $to {
-			#[inline]
-			fn from(src: $from) -> Self { Self::from(src.get()) }
-		}
+	($to:ty: $($from:ty),+ $(,)?) => ($(
+		$crate::macros::from_cast!($to: get $from);
 
 		impl From<Option<$from>> for $to {
 			#[inline]
@@ -99,8 +102,13 @@ macro_rules! impl_nice_nonzero_int {
 				src.map_or_else(Self::min, |s| Self::from(s.get()))
 			}
 		}
-	);
+	)+);
 }
+
+pub(self) use {
+	impl_nice_int,
+	impl_nice_nonzero_int,
+};
 
 
 

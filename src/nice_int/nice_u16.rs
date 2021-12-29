@@ -11,7 +11,7 @@ const SIZE: usize = 6;
 
 
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq)]
+#[derive(Debug, Clone, Copy)]
 /// `NiceU16` provides a quick way to convert a `u16` into a formatted byte
 /// string for e.g. printing. Commas are added for every thousand.
 ///
@@ -86,8 +86,8 @@ impl NiceU16 {
 }
 
 // A few Macro traits.
-crate::impl_nice_nonzero_int!(NonZeroU16, NiceU16);
-crate::impl_nice_int!(NiceU16);
+super::impl_nice_nonzero_int!(NiceU16: NonZeroU16);
+super::impl_nice_int!(NiceU16);
 
 
 
@@ -106,6 +106,17 @@ mod tests {
 				i.to_formatted_string(&Locale::en),
 			);
 		}
+
+		// Test the defaults too.
+		assert_eq!(NiceU16::default().as_bytes(), <&[u8]>::default());
+		assert_eq!(NiceU16::default().as_str(), "");
+
+		// Check ordering too.
+		let one = NiceU16::from(10);
+		let two = NiceU16::from(90);
+		assert_eq!(one.cmp(&two), std::cmp::Ordering::Less);
+		assert_eq!(one.cmp(&one), std::cmp::Ordering::Equal);
+		assert_eq!(two.cmp(&one), std::cmp::Ordering::Greater);
 	}
 
 	#[test]

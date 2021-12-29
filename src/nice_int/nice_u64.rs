@@ -14,7 +14,7 @@ const SIZE: usize = 26;
 
 
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq)]
+#[derive(Debug, Clone, Copy)]
 /// `NiceU64` provides a quick way to convert a `u64` into a formatted byte
 /// string for e.g. printing. Commas are added for every thousand.
 ///
@@ -125,9 +125,8 @@ impl NiceU64 {
 }
 
 // A few Macro traits.
-crate::impl_nice_nonzero_int!(NonZeroU64, NiceU64);
-crate::impl_nice_nonzero_int!(NonZeroUsize, NiceU64);
-crate::impl_nice_int!(NiceU64);
+super::impl_nice_nonzero_int!(NiceU64: NonZeroU64, NonZeroUsize);
+super::impl_nice_int!(NiceU64);
 
 
 
@@ -146,6 +145,17 @@ mod tests {
 			NiceU64::from(u64::MAX).as_str(),
 			u64::MAX.to_formatted_string(&Locale::en),
 		);
+
+		// Test the defaults too.
+		assert_eq!(NiceU64::default().as_bytes(), <&[u8]>::default());
+		assert_eq!(NiceU64::default().as_str(), "");
+
+		// Check ordering too.
+		let one = NiceU64::from(10_u64);
+		let two = NiceU64::from(90_u64);
+		assert_eq!(one.cmp(&two), std::cmp::Ordering::Less);
+		assert_eq!(one.cmp(&one), std::cmp::Ordering::Equal);
+		assert_eq!(two.cmp(&one), std::cmp::Ordering::Greater);
 
 		// Check a subset of everything else.
 		let mut step = 1_u64;
