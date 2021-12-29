@@ -11,7 +11,7 @@ const SIZE: usize = 3;
 
 
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq)]
+#[derive(Debug, Clone, Copy)]
 /// `NiceU8` provides a quick way to convert a `u8` into a formatted byte
 /// string for e.g. printing.
 ///
@@ -63,8 +63,8 @@ impl From<u8> for NiceU8 {
 }
 
 // A few Macro traits.
-crate::impl_nice_nonzero_int!(NonZeroU8, NiceU8);
-crate::impl_nice_int!(NiceU8);
+super::impl_nice_nonzero_int!(NiceU8: NonZeroU8);
+super::impl_nice_int!(NiceU8);
 
 impl NiceU8 {
 	#[must_use]
@@ -171,9 +171,15 @@ mod tests {
 		}
 
 		// Test the defaults too.
-		let empty: &[u8] = &[];
-		assert_eq!(NiceU8::default().as_bytes(), empty);
+		assert_eq!(NiceU8::default().as_bytes(), <&[u8]>::default());
 		assert_eq!(NiceU8::default().as_str(), "");
+
+		// Check ordering too.
+		let one = NiceU8::from(10);
+		let two = NiceU8::from(90);
+		assert_eq!(one.cmp(&two), std::cmp::Ordering::Less);
+		assert_eq!(one.cmp(&one), std::cmp::Ordering::Equal);
+		assert_eq!(two.cmp(&one), std::cmp::Ordering::Greater);
 	}
 
 	#[test]

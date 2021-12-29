@@ -11,7 +11,7 @@ const SIZE: usize = 13;
 
 
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq)]
+#[derive(Debug, Clone, Copy)]
 /// `NiceU32` provides a quick way to convert a `u32` into a formatted byte
 /// string for e.g. printing. Commas are added for every thousand.
 ///
@@ -85,8 +85,8 @@ impl NiceU32 {
 }
 
 // A few Macro traits.
-crate::impl_nice_nonzero_int!(NonZeroU32, NiceU32);
-crate::impl_nice_int!(NiceU32);
+super::impl_nice_nonzero_int!(NiceU32: NonZeroU32);
+super::impl_nice_int!(NiceU32);
 
 
 
@@ -104,6 +104,17 @@ mod tests {
 			NiceU32::from(u32::MAX).as_str(),
 			u32::MAX.to_formatted_string(&Locale::en),
 		);
+
+		// Test the defaults too.
+		assert_eq!(NiceU32::default().as_bytes(), <&[u8]>::default());
+		assert_eq!(NiceU32::default().as_str(), "");
+
+		// Check ordering too.
+		let one = NiceU32::from(10);
+		let two = NiceU32::from(90);
+		assert_eq!(one.cmp(&two), std::cmp::Ordering::Less);
+		assert_eq!(one.cmp(&one), std::cmp::Ordering::Equal);
+		assert_eq!(two.cmp(&one), std::cmp::Ordering::Greater);
 
 		// Check a subset of everything else.
 		let mut step = 1_u32;

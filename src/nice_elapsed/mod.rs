@@ -4,8 +4,13 @@
 Note: this module is "in development". It is subject to change, and may eventually be spun off into its own crate.
 */
 
+use crate::macros;
 use std::{
 	fmt,
+	hash::{
+		Hash,
+		Hasher,
+	},
 	ops::Deref,
 	time::Duration,
 };
@@ -14,7 +19,7 @@ use std::{
 
 /// # Helper: Generate Impl
 macro_rules! elapsed_from {
-	($type:ty) => {
+	($($type:ty),+) => ($(
 		impl From<$type> for NiceElapsed {
 			fn from(num: $type) -> Self {
 				// Nothing!
@@ -27,7 +32,7 @@ macro_rules! elapsed_from {
 				else { Self::max() }
 			}
 		}
-	};
+	)+);
 }
 
 
@@ -58,25 +63,11 @@ pub struct NiceElapsed {
 	len: usize,
 }
 
-impl AsRef<[u8]> for NiceElapsed {
-	#[inline]
-	fn as_ref(&self) -> &[u8] { self }
-}
-
-impl AsRef<str> for NiceElapsed {
-	#[inline]
-	fn as_ref(&self) -> &str { self.as_str() }
-}
-
-impl std::borrow::Borrow<[u8]> for NiceElapsed {
-	#[inline]
-	fn borrow(&self) -> &[u8] { self }
-}
-
-impl std::borrow::Borrow<str> for NiceElapsed {
-	#[inline]
-	fn borrow(&self) -> &str { self.as_str() }
-}
+macros::as_ref_borrow_cast!(
+	NiceElapsed:
+		as_bytes [u8],
+		as_str str,
+);
 
 impl Default for NiceElapsed {
 	#[inline]
@@ -91,7 +82,7 @@ impl Default for NiceElapsed {
 impl Deref for NiceElapsed {
 	type Target = [u8];
 	#[inline]
-	fn deref(&self) -> &Self::Target { &self.inner[0..self.len] }
+	fn deref(&self) -> &Self::Target { self.as_bytes() }
 }
 
 impl fmt::Debug for NiceElapsed {
@@ -103,17 +94,11 @@ impl fmt::Debug for NiceElapsed {
 	}
 }
 
-impl fmt::Display for NiceElapsed {
-	#[inline]
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		f.write_str(self.as_str())
-	}
-}
+macros::display_str!(as_str NiceElapsed);
 
-impl From<Duration> for NiceElapsed {
-	#[inline]
-	fn from(src: Duration) -> Self { Self::from(src.as_secs()) }
-}
+impl Eq for NiceElapsed {}
+
+macros::from_cast!(NiceElapsed: as_secs Duration);
 
 impl From<[u8; 3]> for NiceElapsed {
 	#[allow(clippy::cast_possible_truncation)] // The max is 3.
@@ -164,9 +149,19 @@ impl From<u32> for NiceElapsed {
 }
 
 // These all work the same way.
-elapsed_from!(usize);
-elapsed_from!(u64);
-elapsed_from!(u128);
+elapsed_from!(usize, u64, u128);
+
+impl Hash for NiceElapsed {
+	#[inline]
+	fn hash<H: Hasher>(&self, state: &mut H) {
+		self.as_bytes().hash(state);
+	}
+}
+
+impl PartialEq for NiceElapsed {
+	#[inline]
+	fn eq(&self, other: &Self) -> bool { self.as_bytes() == other.as_bytes() }
+}
 
 impl NiceElapsed {
 	#[must_use]
@@ -242,7 +237,7 @@ impl NiceElapsed {
 	/// # As Bytes.
 	///
 	/// Return the nice value as a byte string.
-	pub fn as_bytes(&self) -> &[u8] { self }
+	pub fn as_bytes(&self) -> &[u8] { &self.inner[0..self.len] }
 
 	#[must_use]
 	#[inline]
@@ -250,7 +245,7 @@ impl NiceElapsed {
 	///
 	/// Return the nice value as a string slice.
 	pub fn as_str(&self) -> &str {
-		unsafe { std::str::from_utf8_unchecked(self) }
+		unsafe { std::str::from_utf8_unchecked(self.as_bytes()) }
 	}
 }
 
