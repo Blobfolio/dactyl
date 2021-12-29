@@ -2,16 +2,26 @@
 
 
 
+## [0.2.2](https://github.com/Blobfolio/dactyl/releases/tag/v0.2.2) - 2021-12-29
+
+### Changed
+
+* Implement `Ord`/`PartialOrd` for `NiceU*`;
+* Only `Hash` filled bytes;
+* Implement `Hash`, `Eq`, `PartialEq` for `NiceElapsed`;
+
+
+
 ## [0.2.1](https://github.com/Blobfolio/dactyl/releases/tag/v0.2.1) - 2021-12-02
 
 ### Deprecated
 
-- `dactyl::div_u128`
-- `dactyl::div_u64`
-- `dactyl::div_u32`
-- `dactyl::div_u16`
-- `dactyl::div_u8`
-- `dactyl::div_usize`
+* `dactyl::div_u128`
+* `dactyl::div_u64`
+* `dactyl::div_u32`
+* `dactyl::div_u16`
+* `dactyl::div_u8`
+* `dactyl::div_usize`
 
 
 
@@ -19,8 +29,8 @@
 
 ### Added
 
-- This changelog! Haha.
+* This changelog! Haha.
 
 ### Changed
 
-- Use Rust edition 2021.
+* Use Rust edition 2021.
