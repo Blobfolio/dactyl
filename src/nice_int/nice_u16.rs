@@ -89,6 +89,55 @@ impl NiceU16 {
 super::impl_nice_nonzero_int!(NiceU16: NonZeroU16);
 super::impl_nice_int!(NiceU16);
 
+impl NiceU16 {
+	/// # Set Separator.
+	///
+	/// Change the thousands separator to any arbitrary ASCII character.
+	///
+	/// ## Examples
+	///
+	/// ```
+	/// use dactyl::NiceU16;
+	///
+	/// let mut num = NiceU16::from(31415_u16);
+	/// assert_eq!(num.as_str(), "31,415");
+	///
+	/// num.set_separator(b'_');
+	/// assert_eq!(num.as_str(), "31_415");
+	/// ```
+	///
+	/// ## Panics
+	///
+	/// This method will panic if the separator is invalid ASCII.
+	pub fn set_separator(&mut self, sep: u8) {
+		assert!(sep.is_ascii(), "Invalid separator.");
+		self.inner[2] = sep;
+	}
+
+	#[must_use]
+	/// # With Separator.
+	///
+	/// Change the thousands separator to any arbitrary ASCII character.
+	///
+	/// ## Examples
+	///
+	/// ```
+	/// use dactyl::NiceU16;
+	///
+	/// let mut num = NiceU16::from(31415_u16);
+	/// assert_eq!(num.as_str(), "31,415");
+	/// assert_eq!(num.with_separator(b'_').as_str(), "31_415");
+	/// ```
+	///
+	/// ## Panics
+	///
+	/// This method will panic if the separator is invalid ASCII.
+	pub fn with_separator(mut self, sep: u8) -> Self {
+		self.set_separator(sep);
+		self
+	}
+}
+
 
 
 #[cfg(test)]

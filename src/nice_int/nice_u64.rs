@@ -125,6 +125,57 @@ impl NiceU64 {
 	}
 }
 
+impl NiceU64 {
+	/// # Set Separator.
+	///
+	/// Change the thousands separator to any arbitrary ASCII character.
+	///
+	/// ## Examples
+	///
+	/// ```
+	/// use dactyl::NiceU64;
+	///
+	/// let mut num = NiceU64::from(3141592653589793238_u64);
+	/// assert_eq!(num.as_str(), "3,141,592,653,589,793,238");
+	///
+	/// num.set_separator(b'_');
+	/// assert_eq!(num.as_str(), "3_141_592_653_589_793_238");
+	/// ```
+	///
+	/// ## Panics
+	///
+	/// This method will panic if the separator is invalid ASCII.
+	pub fn set_separator(&mut self, sep: u8) {
+		assert!(sep.is_ascii(), "Invalid separator.");
+		for i in self.inner.iter_mut().rev().skip(3).step_by(4) {
+			*i = sep;
+		}
+	}
+
+	#[must_use]
+	/// # With Separator.
+	///
+	/// Change the thousands separator to any arbitrary ASCII character.
+	///
+	/// ## Examples
+	///
+	/// ```
+	/// use dactyl::NiceU64;
+	///
+	/// let mut num = NiceU64::from(3141592653589793238_u64);
+	/// assert_eq!(num.as_str(), "3,141,592,653,589,793,238");
+	/// assert_eq!(num.with_separator(b'_').as_str(), "3_141_592_653_589_793_238");
+	/// ```
+	///
+	/// ## Panics
+	///
+	/// This method will panic if the separator is invalid ASCII.
+	pub fn with_separator(mut self, sep: u8) -> Self {
+		self.set_separator(sep);
+		self
+	}
+}
+
 // A few Macro traits.
 super::impl_nice_nonzero_int!(NiceU64: NonZeroU64, NonZeroUsize);
 super::impl_nice_int!(NiceU64);
