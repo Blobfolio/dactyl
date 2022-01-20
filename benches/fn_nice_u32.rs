@@ -34,7 +34,7 @@ benches!(
 		.timed(Duration::from_secs(1))
 		.with(|| NiceU32::from(u32::MAX)),
 
-	Bench::new("dactyl::NiceU32", "with_separator(b'_')")
+	Bench::new("dactyl::NiceU32", "with_separator(777_804_132, b'_')")
 		.timed(Duration::from_secs(1))
-		.with_setup(NiceU32::from(777_804_132_u32), |c| c.with_separator(b'_')),
+		.with(|| NiceU32::with_separator(777_804_132_u32, b'_')),
 );

@@ -14,6 +14,13 @@ const SIZE: usize = 26;
 
 
 
+/// # Generate Inner Buffer.
+macro_rules! inner {
+	($sep:expr) => ([b'0', b'0', $sep, b'0', b'0', b'0', $sep, b'0', b'0', b'0', $sep, b'0', b'0', b'0', $sep, b'0', b'0', b'0', $sep, b'0', b'0', b'0', $sep, b'0', b'0', b'0']);
+}
+
+
+
 #[derive(Debug, Clone, Copy)]
 /// `NiceU64` provides a quick way to convert a `u64` into a formatted byte
 /// string for e.g. printing. Commas are added for every thousand.
@@ -38,7 +45,7 @@ impl Default for NiceU64 {
 	#[inline]
 	fn default() -> Self {
 		Self {
-			inner: [b'0', b'0', b',', b'0', b'0', b'0', b',', b'0', b'0', b'0', b',', b'0', b'0', b'0', b',', b'0', b'0', b'0', b',', b'0', b'0', b'0', b',', b'0', b'0', b'0'],
+			inner: inner!(b','),
 			from: SIZE,
 		}
 	}
@@ -46,6 +53,9 @@ impl Default for NiceU64 {
 
 impl From<usize> for NiceU64 {
 	fn from(mut num: usize) -> Self {
+		#[cfg(target_pointer_width = "128")]
+		assert!(num <= 18_446_744_073_709_551_615);
+
 		let mut out = Self::default();
 		let ptr = out.inner.as_mut_ptr();
 
@@ -74,39 +84,9 @@ impl From<usize> for NiceU64 {
 }
 
 impl From<u64> for NiceU64 {
-	#[cfg(any(target_pointer_width = "64", target_pointer_width = "128"))]
-	#[allow(clippy::cast_possible_truncation)] // We've already asserted pointer widths.
-	#[inline]
 	fn from(num: u64) -> Self {
-		// Skip all the index casts.
-		Self::from(num as usize)
-	}
-
-	#[cfg(not(target_pointer_width = "64"))]
-	fn from(mut num: u64) -> Self {
 		let mut out = Self::default();
-		let ptr = out.inner.as_mut_ptr();
-
-		while num >= 1000 {
-			let (div, rem) = crate::div_mod_u64(num, 1000);
-			unsafe { super::write_u8_3(ptr.add(out.from - 3), rem as usize); }
-			num = div;
-			out.from -= 4;
-		}
-
-		if num >= 100 {
-			out.from -= 3;
-			unsafe { super::write_u8_3(ptr.add(out.from), num as usize); }
-		}
-		else if num >= 10 {
-			out.from -= 2;
-			unsafe { super::write_u8_2(ptr.add(out.from), num as usize); }
-		}
-		else {
-			out.from -= 1;
-			unsafe { super::write_u8_1(ptr.add(out.from), num as usize); }
-		}
-
+		out.parse(num);
 		out
 	}
 }
@@ -119,60 +99,70 @@ impl NiceU64 {
 	/// This is equivalent to zero.
 	pub const fn min() -> Self {
 		Self {
-			inner: [b'0', b'0', b',', b'0', b'0', b'0', b',', b'0', b'0', b'0', b',', b'0', b'0', b'0', b',', b'0', b'0', b'0', b',', b'0', b'0', b'0', b',', b'0', b'0', b'0'],
+			inner: inner!(b','),
 			from: SIZE - 1,
 		}
 	}
-}
 
-impl NiceU64 {
-	/// # Set Separator.
+	#[must_use]
+	/// # New Instance w/ Custom Separator.
 	///
-	/// Change the thousands separator to any arbitrary ASCII character.
+	/// Create a new instance, defining any arbitrary ASCII byte as the
+	/// thousands separator.
+	///
+	/// If you're good with commas, just use [`NiceU64::from`] instead.
 	///
 	/// ## Examples
 	///
 	/// ```
 	/// use dactyl::NiceU64;
 	///
-	/// let mut num = NiceU64::from(3141592653589793238_u64);
+	/// let num = NiceU64::from(3141592653589793238_u64);
 	/// assert_eq!(num.as_str(), "3,141,592,653,589,793,238");
 	///
-	/// num.set_separator(b'_');
+	/// let num = NiceU64::with_separator(3141592653589793238_u64, b'_');
 	/// assert_eq!(num.as_str(), "3_141_592_653_589_793_238");
 	/// ```
 	///
 	/// ## Panics
 	///
 	/// This method will panic if the separator is invalid ASCII.
-	pub fn set_separator(&mut self, sep: u8) {
+	pub fn with_separator(num: u64, sep: u8) -> Self {
 		assert!(sep.is_ascii(), "Invalid separator.");
-		for i in self.inner.iter_mut().rev().skip(3).step_by(4) {
-			*i = sep;
-		}
+		let mut out = Self {
+			inner: inner!(sep),
+			from: SIZE,
+		};
+		out.parse(num);
+		out
 	}
 
-	#[must_use]
-	/// # With Separator.
+	#[allow(clippy::cast_possible_truncation)] // It fits.
+	/// # Parse.
 	///
-	/// Change the thousands separator to any arbitrary ASCII character.
-	///
-	/// ## Examples
-	///
-	/// ```
-	/// use dactyl::NiceU64;
-	///
-	/// let mut num = NiceU64::from(3141592653589793238_u64);
-	/// assert_eq!(num.as_str(), "3,141,592,653,589,793,238");
-	/// assert_eq!(num.with_separator(b'_').as_str(), "3_141_592_653_589_793_238");
-	/// ```
-	///
-	/// ## Panics
-	///
-	/// This method will panic if the separator is invalid ASCII.
-	pub fn with_separator(mut self, sep: u8) -> Self {
-		self.set_separator(sep);
-		self
+	/// This handles the actual crunching.
+	fn parse(&mut self, mut num: u64) {
+		let ptr = self.inner.as_mut_ptr();
+
+		while num >= 1000 {
+			let (div, rem) = crate::div_mod_u64(num, 1000);
+			unsafe { super::write_u8_3(ptr.add(self.from - 3), rem as usize); }
+			num = div;
+			self.from -= 4;
+		}
+
+		if num >= 100 {
+			self.from -= 3;
+			unsafe { super::write_u8_3(ptr.add(self.from), num as usize); }
+		}
+		else if num >= 10 {
+			self.from -= 2;
+			unsafe { super::write_u8_2(ptr.add(self.from), num as usize); }
+		}
+		else {
+			self.from -= 1;
+			unsafe { super::write_u8_1(ptr.add(self.from), num as usize); }
+		}
 	}
 }
 
