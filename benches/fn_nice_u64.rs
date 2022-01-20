@@ -28,5 +28,9 @@ benches!(
 
 	Bench::new("dactyl::NiceU64", "from(u64::MAX)")
 		.timed(Duration::from_secs(1))
-		.with(|| NiceU64::from(u64::MAX))
+		.with(|| NiceU64::from(u64::MAX)),
+
+	Bench::new("dactyl::NiceU64", "with_separator(b'_')")
+		.timed(Duration::from_secs(1))
+		.with_setup(NiceU64::from(42_489_320_013_u64), |c| c.with_separator(b'_')),
 );
