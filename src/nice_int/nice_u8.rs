@@ -216,4 +216,11 @@ mod tests {
 		// Test the default.
 		assert_eq!(NiceU8::default().as_str3(), "000");
 	}
+
+	#[test]
+	fn t_as() {
+		let num = NiceU8::from(253);
+		assert_eq!(num.as_str(), num.as_string());
+		assert_eq!(num.as_bytes(), num.as_vec());
+	}
 }

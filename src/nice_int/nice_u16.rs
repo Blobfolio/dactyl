@@ -11,6 +11,13 @@ const SIZE: usize = 6;
 
 
 
+/// # Generate Inner Buffer.
+macro_rules! inner {
+	($sep:expr) => ([b'0', b'0', $sep, b'0', b'0', b'0']);
+}
+
+
+
 #[derive(Debug, Clone, Copy)]
 /// `NiceU16` provides a quick way to convert a `u16` into a formatted byte
 /// string for e.g. printing. Commas are added for every thousand.
@@ -35,38 +42,16 @@ impl Default for NiceU16 {
 	#[inline]
 	fn default() -> Self {
 		Self {
-			inner: [b'0', b'0', b',', b'0', b'0', b'0'],
+			inner: inner!(b','),
 			from: SIZE,
 		}
 	}
 }
 
 impl From<u16> for NiceU16 {
-	fn from(mut num: u16) -> Self {
+	fn from(num: u16) -> Self {
 		let mut out = Self::default();
-		let ptr = out.inner.as_mut_ptr();
-
-		// For `u16` this can only trigger once.
-		if num >= 1000 {
-			let (div, rem) = crate::div_mod_u16(num, 1000);
-			unsafe { super::write_u8_3(ptr.add(out.from - 3), usize::from(rem)); }
-			num = div;
-			out.from -= 4;
-		}
-
-		if num >= 100 {
-			out.from -= 3;
-			unsafe { super::write_u8_3(ptr.add(out.from), usize::from(num)); }
-		}
-		else if num >= 10 {
-			out.from -= 2;
-			unsafe { super::write_u8_2(ptr.add(out.from), usize::from(num)); }
-		}
-		else {
-			out.from -= 1;
-			unsafe { super::write_u8_1(ptr.add(out.from), usize::from(num)); }
-		}
-
+		out.parse(num);
 		out
 	}
 }
@@ -79,8 +64,69 @@ impl NiceU16 {
 	/// This is equivalent to zero.
 	pub const fn min() -> Self {
 		Self {
-			inner: [b'0', b'0', b',', b'0', b'0', b'0'],
+			inner: inner!(b','),
 			from: SIZE - 1,
+		}
+	}
+
+	#[must_use]
+	/// # New Instance w/ Custom Separator.
+	///
+	/// Create a new instance, defining any arbitrary ASCII byte as the
+	/// thousands separator.
+	///
+	/// If you're good with commas, just use [`NiceU16::from`] instead.
+	///
+	/// ## Examples
+	///
+	/// ```
+	/// use dactyl::NiceU16;
+	///
+	/// let num = NiceU16::from(31415_u16);
+	/// assert_eq!(num.as_str(), "31,415");
+	///
+	/// let num = NiceU16::with_separator(31415_u16, b'_');
+	/// assert_eq!(num.as_str(), "31_415");
+	/// ```
+	///
+	/// ## Panics
+	///
+	/// This method will panic if the separator is invalid ASCII.
+	pub fn with_separator(num: u16, sep: u8) -> Self {
+		assert!(sep.is_ascii(), "Invalid separator.");
+		let mut out = Self {
+			inner: inner!(sep),
+			from: SIZE,
+		};
+		out.parse(num);
+		out
+	}
+
+	/// # Parse.
+	///
+	/// This handles the actual crunching.
+	fn parse(&mut self, mut num: u16) {
+		let ptr = self.inner.as_mut_ptr();
+
+		// For `u16` this can only trigger once.
+		if num >= 1000 {
+			let (div, rem) = crate::div_mod_u16(num, 1000);
+			unsafe { super::write_u8_3(ptr.add(self.from - 3), usize::from(rem)); }
+			num = div;
+			self.from -= 4;
+		}
+
+		if num >= 100 {
+			self.from -= 3;
+			unsafe { super::write_u8_3(ptr.add(self.from), usize::from(num)); }
+		}
+		else if num >= 10 {
+			self.from -= 2;
+			unsafe { super::write_u8_2(ptr.add(self.from), usize::from(num)); }
+		}
+		else {
+			self.from -= 1;
+			unsafe { super::write_u8_1(ptr.add(self.from), usize::from(num)); }
 		}
 	}
 }
@@ -124,5 +170,12 @@ mod tests {
 		assert_eq!(NiceU16::min(), NiceU16::from(NonZeroU16::new(0)));
 		assert_eq!(NiceU16::from(50_u16), NiceU16::from(NonZeroU16::new(50)));
 		assert_eq!(NiceU16::from(50_u16), NiceU16::from(NonZeroU16::new(50).unwrap()));
+	}
+
+	#[test]
+	fn t_as() {
+		let num = NiceU16::from(1234_u16);
+		assert_eq!(num.as_str(), num.as_string());
+		assert_eq!(num.as_bytes(), num.as_vec());
 	}
 }

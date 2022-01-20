@@ -11,6 +11,13 @@ const SIZE: usize = 13;
 
 
 
+/// # Generate Inner Buffer.
+macro_rules! inner {
+	($sep:expr) => ([b'0', $sep, b'0', b'0', b'0', $sep, b'0', b'0', b'0', $sep, b'0', b'0', b'0']);
+}
+
+
+
 #[derive(Debug, Clone, Copy)]
 /// `NiceU32` provides a quick way to convert a `u32` into a formatted byte
 /// string for e.g. printing. Commas are added for every thousand.
@@ -35,37 +42,16 @@ impl Default for NiceU32 {
 	#[inline]
 	fn default() -> Self {
 		Self {
-			inner: [b'0', b',', b'0', b'0', b'0', b',', b'0', b'0', b'0', b',', b'0', b'0', b'0'],
+			inner: inner!(b','),
 			from: SIZE,
 		}
 	}
 }
 
 impl From<u32> for NiceU32 {
-	fn from(mut num: u32) -> Self {
+	fn from(num: u32) -> Self {
 		let mut out = Self::default();
-		let ptr = out.inner.as_mut_ptr();
-
-		while num >= 1000 {
-			let (div, rem) = crate::div_mod_u32(num, 1000);
-			unsafe { super::write_u8_3(ptr.add(out.from - 3), rem as usize); }
-			num = div;
-			out.from -= 4;
-		}
-
-		if num >= 100 {
-			out.from -= 3;
-			unsafe { super::write_u8_3(ptr.add(out.from), num as usize); }
-		}
-		else if num >= 10 {
-			out.from -= 2;
-			unsafe { super::write_u8_2(ptr.add(out.from), num as usize); }
-		}
-		else {
-			out.from -= 1;
-			unsafe { super::write_u8_1(ptr.add(out.from), num as usize); }
-		}
-
+		out.parse(num);
 		out
 	}
 }
@@ -78,8 +64,68 @@ impl NiceU32 {
 	/// This is equivalent to zero.
 	pub const fn min() -> Self {
 		Self {
-			inner: [b'0', b',', b'0', b'0', b'0', b',', b'0', b'0', b'0', b',', b'0', b'0', b'0'],
+			inner: inner!(b','),
 			from: SIZE - 1,
+		}
+	}
+
+	#[must_use]
+	/// # New Instance w/ Custom Separator.
+	///
+	/// Create a new instance, defining any arbitrary ASCII byte as the
+	/// thousands separator.
+	///
+	/// If you're good with commas, just use [`NiceU32::from`] instead.
+	///
+	/// ## Examples
+	///
+	/// ```
+	/// use dactyl::NiceU32;
+	///
+	/// let num = NiceU32::from(3141592653_u32);
+	/// assert_eq!(num.as_str(), "3,141,592,653");
+	///
+	/// let num = NiceU32::with_separator(3141592653_u32, b'_');
+	/// assert_eq!(num.as_str(), "3_141_592_653");
+	/// ```
+	///
+	/// ## Panics
+	///
+	/// This method will panic if the separator is invalid ASCII.
+	pub fn with_separator(num: u32, sep: u8) -> Self {
+		assert!(sep.is_ascii(), "Invalid separator.");
+		let mut out = Self {
+			inner: inner!(sep),
+			from: SIZE,
+		};
+		out.parse(num);
+		out
+	}
+
+	/// # Parse.
+	///
+	/// This handles the actual crunching.
+	fn parse(&mut self, mut num: u32) {
+		let ptr = self.inner.as_mut_ptr();
+
+		while num >= 1000 {
+			let (div, rem) = crate::div_mod_u32(num, 1000);
+			unsafe { super::write_u8_3(ptr.add(self.from - 3), rem as usize); }
+			num = div;
+			self.from -= 4;
+		}
+
+		if num >= 100 {
+			self.from -= 3;
+			unsafe { super::write_u8_3(ptr.add(self.from), num as usize); }
+		}
+		else if num >= 10 {
+			self.from -= 2;
+			unsafe { super::write_u8_2(ptr.add(self.from), num as usize); }
+		}
+		else {
+			self.from -= 1;
+			unsafe { super::write_u8_1(ptr.add(self.from), num as usize); }
 		}
 	}
 }
@@ -139,5 +185,12 @@ mod tests {
 		assert_eq!(NiceU32::min(), NiceU32::from(NonZeroU32::new(0)));
 		assert_eq!(NiceU32::from(50_u32), NiceU32::from(NonZeroU32::new(50)));
 		assert_eq!(NiceU32::from(50_u32), NiceU32::from(NonZeroU32::new(50).unwrap()));
+	}
+
+	#[test]
+	fn t_as() {
+		let num = NiceU32::from(12_345_678_u32);
+		assert_eq!(num.as_str(), num.as_string());
+		assert_eq!(num.as_bytes(), num.as_vec());
 	}
 }

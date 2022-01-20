@@ -2,6 +2,16 @@
 
 
 
+## [0.2.3](https://github.com/Blobfolio/dactyl/releases/tag/v0.2.3) - 2022-01-20
+
+### New
+
+* `NiceU*::with_separator` (except `NiceU8`, which can't reach 1000)
+* `NiceU*::as_string`
+* `NiceU*::as_vec`
+
+
+
 ## [0.2.2](https://github.com/Blobfolio/dactyl/releases/tag/v0.2.2) - 2021-12-29
 
 ### Changed
