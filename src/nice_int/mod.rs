@@ -84,6 +84,25 @@ macro_rules! impl_nice_int {
 			pub fn as_str(&self) -> &str {
 				unsafe { ::std::str::from_utf8_unchecked(self.as_bytes()) }
 			}
+
+			#[must_use]
+			/// # As String.
+			///
+			/// Return the value as an owned string. This works just like
+			/// `Self::to_string`, but is twice as fast.
+			///
+			/// Note: this method is allocating.
+			pub fn as_string(&self) -> String {
+				unsafe { String::from_utf8_unchecked(self.inner[self.from..].to_vec()) }
+			}
+
+			#[must_use]
+			/// # As Vec.
+			///
+			/// Return the value as an owned byte vector.
+			///
+			/// Note: this method is allocating.
+			pub fn as_vec(&self) -> Vec<u8> { self.inner[self.from..].to_vec() }
 		}
 	);
 }

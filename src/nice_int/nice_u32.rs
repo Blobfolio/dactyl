@@ -140,4 +140,11 @@ mod tests {
 		assert_eq!(NiceU32::from(50_u32), NiceU32::from(NonZeroU32::new(50)));
 		assert_eq!(NiceU32::from(50_u32), NiceU32::from(NonZeroU32::new(50).unwrap()));
 	}
+
+	#[test]
+	fn t_as() {
+		let num = NiceU32::from(12_345_678_u32);
+		assert_eq!(num.as_str(), num.as_string());
+		assert_eq!(num.as_bytes(), num.as_vec());
+	}
 }
