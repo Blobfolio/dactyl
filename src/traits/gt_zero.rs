@@ -1,3 +1,8 @@
+#![allow(deprecated)]
+
+
+
+#[deprecated(since = "0.2.4", note="just test for `T > 0` manually")]
 /// # Greater Than Zero
 ///
 /// This trait exposes methods for determining whether or not a type is greater

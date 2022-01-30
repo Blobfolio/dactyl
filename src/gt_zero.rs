@@ -2,6 +2,8 @@
 # Dactyl: Greater-Than-Zero
 */
 
+#![allow(deprecated)]
+
 use crate::traits::GtZero;
 use std::{
 	cmp::Ordering,
@@ -40,6 +42,8 @@ use std::{
 
 
 
+
+#[deprecated(since = "0.2.4", note="just test for `T > 0` manually")]
 #[derive(Debug, Copy, Clone)]
 /// # Greater Than Zero
 ///

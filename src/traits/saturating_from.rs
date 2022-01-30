@@ -24,10 +24,6 @@ assert_eq!(u8::saturating_from(99_u16), 99_u8);
 ```
 */
 
-use crate::traits::GtZero;
-
-
-
 /// # Helper: Title/Description.
 ///
 /// This generates a formatted title and description for the documentation.
@@ -95,7 +91,7 @@ macro_rules! signed_to_unsigned {
 			#[doc = $meta]
 			fn saturating_from(src: $from) -> Self {
 				if src >= $MAX { Self::MAX }
-				else if src.is_gt_zero() { src as Self }
+				else if src > 0 { src as Self }
 				else { 0 }
 			}
 		}
@@ -106,7 +102,7 @@ macro_rules! signed_to_unsigned {
 		impl SaturatingFrom<$from> for $to {
 			#[doc = $meta]
 			fn saturating_from(src: $from) -> Self {
-				if src.is_gt_zero() { src as Self }
+				if src > 0 { src as Self }
 				else { 0 }
 			}
 		}
@@ -134,7 +130,7 @@ macro_rules! float_to_unsigned {
 		impl SaturatingFrom<$from> for $to {
 			#[doc = $meta]
 			fn saturating_from(src: $from) -> Self {
-				if ! src.is_gt_zero() { 0 }
+				if src <= 0.0 { 0 }
 				else if src >= $MAX { Self::MAX }
 				else { src as Self }
 			}
@@ -146,7 +142,7 @@ macro_rules! float_to_unsigned {
 		impl SaturatingFrom<$from> for $to {
 			#[doc = $meta]
 			fn saturating_from(src: $from) -> Self {
-				if src.is_gt_zero() { src as Self }
+				if src > 0.0 { src as Self }
 				else { 0 }
 			}
 		}

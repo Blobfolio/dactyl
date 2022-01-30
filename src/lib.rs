@@ -58,7 +58,9 @@ mod nice_elapsed;
 mod nice_int;
 pub mod traits;
 
+#[allow(deprecated)]
 pub use gt_zero::GreaterThanZero;
+
 pub use nice_elapsed::NiceElapsed;
 pub use nice_int::{
 	nice_u8::NiceU8,
