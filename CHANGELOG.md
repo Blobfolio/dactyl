@@ -2,6 +2,19 @@
 
 
 
+## [0.2.4](https://github.com/Blobfolio/dactyl/releases/tag/v0.2.4) - 2022-01-29
+
+### New
+
+* `TryFrom<(T, T)>` for `NicePercent`;
+
+### Deprecated
+
+* `GreaterThanZero`;
+* `GtZero`;
+
+
+
 ## [0.2.3](https://github.com/Blobfolio/dactyl/releases/tag/v0.2.3) - 2022-01-20
 
 ### New
