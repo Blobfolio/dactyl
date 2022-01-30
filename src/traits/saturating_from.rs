@@ -142,7 +142,7 @@ macro_rules! float_to_unsigned {
 		impl SaturatingFrom<$from> for $to {
 			#[doc = $meta]
 			fn saturating_from(src: $from) -> Self {
-				if src >= 0.0 { src as Self }
+				if src > 0.0 { src as Self }
 				else { 0 }
 			}
 		}
