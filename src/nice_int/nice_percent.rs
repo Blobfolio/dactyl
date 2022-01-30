@@ -106,6 +106,36 @@ macro_rules! impl_from {
 impl_from!(f32);
 impl_from!(f64);
 
+impl<T> TryFrom<(T, T)> for NicePercent
+where T: num_traits::cast::AsPrimitive<f64> {
+	type Error = ();
+
+	/// # Percent From T/T.
+	///
+	/// This method is a shorthand that performs the (decimal) division of
+	/// `T1 / T2` for you, then converts the result into a [`NicePercent`] if
+	/// it falls between `0.0..=1.0`.
+	///
+	/// ```
+	/// use dactyl::NicePercent;
+	///
+	/// assert_eq!(
+	///     NicePercent::from(0.5_f64),
+	///     NicePercent::try_from((10_u8, 20_u8)).unwrap(),
+	/// );
+	/// ```
+	///
+	/// ## Errors
+	///
+	/// Conversion will fail if the enumerator is larger than the denominator,
+	/// or if the denominator is zero.
+	fn try_from(src: (T, T)) -> Result<Self, Self::Error> {
+		crate::int_div_float(src.0, src.1)
+			.map(Self::from)
+			.ok_or(())
+	}
+}
+
 impl NicePercent {
 	#[must_use]
 	/// # Minimum value.
