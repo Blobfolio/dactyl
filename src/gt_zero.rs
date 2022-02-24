@@ -98,6 +98,7 @@ macro_rules! impl_math {
 				type Output = Self;
 
 				#[inline]
+				#[must_use]
 				fn $method(self, other: Self) -> Self {
 					Self(self.0 $op other.0)
 				}
@@ -229,6 +230,7 @@ from_nonzero!(
 );
 
 impl<T: GtZero> GreaterThanZero<T> {
+	#[must_use]
 	/// # Filter.
 	///
 	/// Like [`std::option::Option::filter`], this will evaluate the instance
@@ -289,6 +291,7 @@ impl<T: GtZero> GreaterThanZero<T> {
 	/// `NEG_INFINITY`.
 	pub fn is_gt_zero(&self) -> bool { self.0.is_gt_zero() }
 
+	#[must_use]
 	/// # Map.
 	///
 	/// Operate on the inner value if it is greater than zero, otherwise do
