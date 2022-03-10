@@ -63,3 +63,8 @@ harness = false
 [[bench]]
 name = "fn_saturating_from_u8"
 harness = false
+
+[profile.bench]
+lto = true
+codegen-units = 1
+opt-level = 3
