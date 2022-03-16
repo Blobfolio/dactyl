@@ -37,7 +37,7 @@ Add `dactyl` to your `dependencies` in `Cargo.toml`, like:
 
 ```
 [dependencies]
-dactyl = "0.2.*"
+dactyl = "0.3.*"
 ```
 
 
