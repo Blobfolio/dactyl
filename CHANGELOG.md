@@ -7,6 +7,7 @@
 ### Added
 
 * `dactyl::traits::BytesToUnsigned` (slice to unsigned integer parsing)
+* `From<Instant>` for `NiceElapsed`
 
 ### Removed
 

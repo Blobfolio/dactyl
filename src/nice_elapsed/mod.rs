@@ -12,7 +12,10 @@ use std::{
 		Hasher,
 	},
 	ops::Deref,
-	time::Duration,
+	time::{
+		Duration,
+		Instant,
+	},
 };
 
 
@@ -97,6 +100,12 @@ impl fmt::Debug for NiceElapsed {
 macros::display_str!(as_str NiceElapsed);
 
 impl Eq for NiceElapsed {}
+
+impl From<Instant> for NiceElapsed {
+	fn from(src: Instant) -> Self {
+		Self::from(src.elapsed().as_secs())
+	}
+}
 
 macros::from_cast!(NiceElapsed: as_secs Duration);
 
