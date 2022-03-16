@@ -2,7 +2,11 @@
 
 
 
-## [0.3.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.3.0) - TBD
+## [0.3.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.3.0) - 2022-03-15
+
+### Added
+
+* `dactyl::traits::BytesToUnsigned` (slice to unsigned integer parsing)
 
 ### Removed
 

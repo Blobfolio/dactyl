@@ -37,6 +37,10 @@ fastrand = "1.7.*"
 num-format = "0.4.*"
 
 [[bench]]
+name = "fn_btou"
+harness = false
+
+[[bench]]
 name = "fn_nice_elapsed"
 harness = false
 
@@ -65,6 +69,6 @@ name = "fn_saturating_from_u8"
 harness = false
 
 [profile.bench]
-lto = true
+lto = false
 codegen-units = 1
 opt-level = 3
