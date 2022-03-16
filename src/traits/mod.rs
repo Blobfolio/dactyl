@@ -2,10 +2,8 @@
 # Dactyl: Traits
 */
 
-mod gt_zero;
+mod btou;
 mod saturating_from;
 
-#[allow(deprecated)]
-pub use gt_zero::GtZero;
-
+pub use btou::BytesToUnsigned;
 pub use saturating_from::SaturatingFrom;

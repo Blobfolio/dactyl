@@ -52,14 +52,10 @@ This crate also contains two "in development" structs — [`NicePercent`] and [`
 
 
 
-mod gt_zero;
 pub(crate) mod macros;
 mod nice_elapsed;
 mod nice_int;
 pub mod traits;
-
-#[allow(deprecated)]
-pub use gt_zero::GreaterThanZero;
 
 pub use nice_elapsed::NiceElapsed;
 pub use nice_int::{
@@ -90,19 +86,6 @@ macro_rules! div_mod_fn {
 	)+);
 }
 
-/// # Helper: Generate Div Methods.
-macro_rules! div_fn {
-	($($fn:ident $ty:ty),+ $(,)?) => ($(
-		#[must_use]
-		#[inline]
-		#[deprecated(since="0.2.1", note="please use `wrapping_div` instead")]
-		/// # Floored Division.
-		///
-		/// This is a simple division wrapper like `num_integer::div_floor`.
-		pub const fn $fn(lhs: $ty, rhs: $ty) -> $ty { lhs.wrapping_div(rhs) }
-	)+);
-}
-
 
 
 /// # Decimals, 00-99.
@@ -123,16 +106,6 @@ div_mod_fn!(
 	div_mod_u64 u64,
 	div_mod_u8 u8,
 	div_mod_usize usize,
-);
-
-// And division methods.
-div_fn!(
-	div_u128 u128,
-	div_u16 u16,
-	div_u32 u32,
-	div_u64 u64,
-	div_u8 u8,
-	div_usize usize,
 );
 
 #[must_use]

@@ -1,6 +1,6 @@
 [package]
 name = "dactyl"
-version = "0.2.4"
+version = "0.3.0"
 authors = ["Blobfolio, LLC. <hello@blobfolio.com>"]
 edition = "2021"
 rust-version = "1.56"
@@ -33,7 +33,12 @@ num-traits = "0.2.*"
 
 [dev-dependencies]
 brunch = "0.2.*"
+fastrand = "1.7.*"
 num-format = "0.4.*"
+
+[[bench]]
+name = "fn_btou"
+harness = false
 
 [[bench]]
 name = "fn_nice_elapsed"
@@ -62,3 +67,8 @@ harness = false
 [[bench]]
 name = "fn_saturating_from_u8"
 harness = false
+
+[profile.bench]
+lto = false
+codegen-units = 1
+opt-level = 3

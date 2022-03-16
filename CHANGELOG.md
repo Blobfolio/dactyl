@@ -2,6 +2,26 @@
 
 
 
+## [0.3.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.3.0) - 2022-03-15
+
+### Added
+
+* `dactyl::traits::BytesToUnsigned` (slice to unsigned integer parsing)
+* `From<Instant>` for `NiceElapsed`
+
+### Removed
+
+* `dactyl::div_u128`
+* `dactyl::div_u16`
+* `dactyl::div_u32`
+* `dactyl::div_u64`
+* `dactyl::div_u8`
+* `dactyl::div_usize`
+* `GreaterThanZero`
+* `GtZero`
+
+
+
 ## [0.2.4](https://github.com/Blobfolio/dactyl/releases/tag/v0.2.4) - 2022-01-29
 
 ### New
@@ -10,8 +30,8 @@
 
 ### Deprecated
 
-* `GreaterThanZero`;
-* `GtZero`;
+* `GreaterThanZero`
+* `GtZero`
 
 
 

@@ -163,19 +163,12 @@ mod tests {
 		assert_eq!(two.cmp(&one), std::cmp::Ordering::Greater);
 
 		// Check a subset of everything else.
-		let mut step = 1_u32;
-		let mut i = 0_u32;
-		loop {
-			for _ in 0..10 {
-				if u32::MAX - i < step { return; }
-				i += step;
-				assert_eq!(
-					NiceU32::from(i).as_str(),
-					i.to_formatted_string(&Locale::en),
-				);
-			}
-
-			step *= 10;
+		let rng = fastrand::Rng::new();
+		for i in std::iter::repeat_with(|| rng.u32(..)).take(1_000_000) {
+			assert_eq!(
+				NiceU32::from(i).as_str(),
+				i.to_formatted_string(&Locale::en),
+			);
 		}
 	}
 
