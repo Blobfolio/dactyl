@@ -20,6 +20,8 @@ benches!(
 		.timed(Duration::from_secs(1))
 		.with(|| "65536".parse::<u8>()),
 
+	Bench::spacer(),
+
 	Bench::new("u16", "btou(65536)")
 		.timed(Duration::from_secs(1))
 		.with(|| u16::btou(b"65536")),
@@ -27,6 +29,8 @@ benches!(
 	Bench::new("std::str", "parse::<u16>(65536)")
 		.timed(Duration::from_secs(1))
 		.with(|| "65536".parse::<u16>()),
+
+	Bench::spacer(),
 
 	Bench::new("u32", "btou(1844674407)")
 		.timed(Duration::from_secs(1))
@@ -36,6 +40,8 @@ benches!(
 		.timed(Duration::from_secs(1))
 		.with(|| "1844674407".parse::<u32>()),
 
+	Bench::spacer(),
+
 	Bench::new("u64", "btou(18446744073709551615)")
 		.timed(Duration::from_secs(1))
 		.with(|| u64::btou(b"18446744073709551615")),
@@ -43,6 +49,8 @@ benches!(
 	Bench::new("std::str", "parse::<u64>(18446744073709551615)")
 		.timed(Duration::from_secs(1))
 		.with(|| "18446744073709551615".parse::<u64>()),
+
+	Bench::spacer(),
 
 	Bench::new("u128", "btou(340282366920938463463374607431768211455)")
 		.timed(Duration::from_secs(1))

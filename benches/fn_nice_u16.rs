@@ -38,6 +38,8 @@ benches!(
 		.timed(Duration::from_secs(1))
 		.with(|| NiceU16::with_separator(40_999_u16, b'_')),
 
+	Bench::spacer(),
+
 	Bench::new("dactyl::NiceU16", "as_string()")
 		.timed(Duration::from_secs(1))
 		.with_setup(NiceU16::from(40_999_u16), |c| c.as_string()),
