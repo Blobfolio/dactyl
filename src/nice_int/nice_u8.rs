@@ -129,6 +129,7 @@ impl NiceU8 {
 	/// assert_eq!(dactyl::NiceU8::from(113).as_str2(), "113");
 	/// ```
 	pub fn as_str2(&self) -> &str {
+		// Safety: numbers are valid ASCII.
 		unsafe { std::str::from_utf8_unchecked(self.as_bytes2()) }
 	}
 
@@ -148,6 +149,7 @@ impl NiceU8 {
 	/// assert_eq!(dactyl::NiceU8::from(113).as_str3(), "113");
 	/// ```
 	pub const fn as_str3(&self) -> &str {
+		// Safety: numbers are valid ASCII.
 		unsafe { std::str::from_utf8_unchecked(self.as_bytes3()) }
 	}
 }

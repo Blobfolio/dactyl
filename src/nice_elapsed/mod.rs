@@ -254,6 +254,7 @@ impl NiceElapsed {
 	///
 	/// Return the nice value as a string slice.
 	pub fn as_str(&self) -> &str {
+		// Safety: numbers and labels are valid ASCII.
 		unsafe { std::str::from_utf8_unchecked(self.as_bytes()) }
 	}
 }

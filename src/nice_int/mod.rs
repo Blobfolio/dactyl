@@ -82,6 +82,7 @@ macro_rules! impl_nice_int {
 			///
 			/// Return the value as a string slice.
 			pub fn as_str(&self) -> &str {
+				// Safety: numbers are valid ASCII.
 				unsafe { ::std::str::from_utf8_unchecked(self.as_bytes()) }
 			}
 
@@ -93,6 +94,7 @@ macro_rules! impl_nice_int {
 			///
 			/// Note: this method is allocating.
 			pub fn as_string(&self) -> String {
+				// Safety: numbers are valid ASCII.
 				unsafe { String::from_utf8_unchecked(self.inner[self.from..].to_vec()) }
 			}
 
