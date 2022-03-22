@@ -133,6 +133,7 @@ pub(self) use {
 
 
 
+#[allow(clippy::cast_possible_truncation)] // One digit always fits u8.
 #[doc(hidden)]
 /// # Write `u8` x 3
 ///
@@ -143,7 +144,7 @@ pub(self) use {
 pub(super) unsafe fn write_u8_3(buf: *mut u8, num: usize) {
 	let (div, rem) = crate::div_mod_usize(num, 100);
 	let ptr = DOUBLE.as_ptr();
-	ptr::copy_nonoverlapping(ptr.add((div << 1) + 1), buf, 1);
+	ptr::write(buf, div as u8 + b'0');
 	ptr::copy_nonoverlapping(ptr.add(rem << 1), buf.add(1), 2);
 }
 
@@ -156,15 +157,4 @@ pub(super) unsafe fn write_u8_3(buf: *mut u8, num: usize) {
 /// things may happen!
 pub(super) unsafe fn write_u8_2(buf: *mut u8, num: usize) {
 	ptr::copy_nonoverlapping(DOUBLE.as_ptr().add(num << 1), buf, 2);
-}
-
-#[doc(hidden)]
-/// # Write `u8` x 1
-///
-/// ## Safety
-///
-/// The destination pointer must have at least 1 byte free or undefined
-/// things may happen!
-pub(super) unsafe fn write_u8_1(buf: *mut u8, num: usize) {
-	ptr::copy_nonoverlapping(DOUBLE.as_ptr().add((num << 1) + 1), buf, 1);
 }

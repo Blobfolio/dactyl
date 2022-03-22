@@ -46,16 +46,16 @@ impl From<u8> for NiceU8 {
 		let mut out = Self::default();
 
 		if num >= 100 {
-			out.from -= 3;
-			unsafe { super::write_u8_3(out.inner.as_mut_ptr().add(out.from), usize::from(num)); }
+			out.from = 0;
+			unsafe { super::write_u8_3(out.inner.as_mut_ptr(), usize::from(num)); }
 		}
 		else if num >= 10 {
-			out.from -= 2;
-			unsafe { super::write_u8_2(out.inner.as_mut_ptr().add(out.from), usize::from(num)); }
+			out.from = 1;
+			unsafe { super::write_u8_2(out.inner.as_mut_ptr().add(1), usize::from(num)); }
 		}
 		else {
-			out.from -= 1;
-			unsafe { super::write_u8_1(out.inner.as_mut_ptr().add(out.from), usize::from(num)); }
+			out.from = 2;
+			out.inner[2] = num + b'0';
 		}
 
 		out

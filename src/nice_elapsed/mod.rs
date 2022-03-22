@@ -354,7 +354,7 @@ unsafe fn write_u8_advance(buf: *mut u8, num: u8) -> *mut u8 {
 		buf.add(2)
 	}
 	else {
-		std::ptr::copy_nonoverlapping(crate::DOUBLE.as_ptr().add((usize::from(num) << 1) + 1), buf, 1);
+		std::ptr::write(buf, num + b'0');
 		buf.add(1)
 	}
 }

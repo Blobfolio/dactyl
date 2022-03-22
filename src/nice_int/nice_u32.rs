@@ -102,6 +102,7 @@ impl NiceU32 {
 		out
 	}
 
+	#[allow(clippy::cast_possible_truncation)] // One digit always fits u8.
 	/// # Parse.
 	///
 	/// This handles the actual crunching.
@@ -125,7 +126,7 @@ impl NiceU32 {
 		}
 		else {
 			self.from -= 1;
-			unsafe { super::write_u8_1(ptr.add(self.from), num as usize); }
+			unsafe { std::ptr::write(ptr.add(self.from), num as u8 + b'0'); }
 		}
 	}
 }

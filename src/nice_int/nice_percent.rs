@@ -86,7 +86,7 @@ macro_rules! impl_from {
 				}
 				else {
 					out.from -= 1;
-					unsafe { super::write_u8_1(ptr.add(out.from), base); }
+					unsafe { std::ptr::write(ptr.add(out.from), base as u8 + b'0'); }
 				}
 
 				// Write the fraction.

@@ -52,6 +52,7 @@ impl Default for NiceU64 {
 }
 
 impl From<usize> for NiceU64 {
+	#[allow(clippy::cast_possible_truncation)] // One digit always fits u8.
 	fn from(mut num: usize) -> Self {
 		#[cfg(target_pointer_width = "128")]
 		assert!(num <= 18_446_744_073_709_551_615);
@@ -76,7 +77,7 @@ impl From<usize> for NiceU64 {
 		}
 		else {
 			out.from -= 1;
-			unsafe { super::write_u8_1(ptr.add(out.from), num); }
+			unsafe { std::ptr::write(ptr.add(out.from), num as u8 + b'0'); }
 		}
 
 		out
@@ -137,7 +138,7 @@ impl NiceU64 {
 		out
 	}
 
-	#[allow(clippy::cast_possible_truncation)] // It fits.
+	#[allow(clippy::cast_possible_truncation)] // Usize casting never exceeds 100; u8 casting never exceeds 9.
 	/// # Parse.
 	///
 	/// This handles the actual crunching.
@@ -161,7 +162,7 @@ impl NiceU64 {
 		}
 		else {
 			self.from -= 1;
-			unsafe { super::write_u8_1(ptr.add(self.from), num as usize); }
+			unsafe { std::ptr::write(ptr.add(self.from), num as u8 + b'0'); }
 		}
 	}
 }
