@@ -139,13 +139,13 @@ where T: AsPrimitive<f64> {
 pub unsafe fn write_u8(buf: *mut u8, num: u8) {
 	use std::ptr;
 
-	if num > 99 {
+	if 99 < num {
 		let (div, rem) = div_mod_u8(num, 100);
 		let ptr = DOUBLE.as_ptr();
 		ptr::write(buf, div + b'0');
 		ptr::copy_nonoverlapping(ptr.add((rem as usize) << 1), buf.add(1), 2);
 	}
-	else if num > 9 {
+	else if 9 < num {
 		ptr::copy_nonoverlapping(DOUBLE.as_ptr().add(usize::from(num) << 1), buf, 2);
 	}
 	else {

@@ -80,7 +80,7 @@ macro_rules! impl_from {
 
 				// Write the integer parts.
 				let base = num.trunc() as usize;
-				if base >= 10 {
+				if 9 < base {
 					out.from -= 2;
 					unsafe { super::write_u8_2(ptr.add(out.from), base); }
 				}

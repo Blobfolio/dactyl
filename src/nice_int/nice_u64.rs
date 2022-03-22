@@ -60,18 +60,18 @@ impl From<usize> for NiceU64 {
 		let mut out = Self::default();
 		let ptr = out.inner.as_mut_ptr();
 
-		while num >= 1000 {
+		while 999 < num {
 			let (div, rem) = crate::div_mod_usize(num, 1000);
 			out.from -= 4;
 			unsafe { super::write_u8_3(ptr.add(out.from + 1), rem); }
 			num = div;
 		}
 
-		if num >= 100 {
+		if 99 < num {
 			out.from -= 3;
 			unsafe { super::write_u8_3(ptr.add(out.from), num); }
 		}
-		else if num >= 10 {
+		else if 9 < num {
 			out.from -= 2;
 			unsafe { super::write_u8_2(ptr.add(out.from), num); }
 		}
@@ -145,18 +145,18 @@ impl NiceU64 {
 	fn parse(&mut self, mut num: u64) {
 		let ptr = self.inner.as_mut_ptr();
 
-		while num >= 1000 {
+		while 999 < num {
 			let (div, rem) = crate::div_mod_u64(num, 1000);
 			self.from -= 4;
 			unsafe { super::write_u8_3(ptr.add(self.from + 1), rem as usize); }
 			num = div;
 		}
 
-		if num >= 100 {
+		if 99 < num {
 			self.from -= 3;
 			unsafe { super::write_u8_3(ptr.add(self.from), num as usize); }
 		}
-		else if num >= 10 {
+		else if 9 < num {
 			self.from -= 2;
 			unsafe { super::write_u8_2(ptr.add(self.from), num as usize); }
 		}

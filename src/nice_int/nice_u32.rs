@@ -109,18 +109,18 @@ impl NiceU32 {
 	fn parse(&mut self, mut num: u32) {
 		let ptr = self.inner.as_mut_ptr();
 
-		while num >= 1000 {
+		while 999 < num {
 			let (div, rem) = crate::div_mod_u32(num, 1000);
 			self.from -= 4;
 			unsafe { super::write_u8_3(ptr.add(self.from + 1), rem as usize); }
 			num = div;
 		}
 
-		if num >= 100 {
+		if 99 < num {
 			self.from -= 3;
 			unsafe { super::write_u8_3(ptr.add(self.from), num as usize); }
 		}
-		else if num >= 10 {
+		else if 9 < num {
 			self.from -= 2;
 			unsafe { super::write_u8_2(ptr.add(self.from), num as usize); }
 		}
