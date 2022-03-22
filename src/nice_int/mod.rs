@@ -141,7 +141,7 @@ pub(self) use {
 ///
 /// The destination pointer must have at least 3 bytes free or undefined
 /// things may happen!
-pub(super) unsafe fn write_u8_3(buf: *mut u8, num: usize) {
+unsafe fn write_u8_3(buf: *mut u8, num: usize) {
 	let (div, rem) = crate::div_mod_usize(num, 100);
 	let ptr = DOUBLE.as_ptr();
 	ptr::write(buf, div as u8 + b'0');
@@ -155,6 +155,6 @@ pub(super) unsafe fn write_u8_3(buf: *mut u8, num: usize) {
 ///
 /// The destination pointer must have at least 2 bytes free or undefined
 /// things may happen!
-pub(super) unsafe fn write_u8_2(buf: *mut u8, num: usize) {
+unsafe fn write_u8_2(buf: *mut u8, num: usize) {
 	ptr::copy_nonoverlapping(DOUBLE.as_ptr().add(num << 1), buf, 2);
 }
