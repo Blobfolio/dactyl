@@ -226,6 +226,9 @@ mod tests {
 		unsafe {
 			write_time(buf.as_mut_ptr(), 1, 2, 3);
 			assert_eq!(buf, *b"01:02:03");
+
+			write_time(buf.as_mut_ptr(), 10, 26, 37);
+			assert_eq!(buf, *b"10:26:37");
 		}
 	}
 }
