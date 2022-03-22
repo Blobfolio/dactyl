@@ -61,9 +61,9 @@ impl From<usize> for NiceU64 {
 
 		while num >= 1000 {
 			let (div, rem) = crate::div_mod_usize(num, 1000);
-			unsafe { super::write_u8_3(ptr.add(out.from - 3), rem); }
-			num = div;
 			out.from -= 4;
+			unsafe { super::write_u8_3(ptr.add(out.from + 1), rem); }
+			num = div;
 		}
 
 		if num >= 100 {
@@ -146,9 +146,9 @@ impl NiceU64 {
 
 		while num >= 1000 {
 			let (div, rem) = crate::div_mod_u64(num, 1000);
-			unsafe { super::write_u8_3(ptr.add(self.from - 3), rem as usize); }
-			num = div;
 			self.from -= 4;
+			unsafe { super::write_u8_3(ptr.add(self.from + 1), rem as usize); }
+			num = div;
 		}
 
 		if num >= 100 {
