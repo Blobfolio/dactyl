@@ -134,7 +134,6 @@ pub(self) use {
 
 
 #[allow(clippy::cast_possible_truncation)] // One digit always fits u8.
-#[doc(hidden)]
 /// # Write `u8` x 3
 ///
 /// ## Safety
@@ -148,7 +147,6 @@ unsafe fn write_u8_3(buf: *mut u8, num: usize) {
 	ptr::copy_nonoverlapping(ptr.add(rem << 1), buf.add(1), 2);
 }
 
-#[doc(hidden)]
 /// # Write `u8` x 2
 ///
 /// ## Safety
