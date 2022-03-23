@@ -22,6 +22,8 @@ benches!(
 		.timed(Duration::from_secs(1))
 		.with(|| NiceElapsed::hms(10502_u32)),
 
+	Bench::spacer(),
+
 	Bench::new("dactyl::NiceElapsed", "from(1)")
 		.timed(Duration::from_secs(1))
 		.with(|| NiceElapsed::from(1_u32)),
@@ -41,6 +43,10 @@ benches!(
 	Bench::new("dactyl::NiceElapsed", "from(37732)")
 		.timed(Duration::from_secs(1))
 		.with(|| NiceElapsed::from(37732_u32)),
+
+	Bench::new("dactyl::NiceElapsed", "from(Duration(37732030ms))")
+		.timed(Duration::from_secs(1))
+		.with(|| NiceElapsed::from(Duration::from_millis(37732030))),
 
 	Bench::new("dactyl::NiceElapsed", "from(428390)")
 		.timed(Duration::from_secs(1))
