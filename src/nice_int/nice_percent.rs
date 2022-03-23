@@ -47,7 +47,7 @@ impl Default for NicePercent {
 	#[inline]
 	fn default() -> Self {
 		Self {
-			inner: [0, 0, 0, b'.', 0, 0, b'%'],
+			inner: [b'0', b'0', b'0', b'.', b'0', b'0', b'%'],
 			from: SIZE,
 		}
 	}
