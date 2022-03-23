@@ -111,7 +111,7 @@ impl NiceU16 {
 
 		if 999 < num {
 			let (num, rem) = crate::div_mod_u16(num, 1000);
-			unsafe { super::write_u8_3(ptr.add(3), usize::from(rem)); }
+			unsafe { super::write_u8_3(ptr.add(3), rem); }
 
 			if 9 < num {
 				self.from = 0;
@@ -130,7 +130,7 @@ impl NiceU16 {
 		}
 		else if 99 < num {
 			self.from = 3;
-			unsafe { super::write_u8_3(ptr.add(3), usize::from(num)); }
+			unsafe { super::write_u8_3(ptr.add(3), num); }
 		}
 		else if 9 < num {
 			self.from = 4;

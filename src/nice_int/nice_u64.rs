@@ -52,41 +52,12 @@ impl Default for NiceU64 {
 }
 
 impl From<usize> for NiceU64 {
-	#[allow(clippy::cast_possible_truncation)] // One digit always fits u8.
-	fn from(mut num: usize) -> Self {
+	#[allow(clippy::cast_possible_truncation)] // It fits.
+	fn from(num: usize) -> Self {
 		#[cfg(target_pointer_width = "128")]
 		assert!(num <= 18_446_744_073_709_551_615);
 
-		let mut out = Self::default();
-		let ptr = out.inner.as_mut_ptr();
-
-		while 999 < num {
-			let (div, rem) = crate::div_mod_usize(num, 1000);
-			out.from -= 4;
-			unsafe { super::write_u8_3(ptr.add(out.from + 1), rem); }
-			num = div;
-		}
-
-		if 99 < num {
-			out.from -= 3;
-			unsafe { super::write_u8_3(ptr.add(out.from), num); }
-		}
-		else if 9 < num {
-			out.from -= 2;
-			unsafe {
-				std::ptr::copy_nonoverlapping(
-					crate::double(num),
-					ptr.add(out.from),
-					2
-				);
-			}
-		}
-		else {
-			out.from -= 1;
-			unsafe { std::ptr::write(ptr.add(out.from), num as u8 + b'0'); }
-		}
-
-		out
+		Self::from(num as u64)
 	}
 }
 
@@ -154,13 +125,13 @@ impl NiceU64 {
 		while 999 < num {
 			let (div, rem) = crate::div_mod_u64(num, 1000);
 			self.from -= 4;
-			unsafe { super::write_u8_3(ptr.add(self.from + 1), rem as usize); }
+			unsafe { super::write_u8_3(ptr.add(self.from + 1), rem as u16); }
 			num = div;
 		}
 
 		if 99 < num {
 			self.from -= 3;
-			unsafe { super::write_u8_3(ptr.add(self.from), num as usize); }
+			unsafe { super::write_u8_3(ptr.add(self.from), num as u16); }
 		}
 		else if 9 < num {
 			self.from -= 2;

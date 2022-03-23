@@ -42,10 +42,11 @@ impl Default for NiceU8 {
 }
 
 impl From<u8> for NiceU8 {
+	#[allow(clippy::cast_lossless)] // Seems less performant.
 	fn from(num: u8) -> Self {
 		if 99 < num {
 			let mut inner = [b'0', b'0', b'0'];
-			unsafe { super::write_u8_3(inner.as_mut_ptr(), usize::from(num)); }
+			unsafe { super::write_u8_3(inner.as_mut_ptr(), num as u16); }
 			Self {
 				inner,
 				from: 0,

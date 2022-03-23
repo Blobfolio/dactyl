@@ -112,13 +112,13 @@ impl NiceU32 {
 		while 999 < num {
 			let (div, rem) = crate::div_mod_u32(num, 1000);
 			self.from -= 4;
-			unsafe { super::write_u8_3(ptr.add(self.from + 1), rem as usize); }
+			unsafe { super::write_u8_3(ptr.add(self.from + 1), rem as u16); }
 			num = div;
 		}
 
 		if 99 < num {
 			self.from -= 3;
-			unsafe { super::write_u8_3(ptr.add(self.from), num as usize); }
+			unsafe { super::write_u8_3(ptr.add(self.from), num as u16); }
 		}
 		else if 9 < num {
 			self.from -= 2;
