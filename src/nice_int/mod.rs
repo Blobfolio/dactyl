@@ -10,9 +10,6 @@ pub(super) mod nice_u32;
 pub(super) mod nice_u64;
 pub(super) mod nice_percent;
 
-use crate::DOUBLE;
-use std::ptr;
-
 
 
 #[doc(hidden)]
@@ -82,6 +79,7 @@ macro_rules! impl_nice_int {
 			///
 			/// Return the value as a string slice.
 			pub fn as_str(&self) -> &str {
+				// Safety: numbers are valid ASCII.
 				unsafe { ::std::str::from_utf8_unchecked(self.as_bytes()) }
 			}
 
@@ -93,6 +91,7 @@ macro_rules! impl_nice_int {
 			///
 			/// Note: this method is allocating.
 			pub fn as_string(&self) -> String {
+				// Safety: numbers are valid ASCII.
 				unsafe { String::from_utf8_unchecked(self.inner[self.from..].to_vec()) }
 			}
 
@@ -131,38 +130,15 @@ pub(self) use {
 
 
 
-#[doc(hidden)]
+#[allow(clippy::cast_possible_truncation)] // One digit always fits u8.
 /// # Write `u8` x 3
 ///
 /// ## Safety
 ///
 /// The destination pointer must have at least 3 bytes free or undefined
 /// things may happen!
-pub(super) unsafe fn write_u8_3(buf: *mut u8, num: usize) {
-	let (div, rem) = crate::div_mod_usize(num, 100);
-	let ptr = DOUBLE.as_ptr();
-	ptr::copy_nonoverlapping(ptr.add((div << 1) + 1), buf, 1);
-	ptr::copy_nonoverlapping(ptr.add(rem << 1), buf.add(1), 2);
-}
-
-#[doc(hidden)]
-/// # Write `u8` x 2
-///
-/// ## Safety
-///
-/// The destination pointer must have at least 2 bytes free or undefined
-/// things may happen!
-pub(super) unsafe fn write_u8_2(buf: *mut u8, num: usize) {
-	ptr::copy_nonoverlapping(DOUBLE.as_ptr().add(num << 1), buf, 2);
-}
-
-#[doc(hidden)]
-/// # Write `u8` x 1
-///
-/// ## Safety
-///
-/// The destination pointer must have at least 1 byte free or undefined
-/// things may happen!
-pub(super) unsafe fn write_u8_1(buf: *mut u8, num: usize) {
-	ptr::copy_nonoverlapping(DOUBLE.as_ptr().add((num << 1) + 1), buf, 1);
+unsafe fn write_u8_3(buf: *mut u8, num: u16) {
+	let (div, rem) = crate::div_mod_u16(num, 100);
+	std::ptr::write(buf, div as u8 + b'0');
+	std::ptr::copy_nonoverlapping(crate::double(rem as usize), buf.add(1), 2);
 }

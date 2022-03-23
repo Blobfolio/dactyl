@@ -102,31 +102,49 @@ impl NiceU16 {
 		out
 	}
 
+	#[allow(clippy::cast_possible_truncation)] // One digit always fits u8.
 	/// # Parse.
 	///
 	/// This handles the actual crunching.
-	fn parse(&mut self, mut num: u16) {
+	fn parse(&mut self, num: u16) {
 		let ptr = self.inner.as_mut_ptr();
 
-		// For `u16` this can only trigger once.
-		if num >= 1000 {
-			let (div, rem) = crate::div_mod_u16(num, 1000);
-			unsafe { super::write_u8_3(ptr.add(self.from - 3), usize::from(rem)); }
-			num = div;
-			self.from -= 4;
-		}
+		if 999 < num {
+			let (num, rem) = crate::div_mod_u16(num, 1000);
+			unsafe { super::write_u8_3(ptr.add(3), rem); }
 
-		if num >= 100 {
-			self.from -= 3;
-			unsafe { super::write_u8_3(ptr.add(self.from), usize::from(num)); }
+			if 9 < num {
+				self.from = 0;
+				unsafe {
+					std::ptr::copy_nonoverlapping(
+						crate::double(num as usize),
+						ptr,
+						2
+					);
+				}
+			}
+			else {
+				self.from = 1;
+				unsafe { std::ptr::write(ptr.add(1), num as u8 + b'0'); }
+			}
 		}
-		else if num >= 10 {
-			self.from -= 2;
-			unsafe { super::write_u8_2(ptr.add(self.from), usize::from(num)); }
+		else if 99 < num {
+			self.from = 3;
+			unsafe { super::write_u8_3(ptr.add(3), num); }
+		}
+		else if 9 < num {
+			self.from = 4;
+			unsafe {
+				std::ptr::copy_nonoverlapping(
+					crate::double(num as usize),
+					ptr.add(4),
+					2
+				);
+			}
 		}
 		else {
-			self.from -= 1;
-			unsafe { super::write_u8_1(ptr.add(self.from), usize::from(num)); }
+			self.from = 5;
+			unsafe { std::ptr::write(ptr.add(5), num as u8 + b'0'); }
 		}
 	}
 }

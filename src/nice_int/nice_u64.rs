@@ -52,34 +52,12 @@ impl Default for NiceU64 {
 }
 
 impl From<usize> for NiceU64 {
-	fn from(mut num: usize) -> Self {
+	#[allow(clippy::cast_possible_truncation)] // It fits.
+	fn from(num: usize) -> Self {
 		#[cfg(target_pointer_width = "128")]
 		assert!(num <= 18_446_744_073_709_551_615);
 
-		let mut out = Self::default();
-		let ptr = out.inner.as_mut_ptr();
-
-		while num >= 1000 {
-			let (div, rem) = crate::div_mod_usize(num, 1000);
-			unsafe { super::write_u8_3(ptr.add(out.from - 3), rem); }
-			num = div;
-			out.from -= 4;
-		}
-
-		if num >= 100 {
-			out.from -= 3;
-			unsafe { super::write_u8_3(ptr.add(out.from), num); }
-		}
-		else if num >= 10 {
-			out.from -= 2;
-			unsafe { super::write_u8_2(ptr.add(out.from), num); }
-		}
-		else {
-			out.from -= 1;
-			unsafe { super::write_u8_1(ptr.add(out.from), num); }
-		}
-
-		out
+		Self::from(num as u64)
 	}
 }
 
@@ -137,31 +115,37 @@ impl NiceU64 {
 		out
 	}
 
-	#[allow(clippy::cast_possible_truncation)] // It fits.
+	#[allow(clippy::cast_possible_truncation)] // Usize casting never exceeds 100; u8 casting never exceeds 9.
 	/// # Parse.
 	///
 	/// This handles the actual crunching.
 	fn parse(&mut self, mut num: u64) {
 		let ptr = self.inner.as_mut_ptr();
 
-		while num >= 1000 {
+		while 999 < num {
 			let (div, rem) = crate::div_mod_u64(num, 1000);
-			unsafe { super::write_u8_3(ptr.add(self.from - 3), rem as usize); }
-			num = div;
 			self.from -= 4;
+			unsafe { super::write_u8_3(ptr.add(self.from + 1), rem as u16); }
+			num = div;
 		}
 
-		if num >= 100 {
+		if 99 < num {
 			self.from -= 3;
-			unsafe { super::write_u8_3(ptr.add(self.from), num as usize); }
+			unsafe { super::write_u8_3(ptr.add(self.from), num as u16); }
 		}
-		else if num >= 10 {
+		else if 9 < num {
 			self.from -= 2;
-			unsafe { super::write_u8_2(ptr.add(self.from), num as usize); }
+			unsafe {
+				std::ptr::copy_nonoverlapping(
+					crate::double(num as usize),
+					ptr.add(self.from),
+					2
+				);
+			}
 		}
 		else {
 			self.from -= 1;
-			unsafe { super::write_u8_1(ptr.add(self.from), num as usize); }
+			unsafe { std::ptr::write(ptr.add(self.from), num as u8 + b'0'); }
 		}
 	}
 }

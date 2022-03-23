@@ -89,12 +89,26 @@ macro_rules! div_mod_fn {
 
 
 /// # Decimals, 00-99.
-pub(crate) static DOUBLE: &[u8; 200] = b"\
+static DOUBLE: &[u8; 200] = b"\
 	0001020304050607080910111213141516171819\
 	2021222324252627282930313233343536373839\
 	4041424344454647484950515253545556575859\
 	6061626364656667686970717273747576777879\
 	8081828384858687888990919293949596979899";
+
+#[inline]
+/// # Double Pointer.
+///
+/// This produces a pointer to a specific two-digit subslice of `DOUBLE`.
+///
+/// ## Safety
+///
+/// This method will panic if `num` is greater than 100, but as this is
+/// private and all ranges are pre-checked, that should never actually happen.
+pub(crate) fn double(num: usize) -> *const u8 {
+	assert!(num < 100);
+	unsafe { DOUBLE.as_ptr().add(num << 1) }
+}
 
 
 
@@ -137,19 +151,16 @@ where T: AsPrimitive<f64> {
 /// The pointer must have enough space for the value, i.e. 1-3 digits, or
 /// undefined things will happen.
 pub unsafe fn write_u8(buf: *mut u8, num: u8) {
-	use std::ptr;
-
-	if num > 99 {
-		let (div, rem) = div_mod_usize(usize::from(num), 100);
-		let ptr = DOUBLE.as_ptr();
-		ptr::copy_nonoverlapping(ptr.add((div << 1) + 1), buf, 1);
-		ptr::copy_nonoverlapping(ptr.add(rem << 1), buf.add(1), 2);
+	if 99 < num {
+		let (div, rem) = div_mod_u8(num, 100);
+		std::ptr::write(buf, div + b'0');
+		std::ptr::copy_nonoverlapping(double(rem as usize), buf.add(1), 2);
 	}
-	else if num > 9 {
-		ptr::copy_nonoverlapping(DOUBLE.as_ptr().add(usize::from(num) << 1), buf, 2);
+	else if 9 < num {
+		std::ptr::copy_nonoverlapping(double(num as usize), buf, 2);
 	}
 	else {
-		ptr::copy_nonoverlapping(DOUBLE.as_ptr().add((usize::from(num) << 1) + 1), buf, 1);
+		std::ptr::write(buf, num + b'0');
 	}
 }
 
@@ -166,16 +177,13 @@ pub unsafe fn write_u8(buf: *mut u8, num: u8) {
 ///
 /// The pointer must have 8 bytes free or undefined things will happen.
 pub unsafe fn write_time(buf: *mut u8, h: u8, m: u8, s: u8) {
-	use std::ptr;
-
 	assert!(h < 60 && m < 60 && s < 60);
 
-	let ptr = DOUBLE.as_ptr();
-	ptr::copy_nonoverlapping(ptr.add(usize::from(h) << 1), buf, 2);
-	ptr::write(buf.add(2), b':');
-	ptr::copy_nonoverlapping(ptr.add(usize::from(m) << 1), buf.add(3), 2);
-	ptr::write(buf.add(5), b':');
-	ptr::copy_nonoverlapping(ptr.add(usize::from(s) << 1), buf.add(6), 2);
+	std::ptr::copy_nonoverlapping(double(h as usize), buf, 2);
+	std::ptr::write(buf.add(2), b':');
+	std::ptr::copy_nonoverlapping(double(m as usize), buf.add(3), 2);
+	std::ptr::write(buf.add(5), b':');
+	std::ptr::copy_nonoverlapping(double(s as usize), buf.add(6), 2);
 }
 
 
@@ -226,6 +234,9 @@ mod tests {
 		unsafe {
 			write_time(buf.as_mut_ptr(), 1, 2, 3);
 			assert_eq!(buf, *b"01:02:03");
+
+			write_time(buf.as_mut_ptr(), 10, 26, 37);
+			assert_eq!(buf, *b"10:26:37");
 		}
 	}
 }

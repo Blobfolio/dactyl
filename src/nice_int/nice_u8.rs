@@ -42,23 +42,36 @@ impl Default for NiceU8 {
 }
 
 impl From<u8> for NiceU8 {
+	#[allow(clippy::cast_lossless)] // Seems less performant.
 	fn from(num: u8) -> Self {
-		let mut out = Self::default();
-
-		if num >= 100 {
-			out.from -= 3;
-			unsafe { super::write_u8_3(out.inner.as_mut_ptr().add(out.from), usize::from(num)); }
+		if 99 < num {
+			let mut inner = [b'0', b'0', b'0'];
+			unsafe { super::write_u8_3(inner.as_mut_ptr(), num as u16); }
+			Self {
+				inner,
+				from: 0,
+			}
 		}
-		else if num >= 10 {
-			out.from -= 2;
-			unsafe { super::write_u8_2(out.inner.as_mut_ptr().add(out.from), usize::from(num)); }
+		else if 9 < num {
+			let mut inner = [b'0', b'0', b'0'];
+			unsafe {
+				std::ptr::copy_nonoverlapping(
+					crate::double(num as usize),
+					inner.as_mut_ptr().add(1),
+					2
+				);
+			}
+			Self {
+				inner,
+				from: 1,
+			}
 		}
 		else {
-			out.from -= 1;
-			unsafe { super::write_u8_1(out.inner.as_mut_ptr().add(out.from), usize::from(num)); }
+			Self {
+				inner: [b'0', b'0', num + b'0'],
+				from: 2,
+			}
 		}
-
-		out
 	}
 }
 
@@ -129,6 +142,7 @@ impl NiceU8 {
 	/// assert_eq!(dactyl::NiceU8::from(113).as_str2(), "113");
 	/// ```
 	pub fn as_str2(&self) -> &str {
+		// Safety: numbers are valid ASCII.
 		unsafe { std::str::from_utf8_unchecked(self.as_bytes2()) }
 	}
 
@@ -148,6 +162,7 @@ impl NiceU8 {
 	/// assert_eq!(dactyl::NiceU8::from(113).as_str3(), "113");
 	/// ```
 	pub const fn as_str3(&self) -> &str {
+		// Safety: numbers are valid ASCII.
 		unsafe { std::str::from_utf8_unchecked(self.as_bytes3()) }
 	}
 }

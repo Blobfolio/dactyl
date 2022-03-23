@@ -47,7 +47,7 @@ impl Default for NicePercent {
 	#[inline]
 	fn default() -> Self {
 		Self {
-			inner: [0, 0, 0, b'.', 0, 0, b'%'],
+			inner: [b'0', b'0', b'0', b'.', b'0', b'0', b'%'],
 			from: SIZE,
 		}
 	}
@@ -80,20 +80,27 @@ macro_rules! impl_from {
 
 				// Write the integer parts.
 				let base = num.trunc() as usize;
-				if base >= 10 {
+				if 9 < base {
 					out.from -= 2;
-					unsafe { super::write_u8_2(ptr.add(out.from), base); }
+					unsafe {
+						std::ptr::copy_nonoverlapping(
+							crate::double(base),
+							ptr.add(out.from),
+							2
+						);
+					}
 				}
 				else {
 					out.from -= 1;
-					unsafe { super::write_u8_1(ptr.add(out.from), base); }
+					unsafe { std::ptr::write(ptr.add(out.from), base as u8 + b'0'); }
 				}
 
 				// Write the fraction.
 				unsafe {
-					super::write_u8_2(
+					std::ptr::copy_nonoverlapping(
+						crate::double(<$type>::floor(num.fract() * 100.0) as usize),
 						ptr.add(IDX_PERCENT_DECIMAL),
-						<$type>::floor(num.fract() * 100.0) as usize
+						2
 					);
 				}
 

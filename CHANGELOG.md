@@ -2,9 +2,19 @@
 
 
 
+## [0.3.1](https://github.com/Blobfolio/dactyl/releases/tag/v0.3.1) - TBD
+
+### Changed
+
+* Faster `NiceU*` parsing, particularly for `NiceU8` and `NiceU16`
+* Faster `NiceElapsed` parsing
+* `NiceElapsed::from(Duration)` and `NiceElapsed::from(Instant)` now render fractional seconds (hundredths), e.g. `5 minutes and 0.02 seconds`
+
+
+
 ## [0.3.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.3.0) - 2022-03-15
 
-### Added
+### New
 
 * `dactyl::traits::BytesToUnsigned` (slice to unsigned integer parsing)
 * `From<Instant>` for `NiceElapsed`
