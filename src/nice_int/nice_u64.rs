@@ -73,7 +73,13 @@ impl From<usize> for NiceU64 {
 		}
 		else if 9 < num {
 			out.from -= 2;
-			unsafe { super::write_u8_2(ptr.add(out.from), num); }
+			unsafe {
+				std::ptr::copy_nonoverlapping(
+					crate::double(num),
+					ptr.add(out.from),
+					2
+				);
+			}
 		}
 		else {
 			out.from -= 1;
@@ -158,7 +164,13 @@ impl NiceU64 {
 		}
 		else if 9 < num {
 			self.from -= 2;
-			unsafe { super::write_u8_2(ptr.add(self.from), num as usize); }
+			unsafe {
+				std::ptr::copy_nonoverlapping(
+					crate::double(num as usize),
+					ptr.add(self.from),
+					2
+				);
+			}
 		}
 		else {
 			self.from -= 1;

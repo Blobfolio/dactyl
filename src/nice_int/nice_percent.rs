@@ -82,7 +82,13 @@ macro_rules! impl_from {
 				let base = num.trunc() as usize;
 				if 9 < base {
 					out.from -= 2;
-					unsafe { super::write_u8_2(ptr.add(out.from), base); }
+					unsafe {
+						std::ptr::copy_nonoverlapping(
+							crate::double(base),
+							ptr.add(out.from),
+							2
+						);
+					}
 				}
 				else {
 					out.from -= 1;
@@ -91,9 +97,10 @@ macro_rules! impl_from {
 
 				// Write the fraction.
 				unsafe {
-					super::write_u8_2(
+					std::ptr::copy_nonoverlapping(
+						crate::double(<$type>::floor(num.fract() * 100.0) as usize),
 						ptr.add(IDX_PERCENT_DECIMAL),
-						<$type>::floor(num.fract() * 100.0) as usize
+						2
 					);
 				}
 

@@ -115,7 +115,13 @@ impl NiceU16 {
 
 			if 9 < num {
 				self.from = 0;
-				unsafe { super::write_u8_2(ptr, usize::from(num)); }
+				unsafe {
+					std::ptr::copy_nonoverlapping(
+						crate::double(num as usize),
+						ptr,
+						2
+					);
+				}
 			}
 			else {
 				self.from = 1;
@@ -128,7 +134,13 @@ impl NiceU16 {
 		}
 		else if 9 < num {
 			self.from = 4;
-			unsafe { super::write_u8_2(ptr.add(4), usize::from(num)); }
+			unsafe {
+				std::ptr::copy_nonoverlapping(
+					crate::double(num as usize),
+					ptr.add(4),
+					2
+				);
+			}
 		}
 		else {
 			self.from = 5;

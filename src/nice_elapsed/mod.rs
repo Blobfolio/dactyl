@@ -350,7 +350,7 @@ unsafe fn write_u8_advance(buf: *mut u8, num: u8) -> *mut u8 {
 	assert!(num < 100);
 
 	if 9 < num {
-		std::ptr::copy_nonoverlapping(crate::DOUBLE.as_ptr().add(usize::from(num) << 1), buf, 2);
+		std::ptr::copy_nonoverlapping(crate::double(num as usize), buf, 2);
 		buf.add(2)
 	}
 	else {

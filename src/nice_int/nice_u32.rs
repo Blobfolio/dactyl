@@ -122,7 +122,13 @@ impl NiceU32 {
 		}
 		else if 9 < num {
 			self.from -= 2;
-			unsafe { super::write_u8_2(ptr.add(self.from), num as usize); }
+			unsafe {
+				std::ptr::copy_nonoverlapping(
+					crate::double(num as usize),
+					ptr.add(self.from),
+					2
+				);
+			}
 		}
 		else {
 			self.from -= 1;

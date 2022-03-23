@@ -43,7 +43,7 @@ impl Default for NiceU8 {
 
 impl From<u8> for NiceU8 {
 	fn from(num: u8) -> Self {
-		if num >= 100 {
+		if 99 < num {
 			let mut inner = [b'0', b'0', b'0'];
 			unsafe { super::write_u8_3(inner.as_mut_ptr(), usize::from(num)); }
 			Self {
@@ -51,9 +51,15 @@ impl From<u8> for NiceU8 {
 				from: 0,
 			}
 		}
-		else if num >= 10 {
+		else if 9 < num {
 			let mut inner = [b'0', b'0', b'0'];
-			unsafe { super::write_u8_2(inner.as_mut_ptr().add(1), usize::from(num)); }
+			unsafe {
+				std::ptr::copy_nonoverlapping(
+					crate::double(num as usize),
+					inner.as_mut_ptr().add(1),
+					2
+				);
+			}
 			Self {
 				inner,
 				from: 1,
