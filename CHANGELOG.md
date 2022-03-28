@@ -2,6 +2,14 @@
 
 
 
+## [0.3.3](https://github.com/Blobfolio/dactyl/releases/tag/v0.3.3) - TBD
+
+### Added
+
+* `dactyl::NoHash` (for `HashMap`, `HashSet`)
+
+
+
 ## [0.3.2](https://github.com/Blobfolio/dactyl/releases/tag/v0.3.2) - 2022-03-27
 
 ### Added
