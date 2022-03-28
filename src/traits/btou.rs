@@ -16,7 +16,7 @@ use std::num::{
 /// # Bytes to Unsigned.
 ///
 /// This trait exposes the method `btou` which converts (UTF-8) byte slices to
-/// proper, unsigned numbers. It works just like [`std::str::parse`] and
+/// proper, unsigned numbers. It works just like [`std::str::parse`](https://doc.rust-lang.org/std/primitive.str.html#method.parse) and
 /// `u*::from_str_radix`, but faster, particularly for `u64` and `u128`.
 ///
 /// Leading zeroes are fine, but the method will return `None` if the slice is
@@ -24,7 +24,7 @@ use std::num::{
 /// large for the type.
 ///
 /// Only little endian architectures are optimized; for big endian machines,
-/// this trait just passes through the results of [`std::str::parse`].
+/// this trait just passes through the results of [`std::str::parse`](https://doc.rust-lang.org/std/primitive.str.html#method.parse).
 ///
 /// ## Examples
 ///

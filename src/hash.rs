@@ -11,48 +11,38 @@ use std::hash::{
 
 /// # No-Hash (Passthrough) Hash State.
 ///
-/// This is a generic non-hashing hasher that can be used for [`std::collections::HashMap`]
-/// and [`std::collections::HashSet`] where the key is something that can be
-/// losslessly converted to `u64` (i.e. doesn't need any _hashing_ to get there).
+/// Hashing can be expensive, and is totally unnecessary for most numeric or
+/// pre-hashed types. (You don't need a hash to tell you that `1_u8` is
+/// different than `2_u8`!)
 ///
-/// Why?
+/// `NoHash` is a drop in replacement for the standard library's hasher used in
+/// [`std::collections::HashMap`] and [`std::collections::HashSet`] that lets
+/// the values speak for themselves (e.g. `hash(13_u16) == 13_u64`), bringing a
+/// free performance boost.
 ///
-/// You don't need an expensive hashing function to tell you that `1_u8` is
-/// different from `2_u8`; that's self-evident! The 64-bit hash required by
-/// maps and sets can be done by simply upcasting those `u8`s to `u64`s, which
-/// is exactly what `NoHash` does.
+/// This idea isn't new, but unlike the hashers offered by [`nohash`](https://crates.io/crates/nohash) or [`prehash`](https://crates.io/crates/prehash),
+/// `NoHash` does not limit itself to primitives or require any custom trait
+/// implementations.
 ///
-/// This idea isn't new, but unlike [`nohash`](https://crates.io/crates/nohash) or [`prehash`](https://crates.io/crates/prehash),
-/// this hasher does not limit itself to primitives or hide behind custom
-/// traits. It "just works" for any value that implements [`std::hash::Hash`]
-/// in such a way that it calls one of the type-specific write methods — `write_i8`,
-/// `write_u16`, etc. — _exactly once_.
+/// It "just works" for any type whose [`std::hash::Hash`] implementation writes
+/// a single <= 64-bit integer via one of the following:
+/// * [`std::hash::Hasher::write_i8`]
+/// * [`std::hash::Hasher::write_i16`]
+/// * [`std::hash::Hasher::write_i32`]
+/// * [`std::hash::Hasher::write_i64`]
+/// * [`std::hash::Hasher::write_isize`] (if the target pointer width is <= 64)
+/// * [`std::hash::Hasher::write_u8`]
+/// * [`std::hash::Hasher::write_u16`]
+/// * [`std::hash::Hasher::write_u32`]
+/// * [`std::hash::Hasher::write_u64`]
+/// * [`std::hash::Hasher::write_usize`] (if the target pointer width is <= 64)
 ///
-/// Insofar as the standard library is concerned, the following types meet the
-/// conditions for `NoHash`:
-/// * `i8`
-/// * `i16`
-/// * `i32`
-/// * `i64`
-/// * `isize` (if the target pointer width is <= 64)
-/// * `u8`
-/// * `u16`
-/// * `u32`
-/// * `u64`
-/// * `usize` (if the target pointer width is <= 64)
-/// * All the `NonZero` counterparts of the above
+/// In other words, `NoHash` can always be used for `i8`, `i16`, `i32`, `i64`,
+/// `u8`, `u16`, `u32`, `u64`, all their corresponding `NonZero` wrappers, as
+/// well as any custom types that derive their hashes from one of these types.
 ///
-/// ## Panics
-///
-/// `NoHash` does not support slices, `i128`, or `u128` as they cannot be
-/// losslessly converted to `u64`. If a `Hash` implementation tries to make use
-/// of those write methods, it will panic. On 128-bit platforms, attempts to hash
-/// `isize` or `usize` will likewise result in a panic.
-///
-/// `NoHash` will also panic if a `Hash` implementation writes two or more
-/// values to the hasher — as a tuple would, for example — but only for `debug`
-/// builds. When building in release mode, `NoHash` will simply pass-through
-/// the last value written to it.
+/// `isize` and `usize` will work on most platforms too, just not those with
+/// mythical 128-bit pointer widths.
 ///
 /// ## Examples
 ///
@@ -108,6 +98,18 @@ use std::hash::{
 /// assert!(set.insert(Person { name: "Joan".to_owned(), id: 6 }));
 /// assert!(! set.insert(Person { name: "Jack".to_owned(), id: 6 })); // Duplicate ID.
 /// ```
+///
+/// ## Panics
+///
+/// `NoHash` does **not** support slices, `i128`, or `u128` as they cannot be
+/// losslessly converted to `u64`. If a `Hash` implementation tries to make use
+/// of those write methods, it will panic. On 128-bit platforms, attempts to hash
+/// `isize` or `usize` will likewise result in a panic.
+///
+/// `NoHash` will also panic if a `Hash` implementation writes two or more
+/// values to the hasher — as a tuple would, for example — but only for `debug`
+/// builds. When building in release mode, `NoHash` will simply pass-through
+/// the last integer written to it, ignoring everything else.
 pub type NoHash = BuildHasherDefault<NoHasher>;
 
 
