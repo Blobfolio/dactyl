@@ -202,65 +202,48 @@ mod tests {
 		assert_eq!(set.insert(0), false); // Should already be there.
 	}
 
+	macro_rules! sanity_check_signed {
+		($ty:ty) => (
+			let mut set: HashSet<$ty, NoHash> = HashSet::default();
+			assert_eq!(set.insert(<$ty>::MIN), true);
+			assert_eq!(set.insert(-2), true);
+			assert_eq!(set.insert(-1), true);
+			assert_eq!(set.insert(0), true);
+			assert_eq!(set.insert(1), true);
+			assert_eq!(set.insert(2), true);
+			assert_eq!(set.insert(<$ty>::MAX), true);
+			assert_eq!(set.insert(0), false); // Should already be there.
+		);
+	}
+
+	macro_rules! sanity_check_unsigned {
+		($ty:ty) => (
+			let mut set: HashSet<$ty, NoHash> = HashSet::default();
+			assert_eq!(set.insert(0), true);
+			assert_eq!(set.insert(1), true);
+			assert_eq!(set.insert(2), true);
+			assert_eq!(set.insert(<$ty>::MAX), true);
+			assert_eq!(set.insert(0), false); // Should already be there.
+		);
+	}
+
 	#[test]
 	fn t_u32() {
-		let mut set: HashSet<u32, NoHash> = HashSet::default();
-		assert_eq!(set.insert(0), true);
-		assert_eq!(set.insert(1), true);
-		assert_eq!(set.insert(2), true);
-		assert_eq!(set.insert(u32::MAX), true);
-		assert_eq!(set.insert(0), false); // Should already be there.
-
-		let mut set: HashSet<i32, NoHash> = HashSet::default();
-		assert_eq!(set.insert(i32::MIN), true);
-		assert_eq!(set.insert(-2), true);
-		assert_eq!(set.insert(-1), true);
-		assert_eq!(set.insert(0), true);
-		assert_eq!(set.insert(1), true);
-		assert_eq!(set.insert(2), true);
-		assert_eq!(set.insert(i32::MAX), true);
-		assert_eq!(set.insert(0), false); // Should already be there.
+		sanity_check_unsigned!(u32);
+		sanity_check_signed!(i32);
 	}
 
 	#[test]
 	fn t_u64() {
-		let mut set: HashSet<u64, NoHash> = HashSet::default();
-		assert_eq!(set.insert(0), true);
-		assert_eq!(set.insert(1), true);
-		assert_eq!(set.insert(2), true);
-		assert_eq!(set.insert(u64::MAX), true);
-		assert_eq!(set.insert(0), false); // Should already be there.
-
-		let mut set: HashSet<i64, NoHash> = HashSet::default();
-		assert_eq!(set.insert(i64::MIN), true);
-		assert_eq!(set.insert(-2), true);
-		assert_eq!(set.insert(-1), true);
-		assert_eq!(set.insert(0), true);
-		assert_eq!(set.insert(1), true);
-		assert_eq!(set.insert(2), true);
-		assert_eq!(set.insert(i64::MAX), true);
-		assert_eq!(set.insert(0), false); // Should already be there.
+		sanity_check_unsigned!(u64);
+		sanity_check_signed!(i64);
 	}
 
 	#[cfg(any(target_pointer_width = "16", target_pointer_width = "32", target_pointer_width = "64"))]
 	#[test]
 	fn t_usize() {
-		let mut set: HashSet<usize, NoHash> = HashSet::default();
-		assert_eq!(set.insert(0), true);
-		assert_eq!(set.insert(1), true);
-		assert_eq!(set.insert(2), true);
-		assert_eq!(set.insert(usize::MAX), true);
-		assert_eq!(set.insert(0), false); // Should already be there.
-
-		let mut set: HashSet<isize, NoHash> = HashSet::default();
-		assert_eq!(set.insert(isize::MIN), true);
-		assert_eq!(set.insert(-2), true);
-		assert_eq!(set.insert(-1), true);
-		assert_eq!(set.insert(0), true);
-		assert_eq!(set.insert(1), true);
-		assert_eq!(set.insert(2), true);
-		assert_eq!(set.insert(isize::MAX), true);
-		assert_eq!(set.insert(0), false); // Should already be there.
+		sanity_check_unsigned!(usize);
+		sanity_check_signed!(isize);
 	}
 
 	#[test]
@@ -274,6 +257,7 @@ mod tests {
 	#[test]
 	#[should_panic]
 	fn t_double_write() {
+		// In debug mode, attempts to write twice will panic.
 		let mut set: HashSet<(u8, u8), NoHash> = HashSet::default();
 		set.insert((1_u8, 2_u8));
 	}
@@ -281,6 +265,7 @@ mod tests {
 	#[cfg(not(debug_assertions))]
 	#[test]
 	fn t_double_write() {
+		// In non-debug mode, the last integer written is used for hashing.
 		let mut set: HashSet<(u8, u8), NoHash> = HashSet::default();
 		assert!(set.insert((1_u8, 2_u8)));
 		assert!(set.insert((1_u8, 3_u8)));

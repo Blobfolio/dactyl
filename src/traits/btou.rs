@@ -545,21 +545,26 @@ const fn parse16(src: &[u8]) -> Option<u64> {
 mod tests {
 	use super::*;
 
+	macro_rules! sanity_check {
+		($ty:ty) => (
+			assert_eq!(<$ty>::btou(b""), None);
+			assert_eq!(<$ty>::btou(b" 1"), None);
+			assert_eq!(<$ty>::btou(b"1.0"), None);
+			assert_eq!(<$ty>::btou(b"+123"), None);
+			assert_eq!(<$ty>::btou(b"apples"), None);
+
+			assert_eq!(<$ty>::btou(b"0"), Some(0));
+			assert_eq!(<$ty>::btou(b"00"), Some(0));
+			assert_eq!(<$ty>::btou(b"0000"), Some(0));
+			assert_eq!(<$ty>::btou(b"00000000"), Some(0));
+			assert_eq!(<$ty>::btou(b"0000000000000000"), Some(0));
+			assert_eq!(<$ty>::btou(b"000000000000000000000000000000000000000000000000"), Some(0));
+		);
+	}
+
 	#[test]
 	fn t_u8() {
-		// Let's do some simple sanity checks first.
-		assert_eq!(u8::btou(b""), None);
-		assert_eq!(u8::btou(b" 1"), None);
-		assert_eq!(u8::btou(b"1.0"), None);
-		assert_eq!(u8::btou(b"+123"), None);
-		assert_eq!(u8::btou(b"apples"), None);
-
-		assert_eq!(u8::btou(b"0"), Some(0));
-		assert_eq!(u8::btou(b"00"), Some(0));
-		assert_eq!(u8::btou(b"0000"), Some(0));
-		assert_eq!(u8::btou(b"00000000"), Some(0));
-		assert_eq!(u8::btou(b"0000000000000000"), Some(0));
-
+		sanity_check!(u8);
 		assert_eq!(u8::btou(b"0255"), Some(u8::MAX));
 		assert_eq!(u8::btou(b"256"), None);
 
@@ -573,18 +578,7 @@ mod tests {
 
 	#[test]
 	fn t_u16() {
-		// Let's do some simple sanity checks first.
-		assert_eq!(u16::btou(b""), None);
-		assert_eq!(u16::btou(b"1.0"), None);
-		assert_eq!(u16::btou(b"+123"), None);
-		assert_eq!(u16::btou(b"apples"), None);
-
-		assert_eq!(u16::btou(b"0"), Some(0));
-		assert_eq!(u16::btou(b"00"), Some(0));
-		assert_eq!(u16::btou(b"0000"), Some(0));
-		assert_eq!(u16::btou(b"00000000"), Some(0));
-		assert_eq!(u16::btou(b"0000000000000000"), Some(0));
-
+		sanity_check!(u16);
 		assert_eq!(u16::btou(b"065535"), Some(u16::MAX));
 		assert_eq!(u16::btou(b"65536"), None);
 
@@ -598,18 +592,7 @@ mod tests {
 
 	#[test]
 	fn t_u32() {
-		// Let's do some simple boundary/sanity checks first.
-		assert_eq!(u32::btou(b""), None);
-		assert_eq!(u32::btou(b"1.0"), None);
-		assert_eq!(u32::btou(b"+123"), None);
-		assert_eq!(u32::btou(b"apples"), None);
-
-		assert_eq!(u32::btou(b"0"), Some(0));
-		assert_eq!(u32::btou(b"00"), Some(0));
-		assert_eq!(u32::btou(b"0000"), Some(0));
-		assert_eq!(u32::btou(b"00000000"), Some(0));
-		assert_eq!(u32::btou(b"0000000000000000"), Some(0));
-
+		sanity_check!(u32);
 		assert_eq!(u32::btou(b"4294967295"), Some(u32::MAX));
 		assert_eq!(u32::btou(b"04294967295"), Some(u32::MAX));
 		assert_eq!(u32::btou(b"4294967296"), None);
@@ -625,18 +608,7 @@ mod tests {
 
 	#[test]
 	fn t_u64() {
-		// Let's do some simple boundary/sanity checks first.
-		assert_eq!(u64::btou(b""), None);
-		assert_eq!(u64::btou(b"1.0"), None);
-		assert_eq!(u64::btou(b"+123"), None);
-		assert_eq!(u64::btou(b"apples"), None);
-
-		assert_eq!(u64::btou(b"0"), Some(0));
-		assert_eq!(u64::btou(b"00"), Some(0));
-		assert_eq!(u64::btou(b"0000"), Some(0));
-		assert_eq!(u64::btou(b"00000000"), Some(0));
-		assert_eq!(u64::btou(b"0000000000000000"), Some(0));
-
+		sanity_check!(u64);
 		assert_eq!(u64::btou(b"18446744073709551615"), Some(u64::MAX));
 		assert_eq!(u64::btou(b"018446744073709551615"), Some(u64::MAX));
 		assert_eq!(u64::btou(b"18446744073709551616"), None);
@@ -652,18 +624,7 @@ mod tests {
 
 	#[test]
 	fn t_u128() {
-		// Let's do some simple boundary/sanity checks first.
-		assert_eq!(u128::btou(b""), None);
-		assert_eq!(u128::btou(b"1.0"), None);
-		assert_eq!(u128::btou(b"+123"), None);
-		assert_eq!(u128::btou(b"apples"), None);
-
-		assert_eq!(u128::btou(b"0"), Some(0));
-		assert_eq!(u128::btou(b"00"), Some(0));
-		assert_eq!(u128::btou(b"0000"), Some(0));
-		assert_eq!(u128::btou(b"00000000"), Some(0));
-		assert_eq!(u128::btou(b"0000000000000000"), Some(0));
-
+		sanity_check!(u128);
 		assert_eq!(u128::btou(b"340282366920938463463374607431768211455"), Some(u128::MAX));
 		assert_eq!(u128::btou(b"0340282366920938463463374607431768211455"), Some(u128::MAX));
 		assert_eq!(u128::btou(b"340282366920938463463374607431768211456"), None);
@@ -679,18 +640,7 @@ mod tests {
 
 	#[test]
 	fn t_usize() {
-		// Let's do some simple boundary/sanity checks first.
-		assert_eq!(usize::btou(b""), None);
-		assert_eq!(usize::btou(b"1.0"), None);
-		assert_eq!(usize::btou(b"+123"), None);
-		assert_eq!(usize::btou(b"apples"), None);
-
-		assert_eq!(usize::btou(b"0"), Some(0));
-		assert_eq!(usize::btou(b"00"), Some(0));
-		assert_eq!(usize::btou(b"0000"), Some(0));
-		assert_eq!(usize::btou(b"00000000"), Some(0));
-		assert_eq!(usize::btou(b"0000000000000000"), Some(0));
-
+		sanity_check!(usize);
 		assert_eq!(usize::btou(usize::MAX.to_string().as_bytes()), Some(usize::MAX));
 
 		// Usize just wraps the appropriate sized type, but let's check some
