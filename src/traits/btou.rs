@@ -2,6 +2,15 @@
 # Dactyl — Bytes to Unsigned.
 */
 
+use std::num::{
+	NonZeroU8,
+	NonZeroU16,
+	NonZeroU32,
+	NonZeroU64,
+	NonZeroU128,
+	NonZeroUsize,
+};
+
 
 
 /// # Bytes to Unsigned.
@@ -374,6 +383,28 @@ impl BytesToUnsigned for usize {
 }
 
 
+/// # Helper: Non-Zero.
+macro_rules! nonzero {
+	($($outer:ty, $inner:ty),+ $(,)?) => ($(
+		impl BytesToUnsigned for $outer {
+			/// # Bytes to Unsigned.
+			fn btou(src: &[u8]) -> Option<Self> {
+				<$inner>::btou(src).and_then(Self::new)
+			}
+		}
+	)+);
+}
+
+nonzero!(
+	NonZeroU8, u8,
+	NonZeroU16, u16,
+	NonZeroU32, u32,
+	NonZeroU64, u64,
+	NonZeroU128, u128,
+	NonZeroUsize, usize,
+);
+
+
 
 #[cfg(target_endian = "little")]
 /// # Parse One.
@@ -536,6 +567,7 @@ mod tests {
 		for i in 0..=u8::MAX {
 			let s = i.to_string();
 			assert_eq!(u8::btou(s.as_bytes()), Some(i));
+			assert_eq!(NonZeroU8::btou(s.as_bytes()), NonZeroU8::new(i));
 		}
 	}
 
@@ -560,6 +592,7 @@ mod tests {
 		for i in 0..=u16::MAX {
 			let s = i.to_string();
 			assert_eq!(u16::btou(s.as_bytes()), Some(i));
+			assert_eq!(NonZeroU16::btou(s.as_bytes()), NonZeroU16::new(i));
 		}
 	}
 
@@ -586,6 +619,7 @@ mod tests {
 		for i in std::iter::repeat_with(|| rng.u32(..)).take(10_000_000) {
 			let s = i.to_string();
 			assert_eq!(u32::btou(s.as_bytes()), Some(i));
+			assert_eq!(NonZeroU32::btou(s.as_bytes()), NonZeroU32::new(i));
 		}
 	}
 
@@ -612,6 +646,7 @@ mod tests {
 		for i in std::iter::repeat_with(|| rng.u64(..)).take(10_000_000) {
 			let s = i.to_string();
 			assert_eq!(u64::btou(s.as_bytes()), Some(i));
+			assert_eq!(NonZeroU64::btou(s.as_bytes()), NonZeroU64::new(i));
 		}
 	}
 
@@ -638,6 +673,7 @@ mod tests {
 		for i in std::iter::repeat_with(|| rng.u128(..)).take(10_000_000) {
 			let s = i.to_string();
 			assert_eq!(u128::btou(s.as_bytes()), Some(i));
+			assert_eq!(NonZeroU128::btou(s.as_bytes()), NonZeroU128::new(i));
 		}
 	}
 
@@ -663,6 +699,7 @@ mod tests {
 		for i in std::iter::repeat_with(|| rng.usize(..)).take(50_000) {
 			let s = i.to_string();
 			assert_eq!(usize::btou(s.as_bytes()), Some(i));
+			assert_eq!(NonZeroUsize::btou(s.as_bytes()), NonZeroUsize::new(i));
 		}
 	}
 }
