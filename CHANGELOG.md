@@ -2,6 +2,12 @@
 
 
 
+## [0.3.2](https://github.com/Blobfolio/dactyl/releases/tag/v0.3.2) - TBD
+
+* impl `BytesToUnsigned` for `NonZeroU*`
+
+
+
 ## [0.3.1](https://github.com/Blobfolio/dactyl/releases/tag/v0.3.1) - 2022-03-23
 
 ### Changed
