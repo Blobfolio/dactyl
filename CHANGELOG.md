@@ -7,6 +7,7 @@
 ### Added
 
 * `dactyl::NoHash` (for `HashMap`, `HashSet`)
+* `dactyl::traits::BytesToSigned` (slice to signed integer parsing)
 
 
 

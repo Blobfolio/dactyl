@@ -37,6 +37,10 @@ fastrand = "1.7.*"
 num-format = "0.4.*"
 
 [[bench]]
+name = "fn_btoi"
+harness = false
+
+[[bench]]
 name = "fn_btou"
 harness = false
 
