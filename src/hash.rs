@@ -38,11 +38,11 @@ use std::hash::{
 /// * [`write_usize`](std::hash::Hasher::write_usize) (if the target pointer width is <= 64)
 ///
 /// In other words, `NoHash` can always be used for `i8`, `i16`, `i32`, `i64`,
-/// `u8`, `u16`, `u32`, `u64`, all their corresponding `NonZero` wrappers, as
-/// well as any custom types that derive their hashes from one of these types.
+/// `u8`, `u16`, `u32`, `u64`, all their `NonZero` and [`Wrapping`](std::num::Wrapping) counterparts,
+/// and any custom types that derive their hashes from one of these types.
 ///
-/// `isize` and `usize` will work on most platforms too, just not those with
-/// mythical 128-bit pointer widths.
+/// (`isize` and `usize` will work on most platforms too, just not those with
+/// monstrous 128-bit pointer widths.)
 ///
 /// ## Examples
 ///
@@ -180,7 +180,30 @@ impl Hasher for NoHasher {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use std::collections::HashSet;
+	use std::{
+		collections::HashSet,
+		num::{
+			NonZeroU8,
+			Wrapping,
+		},
+	};
+
+	#[test]
+	fn t_nonzero() {
+		// This just verifies that nonzero types hash the way they're supposed
+		// to, i.e. as the underlying type.
+		let mut set: HashSet<NonZeroU8, NoHash> = (1..=u8::MAX).filter_map(NonZeroU8::new).collect();
+		assert_eq!(set.len(), 255);
+		assert_eq!(set.insert(NonZeroU8::new(1).unwrap()), false); // Should already be there.
+	}
+
+	#[test]
+	fn t_wrapping() {
+		// This just verifies that Wrapping hashes its inner value directly.
+		let mut set: HashSet<Wrapping<u8>, NoHash> = (0..=u8::MAX).map(Wrapping).collect();
+		assert_eq!(set.len(), 256);
+		assert_eq!(set.insert(Wrapping(0)), false); // Should already be there.
+	}
 
 	#[test]
 	fn t_u8() {
