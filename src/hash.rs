@@ -16,7 +16,7 @@ use std::hash::{
 /// different than `2_u8`!)
 ///
 /// `NoHash` is a drop in replacement for the standard library's hasher used in
-/// [`std::collections::HashMap`] and [`std::collections::HashSet`] that lets
+/// [`HashMap`](std::collections::HashMap) and [`HashSet`](std::collections::HashSet) that lets
 /// the values speak for themselves (e.g. `hash(13_u16) == 13_u64`), bringing a
 /// free performance boost.
 ///
@@ -26,16 +26,16 @@ use std::hash::{
 ///
 /// It "just works" for any type whose [`std::hash::Hash`] implementation writes
 /// a single <= 64-bit integer via one of the following:
-/// * [`std::hash::Hasher::write_i8`]
-/// * [`std::hash::Hasher::write_i16`]
-/// * [`std::hash::Hasher::write_i32`]
-/// * [`std::hash::Hasher::write_i64`]
-/// * [`std::hash::Hasher::write_isize`] (if the target pointer width is <= 64)
-/// * [`std::hash::Hasher::write_u8`]
-/// * [`std::hash::Hasher::write_u16`]
-/// * [`std::hash::Hasher::write_u32`]
-/// * [`std::hash::Hasher::write_u64`]
-/// * [`std::hash::Hasher::write_usize`] (if the target pointer width is <= 64)
+/// * [`write_i8`](std::hash::Hasher::write_i8)
+/// * [`write_i16`](std::hash::Hasher::write_i16)
+/// * [`write_i32`](std::hash::Hasher::write_i32)
+/// * [`write_i64`](std::hash::Hasher::write_i64)
+/// * [`write_isize`](std::hash::Hasher::write_isize) (if the target pointer width is <= 64)
+/// * [`write_u8`](std::hash::Hasher::write_u8)
+/// * [`write_u16`](std::hash::Hasher::write_u16)
+/// * [`write_u32`](std::hash::Hasher::write_u32)
+/// * [`write_u64`](std::hash::Hasher::write_u64)
+/// * [`write_usize`](std::hash::Hasher::write_usize) (if the target pointer width is <= 64)
 ///
 /// In other words, `NoHash` can always be used for `i8`, `i16`, `i32`, `i64`,
 /// `u8`, `u16`, `u32`, `u64`, all their corresponding `NonZero` wrappers, as
