@@ -26,6 +26,8 @@ use std::num::{
 /// Only little endian architectures are optimized; for big endian machines,
 /// this trait just passes through the results of [`str::parse`].
 ///
+/// For signed integer parsing, see [`BytesToSigned`](crate::traits::BytesToSigned);
+///
 /// ## Examples
 ///
 /// ```
