@@ -1,5 +1,5 @@
 /*!
-# Benchmark: `dactyl::btou::parse_u64`
+# Benchmark: `dactyl::traits::BytesToUnsigned`
 */
 
 use brunch::{
@@ -12,13 +12,13 @@ use std::time::Duration;
 
 
 benches!(
-	Bench::new("u8", "btou(128)")
+	Bench::new("u8", "btou(255)")
 		.timed(Duration::from_secs(1))
-		.with(|| u8::btou(b"128")),
+		.with(|| u8::btou(b"255")),
 
-	Bench::new("std::str", "parse::<u8>(65536)")
+	Bench::new("std::str", "parse::<u8>(255)")
 		.timed(Duration::from_secs(1))
-		.with(|| "65536".parse::<u8>()),
+		.with(|| "255".parse::<u8>()),
 
 	Bench::spacer(),
 
