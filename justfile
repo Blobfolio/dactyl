@@ -32,13 +32,11 @@ bench BENCH="":
 	if [ -z "{{ BENCH }}" ]; then
 		cargo bench \
 			--benches \
-			--all-features \
 			--target x86_64-unknown-linux-gnu \
 			--target-dir "{{ cargo_dir }}"
 	else
 		cargo bench \
 			--bench "{{ BENCH }}" \
-			--all-features \
 			--target x86_64-unknown-linux-gnu \
 			--target-dir "{{ cargo_dir }}"
 	fi
@@ -51,7 +49,6 @@ bench BENCH="":
 	cargo check \
 		--release \
 		--target x86_64-unknown-linux-gnu \
-		--all-features \
 		--target-dir "{{ cargo_dir }}"
 
 
@@ -72,7 +69,6 @@ bench BENCH="":
 	clear
 	cargo clippy \
 		--release \
-		--all-features \
 		--target x86_64-unknown-linux-gnu \
 		--target-dir "{{ cargo_dir }}"
 
