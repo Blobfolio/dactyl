@@ -1,6 +1,6 @@
 [package]
 name = "dactyl"
-version = "0.3.3"
+version = "0.3.4"
 authors = ["Blobfolio, LLC. <hello@blobfolio.com>"]
 edition = "2021"
 rust-version = "1.56"
@@ -28,11 +28,13 @@ bash-dir = "./"
 man-dir = "./"
 credits-dir = "./"
 
-[dependencies]
-num-traits = "0.2.*"
+[dependencies.num-traits]
+version = "0.2.*"
+default-features = false
+features = [ "std", "i128" ]
 
 [dev-dependencies]
-brunch = "0.2.*, >=0.2.4"
+brunch = "0.2.*, >=0.2.5"
 fastrand = "1.7.*"
 num-format = "0.4.*"
 

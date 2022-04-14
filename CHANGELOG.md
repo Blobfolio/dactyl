@@ -2,6 +2,18 @@
 
 
 
+## [0.3.4](https://github.com/Blobfolio/dactyl/releases/tag/v0.3.4) - 2022-04-14
+
+### Changed
+
+* Make unit tests less glacial for `miri`
+
+### Fixed
+
+* Enable `num-traits` crate feature `i128` (needed for some targets)
+
+
+
 ## [0.3.3](https://github.com/Blobfolio/dactyl/releases/tag/v0.3.3) - 2022-03-28
 
 ### Added

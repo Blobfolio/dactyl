@@ -150,6 +150,12 @@ mod tests {
 
 	#[test]
 	fn t_nice_u32() {
+		#[cfg(not(miri))]
+		const SAMPLE_SIZE: usize = 1_000_000;
+
+		#[cfg(miri)]
+		const SAMPLE_SIZE: usize = 1000; // Miri runs way too slow for a million tests.
+
 		// Check the min and max.
 		assert_eq!(NiceU32::from(0).as_str(), "0");
 		assert_eq!(NiceU32::min(), NiceU32::from(0));
@@ -171,7 +177,7 @@ mod tests {
 
 		// Check a subset of everything else.
 		let rng = fastrand::Rng::new();
-		for i in std::iter::repeat_with(|| rng.u32(..)).take(1_000_000) {
+		for i in std::iter::repeat_with(|| rng.u32(..)).take(SAMPLE_SIZE) {
 			assert_eq!(
 				NiceU32::from(i).as_str(),
 				i.to_formatted_string(&Locale::en),

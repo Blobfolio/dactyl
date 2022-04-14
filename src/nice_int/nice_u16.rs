@@ -164,11 +164,23 @@ mod tests {
 	fn t_nice_u16() {
 		assert_eq!(NiceU16::min(), NiceU16::from(0));
 
+		#[cfg(not(miri))]
 		for i in 0..=u16::MAX {
 			assert_eq!(
 				NiceU16::from(i).as_str(),
 				i.to_formatted_string(&Locale::en),
 			);
+		}
+
+		#[cfg(miri)]
+		{
+			let rng = fastrand::Rng::new();
+			for i in std::iter::repeat_with(|| rng.u16(..)).take(1000) {
+				assert_eq!(
+					NiceU16::from(i).as_str(),
+					i.to_formatted_string(&Locale::en),
+				);
+			}
 		}
 
 		// Test the defaults too.

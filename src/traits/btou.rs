@@ -547,6 +547,12 @@ const fn parse16(src: &[u8]) -> Option<u64> {
 mod tests {
 	use super::*;
 
+	#[cfg(not(miri))]
+	const SAMPLE_SIZE: usize = 1_000_000;
+
+	#[cfg(miri)]
+	const SAMPLE_SIZE: usize = 1000; // Miri runs way too slow for a million tests.
+
 	macro_rules! sanity_check {
 		($ty:ty) => (
 			assert_eq!(<$ty>::btou(b""), None);
@@ -585,10 +591,21 @@ mod tests {
 		assert_eq!(u16::btou(b"65536"), None);
 
 		// This is small enough we can check every value.
+		#[cfg(not(miri))]
 		for i in 0..=u16::MAX {
 			let s = i.to_string();
 			assert_eq!(u16::btou(s.as_bytes()), Some(i));
 			assert_eq!(NonZeroU16::btou(s.as_bytes()), NonZeroU16::new(i));
+		}
+
+		#[cfg(miri)]
+		{
+			let rng = fastrand::Rng::new();
+			for i in std::iter::repeat_with(|| rng.u16(..)).take(SAMPLE_SIZE) {
+				let s = i.to_string();
+				assert_eq!(u16::btou(s.as_bytes()), Some(i));
+				assert_eq!(NonZeroU16::btou(s.as_bytes()), NonZeroU16::new(i));
+			}
 		}
 	}
 
@@ -601,7 +618,7 @@ mod tests {
 
 		// Now let's check ten million random values and hope they all hit.
 		let rng = fastrand::Rng::new();
-		for i in std::iter::repeat_with(|| rng.u32(..)).take(10_000_000) {
+		for i in std::iter::repeat_with(|| rng.u32(..)).take(SAMPLE_SIZE) {
 			let s = i.to_string();
 			assert_eq!(u32::btou(s.as_bytes()), Some(i));
 			assert_eq!(NonZeroU32::btou(s.as_bytes()), NonZeroU32::new(i));
@@ -617,7 +634,7 @@ mod tests {
 
 		// Now let's check ten million random values and hope they all hit.
 		let rng = fastrand::Rng::new();
-		for i in std::iter::repeat_with(|| rng.u64(..)).take(10_000_000) {
+		for i in std::iter::repeat_with(|| rng.u64(..)).take(SAMPLE_SIZE) {
 			let s = i.to_string();
 			assert_eq!(u64::btou(s.as_bytes()), Some(i));
 			assert_eq!(NonZeroU64::btou(s.as_bytes()), NonZeroU64::new(i));
@@ -633,7 +650,7 @@ mod tests {
 
 		// Now let's check ten million random values and hope they all hit.
 		let rng = fastrand::Rng::new();
-		for i in std::iter::repeat_with(|| rng.u128(..)).take(10_000_000) {
+		for i in std::iter::repeat_with(|| rng.u128(..)).take(SAMPLE_SIZE) {
 			let s = i.to_string();
 			assert_eq!(u128::btou(s.as_bytes()), Some(i));
 			assert_eq!(NonZeroU128::btou(s.as_bytes()), NonZeroU128::new(i));
@@ -648,7 +665,7 @@ mod tests {
 		// Usize just wraps the appropriate sized type, but let's check some
 		// random values anyway.
 		let rng = fastrand::Rng::new();
-		for i in std::iter::repeat_with(|| rng.usize(..)).take(50_000) {
+		for i in std::iter::repeat_with(|| rng.usize(..)).take(SAMPLE_SIZE.min(50_000)) {
 			let s = i.to_string();
 			assert_eq!(usize::btou(s.as_bytes()), Some(i));
 			assert_eq!(NonZeroUsize::btou(s.as_bytes()), NonZeroUsize::new(i));
