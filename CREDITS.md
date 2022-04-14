@@ -1,7 +1,7 @@
 # Project Dependencies
     Package:   dactyl
-    Version:   0.3.3
-    Generated: 2022-03-29 04:51:37 UTC
+    Version:   0.3.4
+    Generated: 2022-04-14 18:29:19 UTC
 
 | Package | Version | Author(s) | License |
 | ---- | ---- | ---- | ---- |
