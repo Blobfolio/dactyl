@@ -163,6 +163,12 @@ mod tests {
 
 	#[test]
 	fn t_nice_u64() {
+		#[cfg(not(miri))]
+		const SAMPLE_SIZE: usize = 1_000_000;
+
+		#[cfg(miri)]
+		const SAMPLE_SIZE: usize = 1000; // Miri runs way too slow for a million tests.
+
 		// Check the min and max.
 		assert_eq!(NiceU64::from(0_u64).as_str(), "0");
 		assert_eq!(NiceU64::min(), NiceU64::from(0_u64));
@@ -185,7 +191,7 @@ mod tests {
 
 		// Check a subset of everything else.
 		let rng = fastrand::Rng::new();
-		for i in std::iter::repeat_with(|| rng.u64(..)).take(1_000_000) {
+		for i in std::iter::repeat_with(|| rng.u64(..)).take(SAMPLE_SIZE) {
 			assert_eq!(
 				NiceU64::from(i).as_str(),
 				i.to_formatted_string(&Locale::en),

@@ -216,6 +216,7 @@ mod tests {
 		assert_eq!(set.insert(0), false); // Should already be there.
 	}
 
+	#[cfg(not(miri))]
 	#[test]
 	fn t_u16() {
 		let mut set: HashSet<u16, NoHash> = (0..=u16::MAX).collect();
@@ -250,6 +251,13 @@ mod tests {
 			assert_eq!(set.insert(<$ty>::MAX), true);
 			assert_eq!(set.insert(0), false); // Should already be there.
 		);
+	}
+
+	#[cfg(miri)]
+	#[test]
+	fn t_u16() {
+		sanity_check_unsigned!(u16);
+		sanity_check_signed!(i16);
 	}
 
 	#[test]

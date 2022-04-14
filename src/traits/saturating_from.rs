@@ -285,6 +285,12 @@ mod tests {
 	use super::*;
 	use num_traits::cast::AsPrimitive;
 
+	#[cfg(not(miri))]
+	const SAMPLE_SIZE: usize = 1_000_000;
+
+	#[cfg(miri)]
+	const SAMPLE_SIZE: usize = 1000; // Miri runs way too slow for a million tests.
+
 	/// # Test Flooring.
 	macro_rules! test_impl {
 		($type:ty, ($($val:expr),+)) => (
@@ -329,22 +335,16 @@ mod tests {
 	/// This computes casting for a subset of the total type range; this allows
 	/// testing large types to finish in a reasonable amount of time.
 	macro_rules! test_impl_subrange {
-		($type:ty, ($($from:ty),+)) => {
-			let mut i = <$type>::MIN;
-			let mut step: $type = 0;
-			while <$type>::MAX - i > step {
-				i += step;
+		($type:ty:$fn:ident, ($($from:ty),+)) => {
+			let rng = fastrand::Rng::new();
+			for i in std::iter::repeat_with(|| rng.$fn(..)).take(SAMPLE_SIZE) {
 				$(
-					// Make sure the value can be losslessly represented in the
-					// from type or the exercise is moot. This is really only
-					// necessary for floats.
 					let test: $from = i.as_();
 					let test2: $type = test.as_();
 					if test2 == i {
 						assert_eq!(<$type>::saturating_from(test), i);
 					}
 				)+
-				step += 1;
 			}
 		};
 	}
@@ -398,14 +398,14 @@ mod tests {
 
 	#[test]
 	fn t_u32_from() {
-		test_impl_subrange!(u32, (u64, u128, f32, f64));
+		test_impl_subrange!(u32:u32, (u64, u128, f32, f64));
 		test_impl_max!(u32, (u64, u128));
 		test_impl_max!(u32); // This tests all float::INFINITY.
 	}
 
 	#[test]
 	fn t_u64_from() {
-		test_impl_subrange!(u64, (u128));
+		test_impl_subrange!(u64:u64, (u128));
 		test_impl_max!(u64, (u128));
 		test_impl_max!(u64); // This tests all float::INFINITY.
 	}
@@ -414,7 +414,7 @@ mod tests {
 	#[ignore]
 	// Float testing is comparatively slow at 64 bits.
 	fn t_u64_from_float() {
-		test_impl_subrange!(u64, (f32, f64));
+		test_impl_subrange!(u64:u64, (f32, f64));
 	}
 
 	#[cfg(target_pointer_width = "16")]
@@ -430,7 +430,7 @@ mod tests {
 	#[test]
 	fn t_usize_from() {
 		assert_eq!(std::mem::size_of::<u32>(), std::mem::size_of::<usize>());
-		test_impl_subrange!(usize, (u32, u64, u128, f32, f64));
+		test_impl_subrange!(usize:usize, (u32, u64, u128, f32, f64));
 		test_impl_max!(usize, (u32, u64, u128));
 		test_impl_max!(u32, (usize));
 		test_impl_max!(usize); // This tests all float::INFINITY.
@@ -440,7 +440,7 @@ mod tests {
 	#[test]
 	fn t_usize_from() {
 		assert_eq!(std::mem::size_of::<u64>(), std::mem::size_of::<usize>());
-		test_impl_subrange!(usize, (u64, u128));
+		test_impl_subrange!(usize:usize, (u64, u128));
 		assert_eq!(u32::saturating_from(usize::MAX), u32::MAX);
 		test_impl_max!(u64, (usize));
 		test_impl_max!(usize); // This tests all float::INFINITY.
@@ -450,7 +450,7 @@ mod tests {
 	#[test]
 	fn t_usize_from() {
 		assert_eq!(std::mem::size_of::<u128>(), std::mem::size_of::<usize>());
-		test_impl_subrange!(usize, (u128));
+		test_impl_subrange!(usize:usize, (u128));
 		assert_eq!(u32::saturating_from(usize::MAX), u32::MAX);
 		assert_eq!(u64::saturating_from(usize::MAX), u64::MAX);
 		test_impl_max!(u128, (usize));
@@ -463,6 +463,6 @@ mod tests {
 	#[ignore]
 	// Float testing is comparatively slow at 64+ bits.
 	fn t_usize_from_float() {
-		test_impl_subrange!(usize, (f32, f64));
+		test_impl_subrange!(usize:usize, (f32, f64));
 	}
 }
