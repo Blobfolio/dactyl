@@ -419,6 +419,7 @@ const fn parse1(byte: u8) -> Option<u8> {
 }
 
 #[cfg(target_endian = "little")]
+#[allow(unsafe_code)]
 /// # Parse Two.
 ///
 /// This parses two digits as a single `u16`, reducing the number of
@@ -440,6 +441,7 @@ const fn parse2(src: &[u8]) -> Option<u16> {
 
 #[cfg(target_endian = "little")]
 #[allow(clippy::cast_possible_truncation)] // Four digits always fit `u16`.
+#[allow(unsafe_code)]
 /// # Parse Four.
 ///
 /// This parses four digits as a single `u32`, reducing the number of
@@ -471,6 +473,7 @@ const fn parse4(src: &[u8]) -> Option<u16> {
 
 #[cfg(target_endian = "little")]
 #[allow(clippy::cast_possible_truncation)] // Eight digits always fit `u32`.
+#[allow(unsafe_code)]
 /// # Parse Eight.
 ///
 /// This parses eight digits as a single `u64`, reducing the number of
@@ -504,6 +507,7 @@ const fn parse8(src: &[u8]) -> Option<u32> {
 
 #[cfg(target_endian = "little")]
 #[allow(clippy::cast_possible_truncation)] // Sixteen digits always fit `u16`.
+#[allow(unsafe_code)]
 /// # Parse Sixteen.
 ///
 /// This parses sixteen digits as a single `u128`, reducing the number of

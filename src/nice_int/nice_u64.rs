@@ -116,6 +116,7 @@ impl NiceU64 {
 	}
 
 	#[allow(clippy::cast_possible_truncation)] // Usize casting never exceeds 100; u8 casting never exceeds 9.
+	#[allow(unsafe_code)]
 	/// # Parse.
 	///
 	/// This handles the actual crunching.

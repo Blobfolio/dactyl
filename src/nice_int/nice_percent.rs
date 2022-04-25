@@ -59,6 +59,7 @@ impl Default for NicePercent {
 macro_rules! impl_from {
 	($type:ty) => {
 		impl From<$type> for NicePercent {
+			#[allow(unsafe_code)]
 			fn from(mut num: $type) -> Self {
 				// Shortcut for overflowing values.
 				if num <= 0.0 || ! num.is_normal() {

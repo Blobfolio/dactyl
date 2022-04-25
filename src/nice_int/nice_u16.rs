@@ -103,6 +103,7 @@ impl NiceU16 {
 	}
 
 	#[allow(clippy::cast_possible_truncation)] // One digit always fits u8.
+	#[allow(unsafe_code)]
 	/// # Parse.
 	///
 	/// This handles the actual crunching.

@@ -238,6 +238,7 @@ impl NiceElapsed {
 	/// Return the nice value as a byte string.
 	pub fn as_bytes(&self) -> &[u8] { &self.inner[0..self.len] }
 
+	#[allow(unsafe_code)]
 	#[must_use]
 	#[inline]
 	/// # As Str.
@@ -251,6 +252,7 @@ impl NiceElapsed {
 
 impl NiceElapsed {
 	#[allow(clippy::cast_sign_loss)] // The value is >= 0.
+	#[allow(unsafe_code)]
 	/// # From HMS.
 	///
 	/// Build with hours, minutes, and seconds.
@@ -292,6 +294,7 @@ impl NiceElapsed {
 	}
 
 	#[allow(clippy::cast_sign_loss)] // The value is >= 0.
+	#[allow(unsafe_code)]
 	/// # From HMS.ms.
 	///
 	/// Build with hours, minutes, seconds, and milliseconds (hundredths).
@@ -368,6 +371,7 @@ impl ElapsedKind {
 		}
 	}
 
+	#[allow(unsafe_code)]
 	/// # Write Label.
 	fn write_label(self, dst: *mut u8, singular: bool) -> *mut u8 {
 		let (mut len, label) = self.label();
@@ -379,6 +383,7 @@ impl ElapsedKind {
 		}
 	}
 
+	#[allow(unsafe_code)]
 	/// # Write Joiner.
 	///
 	/// This will add commas and/or ands as necessary.
@@ -415,6 +420,7 @@ impl ElapsedKind {
 
 
 
+#[allow(unsafe_code)]
 /// # Write u8.
 ///
 /// This will quickly write a `u8` number as a UTF-8 byte slice to the provided

@@ -43,6 +43,7 @@ impl Default for NiceU8 {
 
 impl From<u8> for NiceU8 {
 	#[allow(clippy::cast_lossless)] // Seems less performant.
+	#[allow(unsafe_code)]
 	fn from(num: u8) -> Self {
 		if 99 < num {
 			let mut inner = [b'0', b'0', b'0'];
@@ -126,6 +127,7 @@ impl NiceU8 {
 	/// ```
 	pub const fn as_bytes3(&self) -> &[u8] { &self.inner }
 
+	#[allow(unsafe_code)]
 	#[must_use]
 	#[inline]
 	/// # Double Digit Str.
@@ -146,6 +148,7 @@ impl NiceU8 {
 		unsafe { std::str::from_utf8_unchecked(self.as_bytes2()) }
 	}
 
+	#[allow(unsafe_code)]
 	#[must_use]
 	#[inline]
 	/// # Triple Digit Str.

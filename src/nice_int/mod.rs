@@ -73,6 +73,7 @@ macro_rules! impl_nice_int {
 			/// Return the value as a byte string.
 			pub fn as_bytes(&self) -> &[u8] { &self.inner[self.from..] }
 
+			#[allow(unsafe_code)]
 			#[must_use]
 			#[inline]
 			/// # As Str.
@@ -83,6 +84,7 @@ macro_rules! impl_nice_int {
 				unsafe { ::std::str::from_utf8_unchecked(self.as_bytes()) }
 			}
 
+			#[allow(unsafe_code)]
 			#[must_use]
 			/// # As String.
 			///
@@ -131,6 +133,7 @@ pub(self) use {
 
 
 #[allow(clippy::cast_possible_truncation)] // One digit always fits u8.
+#[allow(unsafe_code)]
 /// # Write `u8` x 3
 ///
 /// ## Safety

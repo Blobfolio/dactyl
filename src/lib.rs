@@ -28,25 +28,29 @@ assert_eq!(NiceU16::from(11234_u16).as_bytes(), b"11,234");
 This crate also contains two "in development" structs — [`NicePercent`] and [`NiceElapsed`] — that can be useful for formatting percentages and durations, however their implementations are subject to change and they might eventually be split off into their own crates.
 */
 
-#![warn(clippy::filetype_is_file)]
-#![warn(clippy::integer_division)]
-#![warn(clippy::needless_borrow)]
-#![warn(clippy::nursery)]
-#![warn(clippy::pedantic)]
-#![warn(clippy::perf)]
-#![warn(clippy::suboptimal_flops)]
-#![warn(clippy::unneeded_field_pattern)]
-#![warn(macro_use_extern_crate)]
-#![warn(missing_copy_implementations)]
-#![warn(missing_debug_implementations)]
-#![warn(missing_docs)]
-#![warn(non_ascii_idents)]
-#![warn(trivial_casts)]
-#![warn(trivial_numeric_casts)]
-#![warn(unreachable_pub)]
-#![warn(unused_crate_dependencies)]
-#![warn(unused_extern_crates)]
-#![warn(unused_import_braces)]
+#![deny(unsafe_code)]
+
+#![warn(
+	clippy::filetype_is_file,
+	clippy::integer_division,
+	clippy::needless_borrow,
+	clippy::nursery,
+	clippy::pedantic,
+	clippy::perf,
+	clippy::suboptimal_flops,
+	clippy::unneeded_field_pattern,
+	macro_use_extern_crate,
+	missing_copy_implementations,
+	missing_debug_implementations,
+	missing_docs,
+	non_ascii_idents,
+	trivial_casts,
+	trivial_numeric_casts,
+	unreachable_pub,
+	unused_crate_dependencies,
+	unused_extern_crates,
+	unused_import_braces,
+)]
 
 #![allow(clippy::module_name_repetitions)] // This is fine.
 
@@ -98,6 +102,7 @@ static DOUBLE: &[u8; 200] = b"\
 	6061626364656667686970717273747576777879\
 	8081828384858687888990919293949596979899";
 
+#[allow(unsafe_code)]
 #[inline]
 /// # Double Pointer.
 ///
@@ -143,6 +148,7 @@ where T: AsPrimitive<f64> {
 	}
 }
 
+#[allow(unsafe_code)]
 /// # Write u8.
 ///
 /// This will quickly write a `u8` number as a UTF-8 byte slice to the provided
@@ -166,6 +172,7 @@ pub unsafe fn write_u8(buf: *mut u8, num: u8) {
 	}
 }
 
+#[allow(unsafe_code)]
 /// # Write Time.
 ///
 /// This writes HH:MM:SS to the provided pointer.
@@ -203,6 +210,7 @@ mod tests {
 		assert_eq!(int_div_float(4_u8, 8_u8), Some(0.5));
 	}
 
+	#[allow(unsafe_code)]
 	#[test]
 	fn t_write_u8() {
 		for i in 0..10 {
@@ -230,6 +238,7 @@ mod tests {
 		}
 	}
 
+	#[allow(unsafe_code)]
 	#[test]
 	fn t_write_time() {
 		let mut buf = [0_u8; 8];
