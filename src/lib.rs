@@ -57,7 +57,6 @@ This crate also contains two "in development" structs — [`NicePercent`] and [`
 
 
 mod hash;
-pub(crate) mod macros;
 mod nice_elapsed;
 mod nice_int;
 pub mod traits;
@@ -71,6 +70,10 @@ pub use nice_int::{
 	nice_u64::NiceU64,
 	nice_percent::NicePercent,
 };
+
+#[doc(hidden)]
+pub use nice_int::NiceWrapper;
+
 use num_traits::cast::AsPrimitive;
 
 

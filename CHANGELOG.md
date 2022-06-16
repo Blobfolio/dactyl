@@ -6,10 +6,13 @@
 ### Changed
 
 * The MSRV is now `1.61`
+* The `NiceU*` and `NicePercent` structs are now type aliases
 
 ### Added
 
 * `dactyl::div_mod` (generic)
+* impl `From<NiceU*>` for String
+* impl `From<NiceU*>` for Vec<u8>
 
 ### Removed
 
@@ -19,6 +22,8 @@
 * `dactyl::div_mod_u64`
 * `dactyl::div_mod_u128`
 * `dactyl::div_mod_usize`
+* `NiceU*::as_string` (use `From<NiceU*>` instead)
+* `NiceU*::as_vec` (use `From<NiceU*>` instead)
 
 
 

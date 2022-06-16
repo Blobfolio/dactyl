@@ -12,122 +12,223 @@ pub(super) mod nice_percent;
 
 
 
+use std::{
+	cmp::Ordering,
+	fmt,
+	hash::{
+		Hash,
+		Hasher,
+	},
+	ops::Deref,
+};
+
+
+
+/// # Helper: `AsRef` and `Borrow`.
+macro_rules! as_ref_borrow_cast {
+	($($cast:ident $ty:ty),+ $(,)?) => ($(
+		impl<const S: usize> AsRef<$ty> for NiceWrapper<S> {
+			fn as_ref(&self) -> &$ty { self.$cast() }
+		}
+		impl<const S: usize> ::std::borrow::Borrow<$ty> for NiceWrapper<S> {
+			fn borrow(&self) -> &$ty { self.$cast() }
+		}
+	)+);
+}
+
+
+
 #[doc(hidden)]
-/// # Helper: Generic NiceU* traits.
+#[derive(Debug, Clone, Copy)]
+/// # Nice Unsigned.
 ///
-/// This is not intended for use outside the crate.
-macro_rules! impl_nice_int {
-	($lhs:ty) => (
-		impl ::std::ops::Deref for $lhs {
-			type Target = [u8];
-			#[inline]
-			fn deref(&self) -> &Self::Target { self.as_bytes() }
-		}
+/// This is the master struct for [`NiceU16`](crate::NiceU16), [`NiceU32`](crate::NiceU32), etc.
+/// Don't use this directly. Use the type aliases instead.
+pub struct NiceWrapper<const S: usize> {
+	pub(crate) inner: [u8; S],
+	pub(crate) from: usize,
+}
 
-		$crate::macros::as_ref_borrow_cast!(
-			$lhs:
-				as_bytes [u8],
-				as_str str,
-		);
+as_ref_borrow_cast!(as_bytes [u8], as_str str);
 
-		$crate::macros::display_str!(as_str $lhs);
+impl<const S: usize> Deref for NiceWrapper<S> {
+	type Target = [u8];
+	fn deref(&self) -> &Self::Target { self.as_bytes() }
+}
 
-		impl Eq for $lhs {}
+impl<const S: usize> fmt::Display for NiceWrapper<S> {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		f.write_str(self.as_str())
+	}
+}
 
-		impl ::std::hash::Hash for $lhs {
-			#[inline]
-			fn hash<H: ::std::hash::Hasher>(&self, state: &mut H) {
-				self.as_bytes().hash(state);
+impl<const S: usize> Eq for NiceWrapper<S> {}
+
+impl<const S: usize> From<NiceWrapper<S>> for String {
+	fn from(src: NiceWrapper<S>) -> Self { src.as_str().to_owned() }
+}
+
+impl<const S: usize> From<NiceWrapper<S>> for Vec<u8> {
+	fn from(src: NiceWrapper<S>) -> Self { src.as_bytes().to_vec() }
+}
+
+impl<const S: usize> Hash for NiceWrapper<S> {
+	fn hash<H: Hasher>(&self, state: &mut H) { state.write(self.as_bytes()) }
+}
+
+impl<const S: usize> Ord for NiceWrapper<S> {
+	fn cmp(&self, other: &Self) -> Ordering { self.as_bytes().cmp(other.as_bytes()) }
+}
+
+impl<const S: usize> PartialEq for NiceWrapper<S> {
+	fn eq(&self, other: &Self) -> bool { self.as_bytes() == other.as_bytes() }
+}
+
+impl<const S: usize> PartialOrd for NiceWrapper<S> {
+	fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) }
+}
+
+/// ## Casting.
+///
+/// This section provides methods for converting instances into other types.
+///
+/// Note: this can also be dereferenced to a slice, or `AsRef`ed to a slice or
+/// string slice.
+impl<const S: usize> NiceWrapper<S> {
+	#[must_use]
+	#[inline]
+	/// # As Bytes.
+	///
+	/// Return the value as a byte string.
+	pub fn as_bytes(&self) -> &[u8] { &self.inner[self.from..] }
+
+	#[allow(unsafe_code)]
+	#[must_use]
+	#[inline]
+	/// # As Str.
+	///
+	/// Return the value as a string slice.
+	pub fn as_str(&self) -> &str {
+		// Safety: numbers are valid ASCII.
+		unsafe { std::str::from_utf8_unchecked(self.as_bytes()) }
+	}
+}
+
+
+
+#[doc(hidden)]
+/// # Helper: From<unsigned>
+macro_rules! nice_from {
+	($nice:ty, $uint:ty) => (
+		impl From<$uint> for $nice {
+			fn from(num: $uint) -> Self {
+				let mut out = Self::default();
+				out.parse(num);
+				out
 			}
-		}
-
-		impl Ord for $lhs {
-			fn cmp(&self, other: &Self) -> ::std::cmp::Ordering {
-				self.as_bytes().cmp(other.as_bytes())
-			}
-		}
-
-		impl PartialEq for $lhs {
-			#[inline]
-			fn eq(&self, other: &Self) -> bool { self.as_bytes() == other.as_bytes() }
-		}
-
-		impl PartialOrd for $lhs {
-			#[inline]
-			fn partial_cmp(&self, other: &Self) -> Option<::std::cmp::Ordering> {
-				Some(self.cmp(other))
-			}
-		}
-
-		/// ## Casting.
-		///
-		/// This section provides methods for converting instances into other
-		/// types.
-		///
-		/// Note: this struct can also be dereferenced to `&[u8]`.
-		impl $lhs {
-			#[must_use]
-			#[inline]
-			/// # As Bytes.
-			///
-			/// Return the value as a byte string.
-			pub fn as_bytes(&self) -> &[u8] { &self.inner[self.from..] }
-
-			#[allow(unsafe_code)]
-			#[must_use]
-			#[inline]
-			/// # As Str.
-			///
-			/// Return the value as a string slice.
-			pub fn as_str(&self) -> &str {
-				// Safety: numbers are valid ASCII.
-				unsafe { ::std::str::from_utf8_unchecked(self.as_bytes()) }
-			}
-
-			#[allow(unsafe_code)]
-			#[must_use]
-			/// # As String.
-			///
-			/// Return the value as an owned string. This works just like
-			/// `Self::to_string`, but is twice as fast.
-			///
-			/// Note: this method is allocating.
-			pub fn as_string(&self) -> String {
-				// Safety: numbers are valid ASCII.
-				unsafe { String::from_utf8_unchecked(self.inner[self.from..].to_vec()) }
-			}
-
-			#[must_use]
-			/// # As Vec.
-			///
-			/// Return the value as an owned byte vector.
-			///
-			/// Note: this method is allocating.
-			pub fn as_vec(&self) -> Vec<u8> { self.inner[self.from..].to_vec() }
 		}
 	);
 }
 
 #[doc(hidden)]
-/// # Helper: Generic NiceU*::From<NonZero*>.
-///
-/// This is not intended for use outside the crate.
-macro_rules! impl_nice_nonzero_int {
-	($to:ty: $($from:ty),+ $(,)?) => ($(
-		$crate::macros::from_cast!($to: get $from);
-
-		impl From<Option<$from>> for $to {
-			#[inline]
-			fn from(src: Option<$from>) -> Self {
-				src.map_or_else(Self::min, |s| Self::from(s.get()))
-			}
+/// # Helper: From<nonzero>
+macro_rules! nice_from_nz {
+	($nice:ty, $($nz:ty),+ $(,)?) => ($(
+		impl From<$nz> for $nice {
+			fn from(num: $nz) -> Self { Self::from(num.get()) }
 		}
 	)+);
 }
 
+#[doc(hidden)]
+/// # Helper: From<Option>
+macro_rules! nice_from_opt {
+	($nice:ty) => (
+		/// `None` is treated like zero, otherwise this will simply unwrap the
+		/// inner value and run `From` against that.
+		impl<T> From<Option<T>> for $nice
+		where Self: From<T> {
+			fn from(num: Option<T>) -> Self { num.map_or_else(Self::min, Self::from) }
+		}
+	);
+}
+
+#[doc(hidden)]
+/// # Helper: Default and Min.
+macro_rules! nice_default {
+	($nice:ty, $size:ident) => (
+		#[doc = concat!("The default value is empty. Use [`", stringify!($nice), "::min`] to obtain the equivalent of zero instead.")]
+		impl Default for $nice {
+			fn default() -> Self {
+				Self {
+					inner: inner!(b','),
+					from: $size,
+				}
+			}
+		}
+
+		impl $nice {
+			#[must_use]
+			/// # Min.
+			///
+			/// This is equivalent to zero.
+			pub const fn min() -> Self {
+				Self {
+					inner: inner!(b','),
+					from: $size - 1,
+				}
+			}
+		}
+	);
+}
+
+#[doc(hidden)]
+/// # Helper: Generic Parsing (u32 and larger).
+macro_rules! nice_parse {
+	($nice:ty, $uint:ty) => (
+		impl $nice {
+			#[allow(clippy::cast_possible_truncation)] // Usize casting never exceeds 100; u8 casting never exceeds 9.
+			#[allow(unsafe_code)]
+			/// # Parse.
+			fn parse(&mut self, mut num: $uint) {
+				let ptr = self.inner.as_mut_ptr();
+
+				while 999 < num {
+					let (div, rem) = crate::div_mod(num, 1000);
+					self.from -= 4;
+					unsafe { super::write_u8_3(ptr.add(self.from + 1), rem as u16); }
+					num = div;
+				}
+
+				if 99 < num {
+					self.from -= 3;
+					unsafe { super::write_u8_3(ptr.add(self.from), num as u16); }
+				}
+				else if 9 < num {
+					self.from -= 2;
+					unsafe {
+						std::ptr::copy_nonoverlapping(
+							crate::double(num as usize),
+							ptr.add(self.from),
+							2
+						);
+					}
+				}
+				else {
+					self.from -= 1;
+					unsafe { std::ptr::write(ptr.add(self.from), num as u8 + b'0'); }
+				}
+			}
+		}
+	);
+}
+
 pub(self) use {
-	impl_nice_int,
-	impl_nice_nonzero_int,
+	nice_default,
+	nice_from,
+	nice_from_nz,
+	nice_from_opt,
+	nice_parse,
 };
 
 

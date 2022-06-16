@@ -2,6 +2,7 @@
 # Dactyl: Nice u16.
 */
 
+use crate::NiceWrapper;
 use std::num::NonZeroU16;
 
 
@@ -11,8 +12,6 @@ use std::num::NonZeroU16;
 /// 65535 + one comma = six bytes.
 const SIZE: usize = 6;
 
-
-
 /// # Generate Inner Buffer.
 macro_rules! inner {
 	($sep:expr) => ([b'0', b'0', $sep, b'0', b'0', b'0']);
@@ -20,7 +19,6 @@ macro_rules! inner {
 
 
 
-#[derive(Debug, Clone, Copy)]
 /// `NiceU16` provides a quick way to convert a `u16` into a formatted byte
 /// string for e.g. printing. Commas are added for every thousand.
 ///
@@ -35,42 +33,41 @@ macro_rules! inner {
 ///     "33,231"
 /// );
 /// ```
-pub struct NiceU16 {
-	inner: [u8; SIZE],
-	from: usize,
-}
+///
+/// ## Traits
+///
+/// Rustdoc doesn't do a good job at documenting type alias implementations, but
+/// `NiceU16` has a bunch, including:
+///
+/// * `AsRef<[u8]>`
+/// * `AsRef<str>`
+/// * `Borrow<[u8]>`
+/// * `Borrow<str>`
+/// * `Clone`
+/// * `Copy`
+/// * `Default`
+/// * `Deref<Target=[u8]>`
+/// * `Display`
+/// * `Eq` / `PartialEq`
+/// * `Hash`
+/// * `Ord` / `PartialOrd`
+///
+/// You can instantiate a `NiceU16` with:
+///
+/// * `From<u16>`
+/// * `From<Option<u16>>`
+/// * `From<NonZeroU16>`
+/// * `From<Option<NonZeroU16>>`
+///
+/// When converting from a `None`, the result will be equivalent to zero.
+pub type NiceU16 = NiceWrapper<SIZE>;
 
-impl Default for NiceU16 {
-	#[inline]
-	fn default() -> Self {
-		Self {
-			inner: inner!(b','),
-			from: SIZE,
-		}
-	}
-}
-
-impl From<u16> for NiceU16 {
-	fn from(num: u16) -> Self {
-		let mut out = Self::default();
-		out.parse(num);
-		out
-	}
-}
+super::nice_default!(NiceU16, SIZE);
+super::nice_from!(NiceU16, u16);
+super::nice_from_nz!(NiceU16, NonZeroU16);
+super::nice_from_opt!(NiceU16);
 
 impl NiceU16 {
-	#[must_use]
-	#[inline]
-	/// # Min.
-	///
-	/// This is equivalent to zero.
-	pub const fn min() -> Self {
-		Self {
-			inner: inner!(b','),
-			from: SIZE - 1,
-		}
-	}
-
 	#[must_use]
 	/// # New Instance w/ Custom Separator.
 	///
@@ -152,10 +149,6 @@ impl NiceU16 {
 	}
 }
 
-// A few Macro traits.
-super::impl_nice_nonzero_int!(NiceU16: NonZeroU16);
-super::impl_nice_int!(NiceU16);
-
 
 
 #[cfg(test)]
@@ -190,6 +183,12 @@ mod tests {
 		assert_eq!(NiceU16::default().as_bytes(), <&[u8]>::default());
 		assert_eq!(NiceU16::default().as_str(), "");
 
+		// Test some Option variants.
+		let foo: Option<u16> = None;
+		assert_eq!(NiceU16::min(), NiceU16::from(foo));
+		let foo = Some(13_u16);
+		assert_eq!(NiceU16::from(13_u16), NiceU16::from(foo));
+
 		// Check ordering too.
 		let one = NiceU16::from(10);
 		let two = NiceU16::from(90);
@@ -203,12 +202,18 @@ mod tests {
 		assert_eq!(NiceU16::min(), NiceU16::from(NonZeroU16::new(0)));
 		assert_eq!(NiceU16::from(50_u16), NiceU16::from(NonZeroU16::new(50)));
 		assert_eq!(NiceU16::from(50_u16), NiceU16::from(NonZeroU16::new(50).unwrap()));
+
+		// Test some Option variants.
+		let foo: Option<NonZeroU16> = None;
+		assert_eq!(NiceU16::from(foo), NiceU16::min());
+		let foo = NonZeroU16::new(13);
+		assert_eq!(NiceU16::from(13_u16), NiceU16::from(foo));
 	}
 
 	#[test]
 	fn t_as() {
 		let num = NiceU16::from(1234_u16);
-		assert_eq!(num.as_str(), num.as_string());
-		assert_eq!(num.as_bytes(), num.as_vec());
+		assert_eq!(num.as_str(), String::from(num));
+		assert_eq!(num.as_bytes(), Vec::<u8>::from(num));
 	}
 }

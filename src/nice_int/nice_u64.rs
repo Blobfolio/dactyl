@@ -2,6 +2,7 @@
 # Dactyl: Nice u64.
 */
 
+use crate::NiceWrapper;
 use std::num::{
 	NonZeroU64,
 	NonZeroUsize,
@@ -14,8 +15,6 @@ use std::num::{
 /// 18446744073709551615 + six commas = 26 bytes.
 const SIZE: usize = 26;
 
-
-
 /// # Generate Inner Buffer.
 macro_rules! inner {
 	($sep:expr) => ([b'0', b'0', $sep, b'0', b'0', b'0', $sep, b'0', b'0', b'0', $sep, b'0', b'0', b'0', $sep, b'0', b'0', b'0', $sep, b'0', b'0', b'0', $sep, b'0', b'0', b'0']);
@@ -23,7 +22,6 @@ macro_rules! inner {
 
 
 
-#[derive(Debug, Clone, Copy)]
 /// `NiceU64` provides a quick way to convert a `u64` into a formatted byte
 /// string for e.g. printing. Commas are added for every thousand.
 ///
@@ -38,23 +36,45 @@ macro_rules! inner {
 ///     "33,231"
 /// );
 /// ```
-pub struct NiceU64 {
-	inner: [u8; SIZE],
-	from: usize,
-}
-
-impl Default for NiceU64 {
-	#[inline]
-	fn default() -> Self {
-		Self {
-			inner: inner!(b','),
-			from: SIZE,
-		}
-	}
-}
+///
+/// ## Traits
+///
+/// Rustdoc doesn't do a good job at documenting type alias implementations, but
+/// `NiceU64` has a bunch, including:
+///
+/// * `AsRef<[u8]>`
+/// * `AsRef<str>`
+/// * `Borrow<[u8]>`
+/// * `Borrow<str>`
+/// * `Clone`
+/// * `Copy`
+/// * `Default`
+/// * `Deref<Target=[u8]>`
+/// * `Display`
+/// * `Eq` / `PartialEq`
+/// * `Hash`
+/// * `Ord` / `PartialOrd`
+///
+/// You can instantiate a `NiceU64` with:
+///
+/// * `From<u64>`
+/// * `From<Option<u64>>`
+/// * `From<NonZeroU64>`
+/// * `From<Option<NonZeroU64>>`
+/// * `From<usize>`
+/// * `From<Option<usize>>`
+/// * `From<NonZeroUsize>`
+/// * `From<Option<NonZeroUsize>>`
+///
+/// When converting from a `None`, the result will be equivalent to zero.
+///
+/// For targets with 128-bit pointers, `usize` values cannot exceed [`u64::MAX`]
+/// or a panic will ensue.
+pub type NiceU64 = NiceWrapper<SIZE>;
 
 impl From<usize> for NiceU64 {
 	#[allow(clippy::cast_possible_truncation)] // It fits.
+	#[allow(clippy::only_used_in_recursion)] // Clippy is confused.
 	fn from(num: usize) -> Self {
 		#[cfg(target_pointer_width = "128")]
 		assert!(num <= 18_446_744_073_709_551_615);
@@ -63,27 +83,13 @@ impl From<usize> for NiceU64 {
 	}
 }
 
-impl From<u64> for NiceU64 {
-	fn from(num: u64) -> Self {
-		let mut out = Self::default();
-		out.parse(num);
-		out
-	}
-}
+super::nice_default!(NiceU64, SIZE);
+super::nice_from!(NiceU64, u64);
+super::nice_from_nz!(NiceU64, NonZeroU64, NonZeroUsize);
+super::nice_from_opt!(NiceU64);
+super::nice_parse!(NiceU64, u64);
 
 impl NiceU64 {
-	#[must_use]
-	#[inline]
-	/// # Min.
-	///
-	/// This is equivalent to zero.
-	pub const fn min() -> Self {
-		Self {
-			inner: inner!(b','),
-			from: SIZE - 1,
-		}
-	}
-
 	#[must_use]
 	/// # New Instance w/ Custom Separator.
 	///
@@ -116,46 +122,7 @@ impl NiceU64 {
 		out.parse(num);
 		out
 	}
-
-	#[allow(clippy::cast_possible_truncation)] // Usize casting never exceeds 100; u8 casting never exceeds 9.
-	#[allow(unsafe_code)]
-	/// # Parse.
-	///
-	/// This handles the actual crunching.
-	fn parse(&mut self, mut num: u64) {
-		let ptr = self.inner.as_mut_ptr();
-
-		while 999 < num {
-			let (div, rem) = crate::div_mod(num, 1000);
-			self.from -= 4;
-			unsafe { super::write_u8_3(ptr.add(self.from + 1), rem as u16); }
-			num = div;
-		}
-
-		if 99 < num {
-			self.from -= 3;
-			unsafe { super::write_u8_3(ptr.add(self.from), num as u16); }
-		}
-		else if 9 < num {
-			self.from -= 2;
-			unsafe {
-				std::ptr::copy_nonoverlapping(
-					crate::double(num as usize),
-					ptr.add(self.from),
-					2
-				);
-			}
-		}
-		else {
-			self.from -= 1;
-			unsafe { std::ptr::write(ptr.add(self.from), num as u8 + b'0'); }
-		}
-	}
 }
-
-// A few Macro traits.
-super::impl_nice_nonzero_int!(NiceU64: NonZeroU64, NonZeroUsize);
-super::impl_nice_int!(NiceU64);
 
 
 
@@ -185,6 +152,17 @@ mod tests {
 		assert_eq!(NiceU64::default().as_bytes(), <&[u8]>::default());
 		assert_eq!(NiceU64::default().as_str(), "");
 
+		// Test some Option variants.
+		let foo: Option<u64> = None;
+		assert_eq!(NiceU64::min(), NiceU64::from(foo));
+		let foo = Some(13_u64);
+		assert_eq!(NiceU64::from(13_u64), NiceU64::from(foo));
+
+		let foo: Option<usize> = None;
+		assert_eq!(NiceU64::min(), NiceU64::from(foo));
+		let foo = Some(13_usize);
+		assert_eq!(NiceU64::from(13_usize), NiceU64::from(foo));
+
 		// Check ordering too.
 		let one = NiceU64::from(10_u64);
 		let two = NiceU64::from(90_u64);
@@ -211,12 +189,23 @@ mod tests {
 		assert_eq!(NiceU64::min(), NiceU64::from(NonZeroUsize::new(0)));
 		assert_eq!(NiceU64::from(50_u64), NiceU64::from(NonZeroUsize::new(50)));
 		assert_eq!(NiceU64::from(50_u64), NiceU64::from(NonZeroUsize::new(50).unwrap()));
+
+		// Test some Option variants.
+		let foo: Option<NonZeroU64> = None;
+		assert_eq!(NiceU64::from(foo), NiceU64::min());
+		let foo = NonZeroU64::new(13);
+		assert_eq!(NiceU64::from(13_u64), NiceU64::from(foo));
+
+		let foo: Option<NonZeroUsize> = None;
+		assert_eq!(NiceU64::from(foo), NiceU64::min());
+		let foo = NonZeroUsize::new(13);
+		assert_eq!(NiceU64::from(13_usize), NiceU64::from(foo));
 	}
 
 	#[test]
 	fn t_as() {
 		let num = NiceU64::from(12_345_678_912_345_u64);
-		assert_eq!(num.as_str(), num.as_string());
-		assert_eq!(num.as_bytes(), num.as_vec());
+		assert_eq!(num.as_str(), String::from(num));
+		assert_eq!(num.as_bytes(), Vec::<u8>::from(num));
 	}
 }
