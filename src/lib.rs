@@ -75,25 +75,6 @@ use num_traits::cast::AsPrimitive;
 
 
 
-/// # Helper: Generate Div/Mod Methods.
-macro_rules! div_mod_fn {
-	($($fn:ident $ty:ty),+ $(,)?) => ($(
-		#[allow(clippy::integer_division)]
-		#[must_use]
-		#[inline]
-		/// # Floored Div/Mod.
-		///
-		/// This is a convenience method like `num_integer::div_mod_floor` that
-		/// performs division and mod in one go, returning both results as a
-		/// tuple.
-		pub const fn $fn(lhs: $ty, rhs: $ty) -> ($ty, $ty) {
-			(lhs / rhs, lhs % rhs)
-		}
-	)+);
-}
-
-
-
 /// # Decimals, 00-99.
 static DOUBLE: &[u8; 200] = b"\
 	0001020304050607080910111213141516171819\
@@ -119,15 +100,39 @@ pub(crate) fn double(num: usize) -> *const u8 {
 
 
 
-// Set up div/mod helper methods.
-div_mod_fn!(
-	div_mod_u128 u128,
-	div_mod_u16 u16,
-	div_mod_u32 u32,
-	div_mod_u64 u64,
-	div_mod_u8 u8,
-	div_mod_usize usize,
-);
+#[must_use]
+/// # Combined Division/Remainder.
+///
+/// Perform division and remainder operations in one go, returning both results
+/// as a tuple.
+///
+/// Nothing fancy happens here. This is just more convenient than performing
+/// each operation individually.
+///
+/// ## Examples
+///
+/// ```
+/// // Using the div_mod one-liner.
+/// assert_eq!(
+///     dactyl::div_mod(10_u32, 3_u32),
+///     (3_u32, 1_u32),
+/// );
+///
+/// // Or the same thing, done manually.
+/// assert_eq!(
+///     (10_u32 / 3_u32, 10_u32 % 3_u32),
+///     (3_u32, 1_u32),
+/// );
+/// ```
+///
+/// ## Panics
+///
+/// This will panic if the denominator is set to zero or if the result of
+/// either operation would overflow, like `i8::MIN / -1_i8`.
+pub fn div_mod<T>(e: T, d: T) -> (T, T)
+where T: Copy + std::ops::Div<Output=T> + std::ops::Rem<Output=T> {
+	(e / d, e % d)
+}
 
 #[must_use]
 /// # Integer to Float Division.
@@ -160,7 +165,7 @@ where T: AsPrimitive<f64> {
 /// undefined things will happen.
 pub unsafe fn write_u8(buf: *mut u8, num: u8) {
 	if 99 < num {
-		let (div, rem) = div_mod_u8(num, 100);
+		let (div, rem) = div_mod(num, 100);
 		std::ptr::write(buf, div + b'0');
 		std::ptr::copy_nonoverlapping(double(rem as usize), buf.add(1), 2);
 	}

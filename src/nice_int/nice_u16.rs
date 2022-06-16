@@ -7,6 +7,8 @@ use std::num::NonZeroU16;
 
 
 /// # Total Buffer Size.
+///
+/// 65535 + one comma = six bytes.
 const SIZE: usize = 6;
 
 
@@ -111,7 +113,7 @@ impl NiceU16 {
 		let ptr = self.inner.as_mut_ptr();
 
 		if 999 < num {
-			let (num, rem) = crate::div_mod_u16(num, 1000);
+			let (num, rem) = crate::div_mod(num, 1000);
 			unsafe { super::write_u8_3(ptr.add(3), rem); }
 
 			if 9 < num {

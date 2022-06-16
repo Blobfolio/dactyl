@@ -1,6 +1,26 @@
 # Changelog
 
 
+## [0.4.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.4.0) - TBD
+
+### Changed
+
+* The MSRV is now `1.61`
+
+### Added
+
+* `dactyl::div_mod` (generic)
+
+### Removed
+
+* `dactyl::div_mod_u8` (use the new generic version instead)
+* `dactyl::div_mod_u16`
+* `dactyl::div_mod_u32`
+* `dactyl::div_mod_u64`
+* `dactyl::div_mod_u128`
+* `dactyl::div_mod_usize`
+
+
 
 ## [0.3.4](https://github.com/Blobfolio/dactyl/releases/tag/v0.3.4) - 2022-04-14
 

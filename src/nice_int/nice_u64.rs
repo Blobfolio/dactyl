@@ -10,6 +10,8 @@ use std::num::{
 
 
 /// # Total Buffer Size.
+///
+/// 18446744073709551615 + six commas = 26 bytes.
 const SIZE: usize = 26;
 
 
@@ -124,7 +126,7 @@ impl NiceU64 {
 		let ptr = self.inner.as_mut_ptr();
 
 		while 999 < num {
-			let (div, rem) = crate::div_mod_u64(num, 1000);
+			let (div, rem) = crate::div_mod(num, 1000);
 			self.from -= 4;
 			unsafe { super::write_u8_3(ptr.add(self.from + 1), rem as u16); }
 			num = div;

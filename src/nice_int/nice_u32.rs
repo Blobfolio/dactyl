@@ -7,6 +7,8 @@ use std::num::NonZeroU32;
 
 
 /// # Total Buffer Size.
+///
+/// 4294967295 + three commas = thirteen bytes.
 const SIZE: usize = 13;
 
 
@@ -111,7 +113,7 @@ impl NiceU32 {
 		let ptr = self.inner.as_mut_ptr();
 
 		while 999 < num {
-			let (div, rem) = crate::div_mod_u32(num, 1000);
+			let (div, rem) = crate::div_mod(num, 1000);
 			self.from -= 4;
 			unsafe { super::write_u8_3(ptr.add(self.from + 1), rem as u16); }
 			num = div;

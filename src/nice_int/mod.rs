@@ -141,7 +141,7 @@ pub(self) use {
 /// The destination pointer must have at least 3 bytes free or undefined
 /// things may happen!
 unsafe fn write_u8_3(buf: *mut u8, num: u16) {
-	let (div, rem) = crate::div_mod_u16(num, 100);
+	let (div, rem) = crate::div_mod(num, 100);
 	std::ptr::write(buf, div as u8 + b'0');
 	std::ptr::copy_nonoverlapping(crate::double(rem as usize), buf.add(1), 2);
 }
