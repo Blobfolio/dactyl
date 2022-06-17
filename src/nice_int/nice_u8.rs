@@ -60,16 +60,6 @@ const ZERO: [u8; SIZE] = [b'0', b'0', b'0'];
 /// When converting from a `None`, the result will be equivalent to zero.
 pub type NiceU8 = NiceWrapper<SIZE>;
 
-impl Default for NiceU8 {
-	#[inline]
-	fn default() -> Self {
-		Self {
-			inner: ZERO,
-			from: SIZE,
-		}
-	}
-}
-
 impl From<u8> for NiceU8 {
 	#[allow(clippy::cast_lossless)] // Seems less performant.
 	#[allow(unsafe_code)]
@@ -105,22 +95,11 @@ impl From<u8> for NiceU8 {
 	}
 }
 
+super::nice_default!(NiceU8, ZERO, SIZE);
 super::nice_from_nz!(NiceU8, NonZeroU8);
 super::nice_from_opt!(NiceU8);
 
 impl NiceU8 {
-	#[must_use]
-	#[inline]
-	/// # Min.
-	///
-	/// This is equivalent to zero.
-	pub const fn min() -> Self {
-		Self {
-			inner: ZERO,
-			from: SIZE - 1,
-		}
-	}
-
 	#[must_use]
 	#[inline]
 	/// # Double Digit Bytes.
@@ -217,8 +196,8 @@ mod tests {
 		}
 
 		// Test the defaults too.
-		assert_eq!(NiceU8::default().as_bytes(), <&[u8]>::default());
-		assert_eq!(NiceU8::default().as_str(), "");
+		assert_eq!(NiceU8::empty().as_bytes(), <&[u8]>::default());
+		assert_eq!(NiceU8::empty().as_str(), "");
 
 		// Test some Option variants.
 		let foo: Option<u8> = None;
@@ -258,7 +237,7 @@ mod tests {
 		}
 
 		// Test the default.
-		assert_eq!(NiceU8::default().as_str2(), "00");
+		assert_eq!(NiceU8::empty().as_str2(), "00");
 	}
 
 	#[test]
@@ -272,7 +251,7 @@ mod tests {
 		}
 
 		// Test the default.
-		assert_eq!(NiceU8::default().as_str3(), "000");
+		assert_eq!(NiceU8::empty().as_str3(), "000");
 	}
 
 	#[test]

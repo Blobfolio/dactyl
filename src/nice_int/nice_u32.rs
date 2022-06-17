@@ -62,7 +62,7 @@ macro_rules! inner {
 /// When converting from a `None`, the result will be equivalent to zero.
 pub type NiceU32 = NiceWrapper<SIZE>;
 
-super::nice_default!(NiceU32, SIZE);
+super::nice_default!(NiceU32, inner!(b','), SIZE);
 super::nice_from!(NiceU32, u32);
 super::nice_from_nz!(NiceU32, NonZeroU32);
 super::nice_from_opt!(NiceU32);
@@ -133,8 +133,8 @@ mod tests {
 		assert_eq!(NiceU32::from(13_u32), NiceU32::from(foo));
 
 		// Test the defaults too.
-		assert_eq!(NiceU32::default().as_bytes(), <&[u8]>::default());
-		assert_eq!(NiceU32::default().as_str(), "");
+		assert_eq!(NiceU32::empty().as_bytes(), <&[u8]>::default());
+		assert_eq!(NiceU32::empty().as_str(), "");
 
 		// Check ordering too.
 		let one = NiceU32::from(10);

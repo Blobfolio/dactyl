@@ -61,13 +61,7 @@ const ZERO: [u8; SIZE] = [b'0', b'0', b'0', b'.', b'0', b'0', b'%'];
 pub type NicePercent = NiceWrapper<SIZE>;
 
 impl Default for NicePercent {
-	#[inline]
-	fn default() -> Self {
-		Self {
-			inner: ZERO,
-			from: SIZE,
-		}
-	}
+	fn default() -> Self { Self::min() }
 }
 
 /// # Helper: From

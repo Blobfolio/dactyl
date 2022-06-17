@@ -7,6 +7,7 @@
 
 * The MSRV is now `1.61`
 * The `NiceU*` and `NicePercent` structs are now type aliases
+* `NiceU*::default` is now the equivalent of `From<0>` instead of empty
 
 ### Added
 

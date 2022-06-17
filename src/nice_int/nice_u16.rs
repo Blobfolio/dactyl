@@ -62,7 +62,7 @@ macro_rules! inner {
 /// When converting from a `None`, the result will be equivalent to zero.
 pub type NiceU16 = NiceWrapper<SIZE>;
 
-super::nice_default!(NiceU16, SIZE);
+super::nice_default!(NiceU16, inner!(b','), SIZE);
 super::nice_from!(NiceU16, u16);
 super::nice_from_nz!(NiceU16, NonZeroU16);
 super::nice_from_opt!(NiceU16);
@@ -180,8 +180,8 @@ mod tests {
 		}
 
 		// Test the defaults too.
-		assert_eq!(NiceU16::default().as_bytes(), <&[u8]>::default());
-		assert_eq!(NiceU16::default().as_str(), "");
+		assert_eq!(NiceU16::empty().as_bytes(), <&[u8]>::default());
+		assert_eq!(NiceU16::empty().as_str(), "");
 
 		// Test some Option variants.
 		let foo: Option<u16> = None;

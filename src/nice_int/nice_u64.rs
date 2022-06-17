@@ -83,7 +83,7 @@ impl From<usize> for NiceU64 {
 	}
 }
 
-super::nice_default!(NiceU64, SIZE);
+super::nice_default!(NiceU64, inner!(b','), SIZE);
 super::nice_from!(NiceU64, u64);
 super::nice_from_nz!(NiceU64, NonZeroU64, NonZeroUsize);
 super::nice_from_opt!(NiceU64);
@@ -149,8 +149,8 @@ mod tests {
 		);
 
 		// Test the defaults too.
-		assert_eq!(NiceU64::default().as_bytes(), <&[u8]>::default());
-		assert_eq!(NiceU64::default().as_str(), "");
+		assert_eq!(NiceU64::empty().as_bytes(), <&[u8]>::default());
+		assert_eq!(NiceU64::empty().as_str(), "");
 
 		// Test some Option variants.
 		let foo: Option<u64> = None;

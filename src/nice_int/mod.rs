@@ -122,7 +122,7 @@ macro_rules! nice_from {
 	($nice:ty, $uint:ty) => (
 		impl From<$uint> for $nice {
 			fn from(num: $uint) -> Self {
-				let mut out = Self::default();
+				let mut out = Self::empty();
 				out.parse(num);
 				out
 			}
@@ -156,25 +156,31 @@ macro_rules! nice_from_opt {
 #[doc(hidden)]
 /// # Helper: Default and Min.
 macro_rules! nice_default {
-	($nice:ty, $size:ident) => (
-		#[doc = concat!("The default value is empty. Use [`", stringify!($nice), "::min`] to obtain the equivalent of zero instead.")]
+	($nice:ty, $zero:expr, $size:ident) => (
 		impl Default for $nice {
-			fn default() -> Self {
-				Self {
-					inner: inner!(b','),
-					from: $size,
-				}
-			}
+			fn default() -> Self { Self::min() }
 		}
 
 		impl $nice {
+			#[doc(hidden)]
+			#[must_use]
+			/// # Empty.
+			///
+			/// This returns an empty object.
+			pub const fn empty() -> Self {
+				Self {
+					inner: $zero,
+					from: $size,
+				}
+			}
+
 			#[must_use]
 			/// # Min.
 			///
 			/// This is equivalent to zero.
 			pub const fn min() -> Self {
 				Self {
-					inner: inner!(b','),
+					inner: $zero,
 					from: $size - 1,
 				}
 			}
