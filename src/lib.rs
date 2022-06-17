@@ -79,12 +79,18 @@ use num_traits::cast::AsPrimitive;
 
 
 /// # Decimals, 00-99.
-static DOUBLE: &[u8; 200] = b"\
-	0001020304050607080910111213141516171819\
-	2021222324252627282930313233343536373839\
-	4041424344454647484950515253545556575859\
-	6061626364656667686970717273747576777879\
-	8081828384858687888990919293949596979899";
+static DOUBLE: [[u8; 2]; 100] = [
+	[48, 48], [48, 49], [48, 50], [48, 51], [48, 52], [48, 53], [48, 54], [48, 55], [48, 56], [48, 57],
+	[49, 48], [49, 49], [49, 50], [49, 51], [49, 52], [49, 53], [49, 54], [49, 55], [49, 56], [49, 57],
+	[50, 48], [50, 49], [50, 50], [50, 51], [50, 52], [50, 53], [50, 54], [50, 55], [50, 56], [50, 57],
+	[51, 48], [51, 49], [51, 50], [51, 51], [51, 52], [51, 53], [51, 54], [51, 55], [51, 56], [51, 57],
+	[52, 48], [52, 49], [52, 50], [52, 51], [52, 52], [52, 53], [52, 54], [52, 55], [52, 56], [52, 57],
+	[53, 48], [53, 49], [53, 50], [53, 51], [53, 52], [53, 53], [53, 54], [53, 55], [53, 56], [53, 57],
+	[54, 48], [54, 49], [54, 50], [54, 51], [54, 52], [54, 53], [54, 54], [54, 55], [54, 56], [54, 57],
+	[55, 48], [55, 49], [55, 50], [55, 51], [55, 52], [55, 53], [55, 54], [55, 55], [55, 56], [55, 57],
+	[56, 48], [56, 49], [56, 50], [56, 51], [56, 52], [56, 53], [56, 54], [56, 55], [56, 56], [56, 57],
+	[57, 48], [57, 49], [57, 50], [57, 51], [57, 52], [57, 53], [57, 54], [57, 55], [57, 56], [57, 57]
+];
 
 #[allow(unsafe_code)]
 #[inline]
@@ -92,14 +98,22 @@ static DOUBLE: &[u8; 200] = b"\
 ///
 /// This produces a pointer to a specific two-digit subslice of `DOUBLE`.
 ///
-/// ## Safety
+/// ## Panics
 ///
-/// This method will panic if `num` is greater than 100, but as this is
-/// private and all ranges are pre-checked, that should never actually happen.
-pub(crate) fn double(num: usize) -> *const u8 {
-	assert!(num < 100);
-	unsafe { DOUBLE.as_ptr().add(num << 1) }
+/// This will panic if the number is greater than 99.
+pub(crate) fn double_prt(idx: usize) -> *const u8 {
+	debug_assert!(idx < 100);
+	unsafe { DOUBLE.get_unchecked(idx).as_ptr() }
 }
+
+/// # Double Digits.
+///
+/// Return both digits, ASCII-fied.
+///
+/// ## Panics
+///
+/// This will panic if the number is greater than 99.
+pub(crate) fn double(idx: usize) -> [u8; 2] { DOUBLE[idx] }
 
 
 
@@ -170,10 +184,10 @@ pub unsafe fn write_u8(buf: *mut u8, num: u8) {
 	if 99 < num {
 		let (div, rem) = div_mod(num, 100);
 		std::ptr::write(buf, div + b'0');
-		std::ptr::copy_nonoverlapping(double(rem as usize), buf.add(1), 2);
+		std::ptr::copy_nonoverlapping(double_prt(rem as usize), buf.add(1), 2);
 	}
 	else if 9 < num {
-		std::ptr::copy_nonoverlapping(double(num as usize), buf, 2);
+		std::ptr::copy_nonoverlapping(double_prt(num as usize), buf, 2);
 	}
 	else {
 		std::ptr::write(buf, num + b'0');
@@ -196,11 +210,11 @@ pub unsafe fn write_u8(buf: *mut u8, num: u8) {
 pub unsafe fn write_time(buf: *mut u8, h: u8, m: u8, s: u8) {
 	assert!(h < 60 && m < 60 && s < 60);
 
-	std::ptr::copy_nonoverlapping(double(h as usize), buf, 2);
+	std::ptr::copy_nonoverlapping(double_prt(h as usize), buf, 2);
 	std::ptr::write(buf.add(2), b':');
-	std::ptr::copy_nonoverlapping(double(m as usize), buf.add(3), 2);
+	std::ptr::copy_nonoverlapping(double_prt(m as usize), buf.add(3), 2);
 	std::ptr::write(buf.add(5), b':');
-	std::ptr::copy_nonoverlapping(double(s as usize), buf.add(6), 2);
+	std::ptr::copy_nonoverlapping(double_prt(s as usize), buf.add(6), 2);
 }
 
 

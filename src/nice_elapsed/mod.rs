@@ -439,7 +439,7 @@ impl ElapsedKind {
 /// isn't a problem in practice given the method calls are all private.
 unsafe fn write_u8_advance(buf: *mut u8, num: u8) -> *mut u8 {
 	if 9 < num {
-		std::ptr::copy_nonoverlapping(crate::double(num as usize), buf, 2);
+		std::ptr::copy_nonoverlapping(crate::double_prt(num as usize), buf, 2);
 		buf.add(2)
 	}
 	else {

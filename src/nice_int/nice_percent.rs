@@ -96,7 +96,7 @@ macro_rules! nice_from {
 					out.from -= 2;
 					unsafe {
 						std::ptr::copy_nonoverlapping(
-							crate::double(base),
+							crate::double_prt(base),
 							ptr.add(out.from),
 							2
 						);
@@ -110,7 +110,7 @@ macro_rules! nice_from {
 				// Write the fraction.
 				unsafe {
 					std::ptr::copy_nonoverlapping(
-						crate::double(<$float>::floor(num.fract() * 100.0) as usize),
+						crate::double_prt(<$float>::floor(num.fract() * 100.0) as usize),
 						ptr.add(IDX_PERCENT_DECIMAL),
 						2
 					);

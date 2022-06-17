@@ -9,6 +9,7 @@
 * The `NiceU*` and `NicePercent` structs are now type aliases
 * `NicePercent::default` is now equivalent to `From<0.0>`
 * `NiceU*::default` is now equivalent to `From<0>`
+* Slightly faster `NiceU8`, `NiceU16` instantiation
 
 ### Added
 

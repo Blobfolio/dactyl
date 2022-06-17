@@ -12,10 +12,8 @@ use std::num::NonZeroU16;
 /// 65535 + one comma = six bytes.
 const SIZE: usize = 6;
 
-/// # Generate Inner Buffer.
-macro_rules! inner {
-	($sep:expr) => ([b'0', b'0', $sep, b'0', b'0', b'0']);
-}
+/// # Default Buffer.
+const ZERO: [u8; SIZE] = [b'0', b'0', b',', b'0', b'0', b'0'];
 
 
 
@@ -62,9 +60,57 @@ macro_rules! inner {
 /// When converting from a `None`, the result will be equivalent to zero.
 pub type NiceU16 = NiceWrapper<SIZE>;
 
-super::nice_default!(NiceU16, inner!(b','), SIZE);
-super::nice_from!(NiceU16, u16);
+super::nice_default!(NiceU16, ZERO, SIZE);
 super::nice_from_nz!(NiceU16, NonZeroU16);
+
+impl From<u16> for NiceU16 {
+	#[allow(clippy::cast_possible_truncation)] // One digit always fits u8.
+	#[allow(unsafe_code)]
+	fn from(num: u16) -> Self {
+		if 999 < num {
+			let mut inner = ZERO;
+			let ptr = inner.as_mut_ptr();
+			let (num, rem) = crate::div_mod(num, 1000);
+			unsafe { super::write_u8_3(ptr.add(3), rem); }
+
+			if 9 < num {
+				unsafe {
+					std::ptr::copy_nonoverlapping(
+						crate::double_prt(num as usize),
+						ptr,
+						2
+					);
+				}
+				Self {
+					inner,
+					from: 0,
+				}
+			}
+			else {
+				unsafe { std::ptr::write(ptr.add(1), num as u8 + b'0'); }
+				Self {
+					inner,
+					from: 1,
+				}
+			}
+		}
+		else if 99 < num {
+			let mut inner = ZERO;
+			unsafe { super::write_u8_3(inner.as_mut_ptr().add(3), num); }
+			Self {
+				inner,
+				from: 3,
+			}
+		}
+		else {
+			let [a, b] = crate::double(num as usize);
+			Self {
+				inner: [b'0', b'0', b',', b'0', a, b],
+				from: if a == b'0' { 5 } else { 4 },
+			}
+		}
+	}
+}
 
 impl NiceU16 {
 	#[must_use]
@@ -92,59 +138,9 @@ impl NiceU16 {
 	/// This method will panic if the separator is invalid ASCII.
 	pub fn with_separator(num: u16, sep: u8) -> Self {
 		assert!(sep.is_ascii(), "Invalid separator.");
-		let mut out = Self {
-			inner: inner!(sep),
-			from: SIZE,
-		};
-		out.parse(num);
+		let mut out = Self::from(num);
+		out.inner[2] = sep;
 		out
-	}
-
-	#[allow(clippy::cast_possible_truncation)] // One digit always fits u8.
-	#[allow(unsafe_code)]
-	/// # Parse.
-	///
-	/// This handles the actual crunching.
-	fn parse(&mut self, num: u16) {
-		let ptr = self.inner.as_mut_ptr();
-
-		if 999 < num {
-			let (num, rem) = crate::div_mod(num, 1000);
-			unsafe { super::write_u8_3(ptr.add(3), rem); }
-
-			if 9 < num {
-				self.from = 0;
-				unsafe {
-					std::ptr::copy_nonoverlapping(
-						crate::double(num as usize),
-						ptr,
-						2
-					);
-				}
-			}
-			else {
-				self.from = 1;
-				unsafe { std::ptr::write(ptr.add(1), num as u8 + b'0'); }
-			}
-		}
-		else if 99 < num {
-			self.from = 3;
-			unsafe { super::write_u8_3(ptr.add(3), num); }
-		}
-		else if 9 < num {
-			self.from = 4;
-			unsafe {
-				std::ptr::copy_nonoverlapping(
-					crate::double(num as usize),
-					ptr.add(4),
-					2
-				);
-			}
-		}
-		else {
-			self.from = 5;
-			unsafe { std::ptr::write(ptr.add(5), num as u8 + b'0'); }
-		}
 	}
 }
 

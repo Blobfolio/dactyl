@@ -84,7 +84,6 @@ impl From<usize> for NiceU64 {
 }
 
 super::nice_default!(NiceU64, inner!(b','), SIZE);
-super::nice_from!(NiceU64, u64);
 super::nice_from_nz!(NiceU64, NonZeroU64, NonZeroUsize);
 super::nice_parse!(NiceU64, u64);
 

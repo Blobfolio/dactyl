@@ -132,20 +132,6 @@ impl<const S: usize> NiceWrapper<S> {
 
 
 #[doc(hidden)]
-/// # Helper: From<unsigned>
-macro_rules! nice_from {
-	($nice:ty, $uint:ty) => (
-		impl From<$uint> for $nice {
-			fn from(num: $uint) -> Self {
-				let mut out = Self::empty();
-				out.parse(num);
-				out
-			}
-		}
-	);
-}
-
-#[doc(hidden)]
 /// # Helper: From<nonzero>
 macro_rules! nice_from_nz {
 	($nice:ty, $($nz:ty),+ $(,)?) => ($(
@@ -160,12 +146,7 @@ macro_rules! nice_from_nz {
 macro_rules! nice_default {
 	($nice:ty, $zero:expr, $size:ident) => (
 		impl Default for $nice {
-			fn default() -> Self {
-				Self {
-					inner: $zero,
-					from: $size - 1,
-				}
-			}
+			fn default() -> Self { Self { inner: $zero, from: $size - 1 } }
 		}
 
 		impl $nice {
@@ -174,23 +155,25 @@ macro_rules! nice_default {
 			/// # Empty.
 			///
 			/// This returns an empty object.
-			pub const fn empty() -> Self {
-				Self {
-					inner: $zero,
-					from: $size,
-				}
-			}
+			pub const fn empty() -> Self { Self { inner: $zero, from: $size } }
 		}
 	);
 }
 
 #[doc(hidden)]
-/// # Helper: Generic Parsing (u32 and larger).
+/// # Helper: Generic From/Parsing (u32 and larger).
 macro_rules! nice_parse {
 	($nice:ty, $uint:ty) => (
+		impl From<$uint> for $nice {
+			fn from(num: $uint) -> Self {
+				let mut out = Self::empty();
+				out.parse(num);
+				out
+			}
+		}
+
 		impl $nice {
-			#[allow(clippy::cast_possible_truncation)] // Usize casting never exceeds 100; u8 casting never exceeds 9.
-			#[allow(unsafe_code)]
+			#[allow(clippy::cast_possible_truncation, unsafe_code)]
 			/// # Parse.
 			fn parse(&mut self, mut num: $uint) {
 				let ptr = self.inner.as_mut_ptr();
@@ -210,7 +193,7 @@ macro_rules! nice_parse {
 					self.from -= 2;
 					unsafe {
 						std::ptr::copy_nonoverlapping(
-							crate::double(num as usize),
+							crate::double_prt(num as usize),
 							ptr.add(self.from),
 							2
 						);
@@ -227,7 +210,6 @@ macro_rules! nice_parse {
 
 pub(self) use {
 	nice_default,
-	nice_from,
 	nice_from_nz,
 	nice_parse,
 };
@@ -245,5 +227,5 @@ pub(self) use {
 unsafe fn write_u8_3(buf: *mut u8, num: u16) {
 	let (div, rem) = crate::div_mod(num, 100);
 	std::ptr::write(buf, div as u8 + b'0');
-	std::ptr::copy_nonoverlapping(crate::double(rem as usize), buf.add(1), 2);
+	std::ptr::copy_nonoverlapping(crate::double_prt(rem as usize), buf.add(1), 2);
 }

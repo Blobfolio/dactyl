@@ -72,24 +72,11 @@ impl From<u8> for NiceU8 {
 				from: 0,
 			}
 		}
-		else if 9 < num {
-			let mut inner = ZERO;
-			unsafe {
-				std::ptr::copy_nonoverlapping(
-					crate::double(num as usize),
-					inner.as_mut_ptr().add(1),
-					2
-				);
-			}
-			Self {
-				inner,
-				from: 1,
-			}
-		}
 		else {
+			let [a, b] = crate::double(num as usize);
 			Self {
-				inner: [b'0', b'0', num + b'0'],
-				from: 2,
+				inner: [b'0', a, b],
+				from: if a == b'0' { 2 } else { 1 },
 			}
 		}
 	}
