@@ -97,7 +97,6 @@ impl From<u8> for NiceU8 {
 
 super::nice_default!(NiceU8, ZERO, SIZE);
 super::nice_from_nz!(NiceU8, NonZeroU8);
-super::nice_from_opt!(NiceU8);
 
 impl NiceU8 {
 	#[must_use]

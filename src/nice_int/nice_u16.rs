@@ -65,7 +65,6 @@ pub type NiceU16 = NiceWrapper<SIZE>;
 super::nice_default!(NiceU16, inner!(b','), SIZE);
 super::nice_from!(NiceU16, u16);
 super::nice_from_nz!(NiceU16, NonZeroU16);
-super::nice_from_opt!(NiceU16);
 
 impl NiceU16 {
 	#[must_use]

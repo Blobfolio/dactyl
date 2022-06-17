@@ -7,13 +7,18 @@
 
 * The MSRV is now `1.61`
 * The `NiceU*` and `NicePercent` structs are now type aliases
-* `NiceU*::default` is now the equivalent of `From<0>` instead of empty
+* `NicePercent::default` is now equivalent to `From<0.0>`
+* `NiceU*::default` is now equivalent to `From<0>`
 
 ### Added
 
 * `dactyl::div_mod` (generic)
+* impl `From<NicePercent>` for String
+* impl `From<NicePercent>` for Vec<u8>
 * impl `From<NiceU*>` for String
 * impl `From<NiceU*>` for Vec<u8>
+* impl `From<Option<T>>` (where `From<T>`) for `NicePercent`
+* impl `From<Option<T>>` (where `From<T>`) for `NiceU*`
 
 ### Removed
 
@@ -23,6 +28,8 @@
 * `dactyl::div_mod_u64`
 * `dactyl::div_mod_u128`
 * `dactyl::div_mod_usize`
+* `NicePercent::as_string` (use `From<NicePercent>` instead)
+* `NicePercent::as_vec` (use `From<NicePercent>` instead)
 * `NiceU*::as_string` (use `From<NiceU*>` instead)
 * `NiceU*::as_vec` (use `From<NiceU*>` instead)
 

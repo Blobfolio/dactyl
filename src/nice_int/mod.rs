@@ -72,6 +72,13 @@ impl<const S: usize> From<NiceWrapper<S>> for Vec<u8> {
 	fn from(src: NiceWrapper<S>) -> Self { src.as_bytes().to_vec() }
 }
 
+impl<const S: usize, T> From<Option<T>> for NiceWrapper<S>
+where Self: From<T> + Default {
+	/// `None` is treated like zero, otherwise this will simply unwrap the
+	/// inner value and run `From` against that.
+	fn from(num: Option<T>) -> Self { num.map_or_else(Self::default, Self::from) }
+}
+
 impl<const S: usize> Hash for NiceWrapper<S> {
 	fn hash<H: Hasher>(&self, state: &mut H) { state.write(self.as_bytes()) }
 }
@@ -141,24 +148,16 @@ macro_rules! nice_from_nz {
 }
 
 #[doc(hidden)]
-/// # Helper: From<Option>
-macro_rules! nice_from_opt {
-	($nice:ty) => (
-		/// `None` is treated like zero, otherwise this will simply unwrap the
-		/// inner value and run `From` against that.
-		impl<T> From<Option<T>> for $nice
-		where Self: From<T> {
-			fn from(num: Option<T>) -> Self { num.map_or_else(Self::min, Self::from) }
-		}
-	);
-}
-
-#[doc(hidden)]
 /// # Helper: Default and Min.
 macro_rules! nice_default {
 	($nice:ty, $zero:expr, $size:ident) => (
 		impl Default for $nice {
-			fn default() -> Self { Self::min() }
+			fn default() -> Self {
+				Self {
+					inner: $zero,
+					from: $size - 1,
+				}
+			}
 		}
 
 		impl $nice {
@@ -171,17 +170,6 @@ macro_rules! nice_default {
 				Self {
 					inner: $zero,
 					from: $size,
-				}
-			}
-
-			#[must_use]
-			/// # Min.
-			///
-			/// This is equivalent to zero.
-			pub const fn min() -> Self {
-				Self {
-					inner: $zero,
-					from: $size - 1,
 				}
 			}
 		}
@@ -233,7 +221,6 @@ pub(self) use {
 	nice_default,
 	nice_from,
 	nice_from_nz,
-	nice_from_opt,
 	nice_parse,
 };
 

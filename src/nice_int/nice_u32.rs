@@ -65,7 +65,6 @@ pub type NiceU32 = NiceWrapper<SIZE>;
 super::nice_default!(NiceU32, inner!(b','), SIZE);
 super::nice_from!(NiceU32, u32);
 super::nice_from_nz!(NiceU32, NonZeroU32);
-super::nice_from_opt!(NiceU32);
 super::nice_parse!(NiceU32, u32);
 
 impl NiceU32 {
