@@ -119,7 +119,7 @@ mod tests {
 
 		// Check the min and max.
 		assert_eq!(NiceU32::from(0).as_str(), "0");
-		assert_eq!(NiceU32::min(), NiceU32::from(0));
+		assert_eq!(NiceU32::default(), NiceU32::from(0));
 		assert_eq!(
 			NiceU32::from(u32::MAX).as_str(),
 			u32::MAX.to_formatted_string(&Locale::en),
@@ -127,7 +127,7 @@ mod tests {
 
 		// Test some Option variants.
 		let foo: Option<u32> = None;
-		assert_eq!(NiceU32::min(), NiceU32::from(foo));
+		assert_eq!(NiceU32::default(), NiceU32::from(foo));
 		let foo = Some(13_u32);
 		assert_eq!(NiceU32::from(13_u32), NiceU32::from(foo));
 
@@ -155,13 +155,13 @@ mod tests {
 
 	#[test]
 	fn t_nice_nonzero_u32() {
-		assert_eq!(NiceU32::min(), NiceU32::from(NonZeroU32::new(0)));
+		assert_eq!(NiceU32::default(), NiceU32::from(NonZeroU32::new(0)));
 		assert_eq!(NiceU32::from(50_u32), NiceU32::from(NonZeroU32::new(50)));
 		assert_eq!(NiceU32::from(50_u32), NiceU32::from(NonZeroU32::new(50).unwrap()));
 
 		// Test some Option variants.
 		let foo: Option<NonZeroU32> = None;
-		assert_eq!(NiceU32::from(foo), NiceU32::min());
+		assert_eq!(NiceU32::from(foo), NiceU32::default());
 		let foo = NonZeroU32::new(13);
 		assert_eq!(NiceU32::from(13_u32), NiceU32::from(foo));
 	}

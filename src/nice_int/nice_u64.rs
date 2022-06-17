@@ -140,8 +140,8 @@ mod tests {
 
 		// Check the min and max.
 		assert_eq!(NiceU64::from(0_u64).as_str(), "0");
-		assert_eq!(NiceU64::min(), NiceU64::from(0_u64));
-		assert_eq!(NiceU64::min(), NiceU64::from(0_usize));
+		assert_eq!(NiceU64::default(), NiceU64::from(0_u64));
+		assert_eq!(NiceU64::default(), NiceU64::from(0_usize));
 		assert_eq!(
 			NiceU64::from(u64::MAX).as_str(),
 			u64::MAX.to_formatted_string(&Locale::en),
@@ -153,12 +153,12 @@ mod tests {
 
 		// Test some Option variants.
 		let foo: Option<u64> = None;
-		assert_eq!(NiceU64::min(), NiceU64::from(foo));
+		assert_eq!(NiceU64::default(), NiceU64::from(foo));
 		let foo = Some(13_u64);
 		assert_eq!(NiceU64::from(13_u64), NiceU64::from(foo));
 
 		let foo: Option<usize> = None;
-		assert_eq!(NiceU64::min(), NiceU64::from(foo));
+		assert_eq!(NiceU64::default(), NiceU64::from(foo));
 		let foo = Some(13_usize);
 		assert_eq!(NiceU64::from(13_usize), NiceU64::from(foo));
 
@@ -181,22 +181,22 @@ mod tests {
 
 	#[test]
 	fn t_nice_nonzero_u64() {
-		assert_eq!(NiceU64::min(), NiceU64::from(NonZeroU64::new(0)));
+		assert_eq!(NiceU64::default(), NiceU64::from(NonZeroU64::new(0)));
 		assert_eq!(NiceU64::from(50_u64), NiceU64::from(NonZeroU64::new(50)));
 		assert_eq!(NiceU64::from(50_u64), NiceU64::from(NonZeroU64::new(50).unwrap()));
 
-		assert_eq!(NiceU64::min(), NiceU64::from(NonZeroUsize::new(0)));
+		assert_eq!(NiceU64::default(), NiceU64::from(NonZeroUsize::new(0)));
 		assert_eq!(NiceU64::from(50_u64), NiceU64::from(NonZeroUsize::new(50)));
 		assert_eq!(NiceU64::from(50_u64), NiceU64::from(NonZeroUsize::new(50).unwrap()));
 
 		// Test some Option variants.
 		let foo: Option<NonZeroU64> = None;
-		assert_eq!(NiceU64::from(foo), NiceU64::min());
+		assert_eq!(NiceU64::from(foo), NiceU64::default());
 		let foo = NonZeroU64::new(13);
 		assert_eq!(NiceU64::from(13_u64), NiceU64::from(foo));
 
 		let foo: Option<NonZeroUsize> = None;
-		assert_eq!(NiceU64::from(foo), NiceU64::min());
+		assert_eq!(NiceU64::from(foo), NiceU64::default());
 		let foo = NonZeroUsize::new(13);
 		assert_eq!(NiceU64::from(13_usize), NiceU64::from(foo));
 	}

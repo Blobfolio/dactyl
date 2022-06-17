@@ -184,7 +184,7 @@ mod tests {
 
 	#[test]
 	fn t_nice_u8() {
-		assert_eq!(NiceU8::min(), NiceU8::from(0));
+		assert_eq!(NiceU8::default(), NiceU8::from(0));
 
 		// Strings come from bytes, so this implicitly tests both.
 		for i in 0..=u8::MAX {
@@ -200,7 +200,7 @@ mod tests {
 
 		// Test some Option variants.
 		let foo: Option<u8> = None;
-		assert_eq!(NiceU8::min(), NiceU8::from(foo));
+		assert_eq!(NiceU8::default(), NiceU8::from(foo));
 		let foo = Some(13_u8);
 		assert_eq!(NiceU8::from(13_u8), NiceU8::from(foo));
 
@@ -214,13 +214,13 @@ mod tests {
 
 	#[test]
 	fn t_nice_nonzero_u8() {
-		assert_eq!(NiceU8::min(), NiceU8::from(NonZeroU8::new(0)));
+		assert_eq!(NiceU8::default(), NiceU8::from(NonZeroU8::new(0)));
 		assert_eq!(NiceU8::from(50_u8), NiceU8::from(NonZeroU8::new(50)));
 		assert_eq!(NiceU8::from(50_u8), NiceU8::from(NonZeroU8::new(50).unwrap()));
 
 		// Test some Option variants.
 		let foo: Option<NonZeroU8> = None;
-		assert_eq!(NiceU8::from(foo), NiceU8::min());
+		assert_eq!(NiceU8::from(foo), NiceU8::default());
 		let foo = NonZeroU8::new(13);
 		assert_eq!(NiceU8::from(13_u8), NiceU8::from(foo));
 	}

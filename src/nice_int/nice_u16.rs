@@ -157,7 +157,7 @@ mod tests {
 
 	#[test]
 	fn t_nice_u16() {
-		assert_eq!(NiceU16::min(), NiceU16::from(0));
+		assert_eq!(NiceU16::default(), NiceU16::from(0));
 
 		#[cfg(not(miri))]
 		for i in 0..=u16::MAX {
@@ -184,7 +184,7 @@ mod tests {
 
 		// Test some Option variants.
 		let foo: Option<u16> = None;
-		assert_eq!(NiceU16::min(), NiceU16::from(foo));
+		assert_eq!(NiceU16::default(), NiceU16::from(foo));
 		let foo = Some(13_u16);
 		assert_eq!(NiceU16::from(13_u16), NiceU16::from(foo));
 
@@ -198,13 +198,13 @@ mod tests {
 
 	#[test]
 	fn t_nice_nonzero_u16() {
-		assert_eq!(NiceU16::min(), NiceU16::from(NonZeroU16::new(0)));
+		assert_eq!(NiceU16::default(), NiceU16::from(NonZeroU16::new(0)));
 		assert_eq!(NiceU16::from(50_u16), NiceU16::from(NonZeroU16::new(50)));
 		assert_eq!(NiceU16::from(50_u16), NiceU16::from(NonZeroU16::new(50).unwrap()));
 
 		// Test some Option variants.
 		let foo: Option<NonZeroU16> = None;
-		assert_eq!(NiceU16::from(foo), NiceU16::min());
+		assert_eq!(NiceU16::from(foo), NiceU16::default());
 		let foo = NonZeroU16::new(13);
 		assert_eq!(NiceU16::from(13_u16), NiceU16::from(foo));
 	}
