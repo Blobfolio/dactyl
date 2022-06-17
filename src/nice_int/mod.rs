@@ -39,7 +39,7 @@ macro_rules! as_ref_borrow_cast {
 
 
 #[doc(hidden)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 /// # Nice Unsigned.
 ///
 /// This is the master struct for [`NiceU16`](crate::NiceU16), [`NiceU32`](crate::NiceU32), etc.
@@ -50,6 +50,14 @@ pub struct NiceWrapper<const S: usize> {
 }
 
 as_ref_borrow_cast!(as_bytes [u8], as_str str);
+
+impl<const S: usize> fmt::Debug for NiceWrapper<S> {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		f.debug_tuple(&format!("NiceWrapper<{}>", S))
+			.field(&self.as_str())
+			.finish()
+	}
+}
 
 impl<const S: usize> Deref for NiceWrapper<S> {
 	type Target = [u8];

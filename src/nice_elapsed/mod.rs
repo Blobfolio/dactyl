@@ -101,10 +101,9 @@ impl Deref for NiceElapsed {
 
 impl fmt::Debug for NiceElapsed {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		f.debug_struct("NiceElapsed")
-		 .field("inner", &self.inner.to_vec())
-		 .field("len", &self.len)
-		 .finish()
+		f.debug_tuple("NiceElapsed")
+			.field(&self.as_str())
+			.finish()
 	}
 }
 
@@ -162,9 +161,7 @@ elapsed_from!(usize, u64, u128);
 
 impl Hash for NiceElapsed {
 	#[inline]
-	fn hash<H: Hasher>(&self, state: &mut H) {
-		self.as_bytes().hash(state);
-	}
+	fn hash<H: Hasher>(&self, state: &mut H) { state.write(self.as_bytes()); }
 }
 
 impl PartialEq for NiceElapsed {
