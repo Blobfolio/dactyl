@@ -1,7 +1,7 @@
 # Changelog
 
 
-## [0.4.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.4.0) - TBD
+## [0.4.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.4.0) - 2022-06-18
 
 ### Changed
 
