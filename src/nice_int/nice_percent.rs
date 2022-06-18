@@ -4,6 +4,8 @@
 Note: this module is "in development". It is subject to change, and may eventually be spun off into its own crate.
 */
 
+use crate::NiceWrapper;
+
 
 
 /// # Total Buffer Size.
@@ -12,9 +14,11 @@ const SIZE: usize = 7;
 /// # Starting Index For Percentage Decimal.
 const IDX_PERCENT_DECIMAL: usize = SIZE - 3;
 
+/// # Zero.
+const ZERO: [u8; SIZE] = [b'0', b'0', b'0', b'.', b'0', b'0', b'%'];
 
 
-#[derive(Debug, Clone, Copy)]
+
 /// `NicePercent` provides a quick way to convert an `f32` or `f64` into a
 /// formatted byte string for e.g. printing.
 ///
@@ -33,33 +37,41 @@ const IDX_PERCENT_DECIMAL: usize = SIZE - 3;
 /// assert_eq!(NicePercent::from(0.321).as_str(), "32.10%");
 /// ```
 ///
+/// ## Traits
+///
+/// Rustdoc doesn't do a good job at documenting type alias implementations, but
+/// `NicePercent` has a bunch, including:
+///
+/// * `AsRef<[u8]>`
+/// * `AsRef<str>`
+/// * `Borrow<[u8]>`
+/// * `Borrow<str>`
+/// * `Clone`
+/// * `Copy`
+/// * `Default`
+/// * `Deref<Target=[u8]>`
+/// * `Display`
+/// * `Eq` / `PartialEq`
+/// * `Hash`
+/// * `Ord` / `PartialOrd`
+///
 /// ## Note
 ///
 /// This module is "in development". It is subject to change, and may eventually be spun off into its own crate.
-pub struct NicePercent {
-	inner: [u8; SIZE],
-	from: usize,
-}
-
-super::impl_nice_int!(NicePercent);
+pub type NicePercent = NiceWrapper<SIZE>;
 
 impl Default for NicePercent {
-	#[inline]
-	fn default() -> Self {
-		Self {
-			inner: [b'0', b'0', b'0', b'.', b'0', b'0', b'%'],
-			from: SIZE,
-		}
-	}
+	fn default() -> Self { Self::min() }
 }
 
 /// # Helper: From
 ///
 /// This code is identical for `f32` and `f64` types.
-macro_rules! impl_from {
-	($type:ty) => {
-		impl From<$type> for NicePercent {
-			fn from(mut num: $type) -> Self {
+macro_rules! nice_from {
+	($($float:ty),+ $(,)?) => ($(
+		impl From<$float> for NicePercent {
+			#[allow(unsafe_code)]
+			fn from(mut num: $float) -> Self {
 				// Shortcut for overflowing values.
 				if num <= 0.0 || ! num.is_normal() {
 					return Self::min();
@@ -70,7 +82,7 @@ macro_rules! impl_from {
 
 				// Start with the bits we know.
 				let mut out = Self {
-					inner: *b"000.00%",
+					inner: ZERO,
 					from: SIZE - 4,
 				};
 				let ptr = out.inner.as_mut_ptr();
@@ -84,7 +96,7 @@ macro_rules! impl_from {
 					out.from -= 2;
 					unsafe {
 						std::ptr::copy_nonoverlapping(
-							crate::double(base),
+							crate::double_prt(base),
 							ptr.add(out.from),
 							2
 						);
@@ -98,7 +110,7 @@ macro_rules! impl_from {
 				// Write the fraction.
 				unsafe {
 					std::ptr::copy_nonoverlapping(
-						crate::double(<$type>::floor(num.fract() * 100.0) as usize),
+						crate::double_prt(<$float>::floor(num.fract() * 100.0) as usize),
 						ptr.add(IDX_PERCENT_DECIMAL),
 						2
 					);
@@ -107,11 +119,10 @@ macro_rules! impl_from {
 				out
 			}
 		}
-	};
+	)+);
 }
 
-impl_from!(f32);
-impl_from!(f64);
+nice_from!(f32, f64);
 
 impl<T> TryFrom<(T, T)> for NicePercent
 where T: num_traits::cast::AsPrimitive<f64> {
@@ -150,7 +161,7 @@ impl NicePercent {
 	/// This reads: `0.00%`.
 	pub const fn min() -> Self {
 		Self {
-			inner: *b"000.00%",
+			inner: ZERO,
 			from: SIZE - 5,
 		}
 	}
@@ -161,7 +172,7 @@ impl NicePercent {
 	/// This reads: `100.00%`.
 	pub const fn max() -> Self {
 		Self {
-			inner: *b"100.00%",
+			inner: [b'1', b'0', b'0', b'.', b'0', b'0', b'%'],
 			from: SIZE - 7,
 		}
 	}

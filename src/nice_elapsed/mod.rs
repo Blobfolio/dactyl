@@ -4,7 +4,6 @@
 Note: this module is "in development". It is subject to change, and may eventually be spun off into its own crate.
 */
 
-use crate::macros;
 use std::{
 	fmt,
 	hash::{
@@ -23,7 +22,17 @@ use std::{
 /// # Array Size.
 const SIZE: usize = 39;
 
-
+/// # Helper: `AsRef` and `Borrow`.
+macro_rules! as_ref_borrow_cast {
+	($($cast:ident $ty:ty),+ $(,)?) => ($(
+		impl AsRef<$ty> for NiceElapsed {
+			fn as_ref(&self) -> &$ty { self.$cast() }
+		}
+		impl ::std::borrow::Borrow<$ty> for NiceElapsed {
+			fn borrow(&self) -> &$ty { self.$cast() }
+		}
+	)+);
+}
 
 /// # Helper: Generate Impl
 macro_rules! elapsed_from {
@@ -72,11 +81,7 @@ pub struct NiceElapsed {
 	len: usize,
 }
 
-macros::as_ref_borrow_cast!(
-	NiceElapsed:
-		as_bytes [u8],
-		as_str str,
-);
+as_ref_borrow_cast!(as_bytes [u8], as_str str);
 
 impl Default for NiceElapsed {
 	#[inline]
@@ -96,14 +101,18 @@ impl Deref for NiceElapsed {
 
 impl fmt::Debug for NiceElapsed {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		f.debug_struct("NiceElapsed")
-		 .field("inner", &self.inner.to_vec())
-		 .field("len", &self.len)
-		 .finish()
+		f.debug_tuple("NiceElapsed")
+			.field(&self.as_str())
+			.finish()
 	}
 }
 
-macros::display_str!(as_str NiceElapsed);
+impl fmt::Display for NiceElapsed {
+	#[inline]
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		f.write_str(self.as_str())
+	}
+}
 
 impl Eq for NiceElapsed {}
 
@@ -152,9 +161,7 @@ elapsed_from!(usize, u64, u128);
 
 impl Hash for NiceElapsed {
 	#[inline]
-	fn hash<H: Hasher>(&self, state: &mut H) {
-		self.as_bytes().hash(state);
-	}
+	fn hash<H: Hasher>(&self, state: &mut H) { state.write(self.as_bytes()); }
 }
 
 impl PartialEq for NiceElapsed {
@@ -238,6 +245,7 @@ impl NiceElapsed {
 	/// Return the nice value as a byte string.
 	pub fn as_bytes(&self) -> &[u8] { &self.inner[0..self.len] }
 
+	#[allow(unsafe_code)]
 	#[must_use]
 	#[inline]
 	/// # As Str.
@@ -251,6 +259,7 @@ impl NiceElapsed {
 
 impl NiceElapsed {
 	#[allow(clippy::cast_sign_loss)] // The value is >= 0.
+	#[allow(unsafe_code)]
 	/// # From HMS.
 	///
 	/// Build with hours, minutes, and seconds.
@@ -292,6 +301,7 @@ impl NiceElapsed {
 	}
 
 	#[allow(clippy::cast_sign_loss)] // The value is >= 0.
+	#[allow(unsafe_code)]
 	/// # From HMS.ms.
 	///
 	/// Build with hours, minutes, seconds, and milliseconds (hundredths).
@@ -368,6 +378,7 @@ impl ElapsedKind {
 		}
 	}
 
+	#[allow(unsafe_code)]
 	/// # Write Label.
 	fn write_label(self, dst: *mut u8, singular: bool) -> *mut u8 {
 		let (mut len, label) = self.label();
@@ -379,6 +390,7 @@ impl ElapsedKind {
 		}
 	}
 
+	#[allow(unsafe_code)]
 	/// # Write Joiner.
 	///
 	/// This will add commas and/or ands as necessary.
@@ -415,6 +427,7 @@ impl ElapsedKind {
 
 
 
+#[allow(unsafe_code)]
 /// # Write u8.
 ///
 /// This will quickly write a `u8` number as a UTF-8 byte slice to the provided
@@ -426,7 +439,7 @@ impl ElapsedKind {
 /// isn't a problem in practice given the method calls are all private.
 unsafe fn write_u8_advance(buf: *mut u8, num: u8) -> *mut u8 {
 	if 9 < num {
-		std::ptr::copy_nonoverlapping(crate::double(num as usize), buf, 2);
+		std::ptr::copy_nonoverlapping(crate::double_prt(num as usize), buf, 2);
 		buf.add(2)
 	}
 	else {

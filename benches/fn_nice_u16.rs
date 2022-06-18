@@ -40,9 +40,9 @@ benches!(
 
 	Bench::spacer(),
 
-	Bench::new("dactyl::NiceU16", "as_string()")
+	Bench::new("String::from", "dactyl::NiceU16")
 		.timed(Duration::from_secs(1))
-		.with_setup(NiceU16::from(40_999_u16), |c| c.as_string()),
+		.with_setup(NiceU16::from(40_999_u16), String::from),
 
 	Bench::new("dactyl::NiceU16", "to_string()")
 		.timed(Duration::from_secs(1))

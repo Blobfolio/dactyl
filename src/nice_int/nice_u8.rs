@@ -2,16 +2,21 @@
 # Dactyl: Nice u8.
 */
 
+use crate::NiceWrapper;
 use std::num::NonZeroU8;
 
 
 
 /// # Total Buffer Size.
+///
+/// 255 needs no commas, so is only three bytes.
 const SIZE: usize = 3;
 
+/// # Zero.
+const ZERO: [u8; SIZE] = [b'0', b'0', b'0'];
 
 
-#[derive(Debug, Clone, Copy)]
+
 /// `NiceU8` provides a quick way to convert a `u8` into a formatted byte
 /// string for e.g. printing.
 ///
@@ -26,72 +31,61 @@ const SIZE: usize = 3;
 ///     "231"
 /// );
 /// ```
-pub struct NiceU8 {
-	inner: [u8; SIZE],
-	from: usize,
-}
-
-impl Default for NiceU8 {
-	#[inline]
-	fn default() -> Self {
-		Self {
-			inner: [b'0', b'0', b'0'],
-			from: SIZE,
-		}
-	}
-}
+///
+/// ## Traits
+///
+/// Rustdoc doesn't do a good job at documenting type alias implementations, but
+/// `NiceU8` has a bunch, including:
+///
+/// * `AsRef<[u8]>`
+/// * `AsRef<str>`
+/// * `Borrow<[u8]>`
+/// * `Borrow<str>`
+/// * `Clone`
+/// * `Copy`
+/// * `Default`
+/// * `Deref<Target=[u8]>`
+/// * `Display`
+/// * `Eq` / `PartialEq`
+/// * `Hash`
+/// * `Ord` / `PartialOrd`
+///
+/// You can instantiate a `NiceU8` with:
+///
+/// * `From<u8>`
+/// * `From<Option<u8>>`
+/// * `From<NonZeroU8>`
+/// * `From<Option<NonZeroU8>>`
+///
+/// When converting from a `None`, the result will be equivalent to zero.
+pub type NiceU8 = NiceWrapper<SIZE>;
 
 impl From<u8> for NiceU8 {
 	#[allow(clippy::cast_lossless)] // Seems less performant.
+	#[allow(unsafe_code)]
 	fn from(num: u8) -> Self {
 		if 99 < num {
-			let mut inner = [b'0', b'0', b'0'];
+			let mut inner = ZERO;
 			unsafe { super::write_u8_3(inner.as_mut_ptr(), num as u16); }
 			Self {
 				inner,
 				from: 0,
 			}
 		}
-		else if 9 < num {
-			let mut inner = [b'0', b'0', b'0'];
-			unsafe {
-				std::ptr::copy_nonoverlapping(
-					crate::double(num as usize),
-					inner.as_mut_ptr().add(1),
-					2
-				);
-			}
-			Self {
-				inner,
-				from: 1,
-			}
-		}
 		else {
+			let [a, b] = crate::double(num as usize);
 			Self {
-				inner: [b'0', b'0', num + b'0'],
-				from: 2,
+				inner: [b'0', a, b],
+				from: if a == b'0' { 2 } else { 1 },
 			}
 		}
 	}
 }
 
-// A few Macro traits.
-super::impl_nice_nonzero_int!(NiceU8: NonZeroU8);
-super::impl_nice_int!(NiceU8);
+super::nice_default!(NiceU8, ZERO, SIZE);
+super::nice_from_nz!(NiceU8, NonZeroU8);
 
 impl NiceU8 {
-	#[must_use]
-	#[inline]
-	/// # Min.
-	///
-	/// This is equivalent to zero.
-	pub const fn min() -> Self {
-		Self {
-			inner: [b'0', b'0', b'0'],
-			from: SIZE - 1,
-		}
-	}
-
 	#[must_use]
 	#[inline]
 	/// # Double Digit Bytes.
@@ -126,6 +120,7 @@ impl NiceU8 {
 	/// ```
 	pub const fn as_bytes3(&self) -> &[u8] { &self.inner }
 
+	#[allow(unsafe_code)]
 	#[must_use]
 	#[inline]
 	/// # Double Digit Str.
@@ -146,6 +141,7 @@ impl NiceU8 {
 		unsafe { std::str::from_utf8_unchecked(self.as_bytes2()) }
 	}
 
+	#[allow(unsafe_code)]
 	#[must_use]
 	#[inline]
 	/// # Triple Digit Str.
@@ -175,7 +171,7 @@ mod tests {
 
 	#[test]
 	fn t_nice_u8() {
-		assert_eq!(NiceU8::min(), NiceU8::from(0));
+		assert_eq!(NiceU8::default(), NiceU8::from(0));
 
 		// Strings come from bytes, so this implicitly tests both.
 		for i in 0..=u8::MAX {
@@ -186,8 +182,14 @@ mod tests {
 		}
 
 		// Test the defaults too.
-		assert_eq!(NiceU8::default().as_bytes(), <&[u8]>::default());
-		assert_eq!(NiceU8::default().as_str(), "");
+		assert_eq!(NiceU8::empty().as_bytes(), <&[u8]>::default());
+		assert_eq!(NiceU8::empty().as_str(), "");
+
+		// Test some Option variants.
+		let foo: Option<u8> = None;
+		assert_eq!(NiceU8::default(), NiceU8::from(foo));
+		let foo = Some(13_u8);
+		assert_eq!(NiceU8::from(13_u8), NiceU8::from(foo));
 
 		// Check ordering too.
 		let one = NiceU8::from(10);
@@ -199,9 +201,15 @@ mod tests {
 
 	#[test]
 	fn t_nice_nonzero_u8() {
-		assert_eq!(NiceU8::min(), NiceU8::from(NonZeroU8::new(0)));
+		assert_eq!(NiceU8::default(), NiceU8::from(NonZeroU8::new(0)));
 		assert_eq!(NiceU8::from(50_u8), NiceU8::from(NonZeroU8::new(50)));
 		assert_eq!(NiceU8::from(50_u8), NiceU8::from(NonZeroU8::new(50).unwrap()));
+
+		// Test some Option variants.
+		let foo: Option<NonZeroU8> = None;
+		assert_eq!(NiceU8::from(foo), NiceU8::default());
+		let foo = NonZeroU8::new(13);
+		assert_eq!(NiceU8::from(13_u8), NiceU8::from(foo));
 	}
 
 	#[test]
@@ -215,7 +223,7 @@ mod tests {
 		}
 
 		// Test the default.
-		assert_eq!(NiceU8::default().as_str2(), "00");
+		assert_eq!(NiceU8::empty().as_str2(), "00");
 	}
 
 	#[test]
@@ -229,13 +237,13 @@ mod tests {
 		}
 
 		// Test the default.
-		assert_eq!(NiceU8::default().as_str3(), "000");
+		assert_eq!(NiceU8::empty().as_str3(), "000");
 	}
 
 	#[test]
 	fn t_as() {
 		let num = NiceU8::from(253);
-		assert_eq!(num.as_str(), num.as_string());
-		assert_eq!(num.as_bytes(), num.as_vec());
+		assert_eq!(num.as_str(), String::from(num));
+		assert_eq!(num.as_bytes(), Vec::<u8>::from(num));
 	}
 }

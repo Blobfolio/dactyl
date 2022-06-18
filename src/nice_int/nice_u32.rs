@@ -2,14 +2,15 @@
 # Dactyl: Nice u32.
 */
 
+use crate::NiceWrapper;
 use std::num::NonZeroU32;
 
 
 
 /// # Total Buffer Size.
+///
+/// 4294967295 + three commas = thirteen bytes.
 const SIZE: usize = 13;
-
-
 
 /// # Generate Inner Buffer.
 macro_rules! inner {
@@ -18,7 +19,6 @@ macro_rules! inner {
 
 
 
-#[derive(Debug, Clone, Copy)]
 /// `NiceU32` provides a quick way to convert a `u32` into a formatted byte
 /// string for e.g. printing. Commas are added for every thousand.
 ///
@@ -33,42 +33,40 @@ macro_rules! inner {
 ///     "33,231"
 /// );
 /// ```
-pub struct NiceU32 {
-	inner: [u8; SIZE],
-	from: usize,
-}
+///
+/// ## Traits
+///
+/// Rustdoc doesn't do a good job at documenting type alias implementations, but
+/// `NiceU32` has a bunch, including:
+///
+/// * `AsRef<[u8]>`
+/// * `AsRef<str>`
+/// * `Borrow<[u8]>`
+/// * `Borrow<str>`
+/// * `Clone`
+/// * `Copy`
+/// * `Default`
+/// * `Deref<Target=[u8]>`
+/// * `Display`
+/// * `Eq` / `PartialEq`
+/// * `Hash`
+/// * `Ord` / `PartialOrd`
+///
+/// You can instantiate a `NiceU32` with:
+///
+/// * `From<u32>`
+/// * `From<Option<u32>>`
+/// * `From<NonZeroU32>`
+/// * `From<Option<NonZeroU32>>`
+///
+/// When converting from a `None`, the result will be equivalent to zero.
+pub type NiceU32 = NiceWrapper<SIZE>;
 
-impl Default for NiceU32 {
-	#[inline]
-	fn default() -> Self {
-		Self {
-			inner: inner!(b','),
-			from: SIZE,
-		}
-	}
-}
-
-impl From<u32> for NiceU32 {
-	fn from(num: u32) -> Self {
-		let mut out = Self::default();
-		out.parse(num);
-		out
-	}
-}
+super::nice_default!(NiceU32, inner!(b','), SIZE);
+super::nice_from_nz!(NiceU32, NonZeroU32);
+super::nice_parse!(NiceU32, u32);
 
 impl NiceU32 {
-	#[must_use]
-	#[inline]
-	/// # Min.
-	///
-	/// This is equivalent to zero.
-	pub const fn min() -> Self {
-		Self {
-			inner: inner!(b','),
-			from: SIZE - 1,
-		}
-	}
-
 	#[must_use]
 	/// # New Instance w/ Custom Separator.
 	///
@@ -101,45 +99,7 @@ impl NiceU32 {
 		out.parse(num);
 		out
 	}
-
-	#[allow(clippy::cast_possible_truncation)] // One digit always fits u8.
-	/// # Parse.
-	///
-	/// This handles the actual crunching.
-	fn parse(&mut self, mut num: u32) {
-		let ptr = self.inner.as_mut_ptr();
-
-		while 999 < num {
-			let (div, rem) = crate::div_mod_u32(num, 1000);
-			self.from -= 4;
-			unsafe { super::write_u8_3(ptr.add(self.from + 1), rem as u16); }
-			num = div;
-		}
-
-		if 99 < num {
-			self.from -= 3;
-			unsafe { super::write_u8_3(ptr.add(self.from), num as u16); }
-		}
-		else if 9 < num {
-			self.from -= 2;
-			unsafe {
-				std::ptr::copy_nonoverlapping(
-					crate::double(num as usize),
-					ptr.add(self.from),
-					2
-				);
-			}
-		}
-		else {
-			self.from -= 1;
-			unsafe { std::ptr::write(ptr.add(self.from), num as u8 + b'0'); }
-		}
-	}
 }
-
-// A few Macro traits.
-super::impl_nice_nonzero_int!(NiceU32: NonZeroU32);
-super::impl_nice_int!(NiceU32);
 
 
 
@@ -158,15 +118,21 @@ mod tests {
 
 		// Check the min and max.
 		assert_eq!(NiceU32::from(0).as_str(), "0");
-		assert_eq!(NiceU32::min(), NiceU32::from(0));
+		assert_eq!(NiceU32::default(), NiceU32::from(0));
 		assert_eq!(
 			NiceU32::from(u32::MAX).as_str(),
 			u32::MAX.to_formatted_string(&Locale::en),
 		);
 
+		// Test some Option variants.
+		let foo: Option<u32> = None;
+		assert_eq!(NiceU32::default(), NiceU32::from(foo));
+		let foo = Some(13_u32);
+		assert_eq!(NiceU32::from(13_u32), NiceU32::from(foo));
+
 		// Test the defaults too.
-		assert_eq!(NiceU32::default().as_bytes(), <&[u8]>::default());
-		assert_eq!(NiceU32::default().as_str(), "");
+		assert_eq!(NiceU32::empty().as_bytes(), <&[u8]>::default());
+		assert_eq!(NiceU32::empty().as_str(), "");
 
 		// Check ordering too.
 		let one = NiceU32::from(10);
@@ -188,15 +154,21 @@ mod tests {
 
 	#[test]
 	fn t_nice_nonzero_u32() {
-		assert_eq!(NiceU32::min(), NiceU32::from(NonZeroU32::new(0)));
+		assert_eq!(NiceU32::default(), NiceU32::from(NonZeroU32::new(0)));
 		assert_eq!(NiceU32::from(50_u32), NiceU32::from(NonZeroU32::new(50)));
 		assert_eq!(NiceU32::from(50_u32), NiceU32::from(NonZeroU32::new(50).unwrap()));
+
+		// Test some Option variants.
+		let foo: Option<NonZeroU32> = None;
+		assert_eq!(NiceU32::from(foo), NiceU32::default());
+		let foo = NonZeroU32::new(13);
+		assert_eq!(NiceU32::from(13_u32), NiceU32::from(foo));
 	}
 
 	#[test]
 	fn t_as() {
 		let num = NiceU32::from(12_345_678_u32);
-		assert_eq!(num.as_str(), num.as_string());
-		assert_eq!(num.as_bytes(), num.as_vec());
+		assert_eq!(num.as_str(), String::from(num));
+		assert_eq!(num.as_bytes(), Vec::<u8>::from(num));
 	}
 }

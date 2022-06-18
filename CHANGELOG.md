@@ -1,6 +1,42 @@
 # Changelog
 
 
+## [0.4.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.4.0) - 2022-06-18
+
+### Changed
+
+* The MSRV is now `1.61`
+* The `NiceU*` and `NicePercent` structs are now type aliases
+* `NicePercent::default` is now equivalent to `From<0.0>`
+* `NiceU*::default` is now equivalent to `From<0>`
+* Slightly faster `NiceU8`, `NiceU16` instantiation
+
+### Added
+
+* `dactyl::div_mod` (generic)
+* impl `From<NicePercent>` for `String`
+* impl `From<NicePercent>` for `Vec<u8>`
+* impl `From<NiceU*>` for `String`
+* impl `From<NiceU*>` for `Vec<u8>`
+* impl `From<Option<T>>` (where `From<T>`) for `NicePercent`
+* impl `From<Option<T>>` (where `From<T>`) for `NiceU*`
+
+### Removed
+
+* `dactyl::div_mod_u8` (use the new generic version instead)
+* `dactyl::div_mod_u16`
+* `dactyl::div_mod_u32`
+* `dactyl::div_mod_u64`
+* `dactyl::div_mod_u128`
+* `dactyl::div_mod_usize`
+* `dactyl::write_time`
+* `dactyl::write_u8`
+* `NicePercent::as_string` (use `From<NicePercent>` instead)
+* `NicePercent::as_vec` (use `From<NicePercent>` instead)
+* `NiceU*::as_string` (use `From<NiceU*>` instead)
+* `NiceU*::as_vec` (use `From<NiceU*>` instead)
+
+
 
 ## [0.3.4](https://github.com/Blobfolio/dactyl/releases/tag/v0.3.4) - 2022-04-14
 
