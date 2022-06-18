@@ -102,7 +102,7 @@ static DOUBLE: [[u8; 2]; 100] = [
 ///
 /// This will panic if the number is greater than 99.
 pub(crate) fn double_prt(idx: usize) -> *const u8 {
-	debug_assert!(idx < 100);
+	debug_assert!(idx < 100, "BUG: Invalid index passed to double_ptr.");
 	unsafe { DOUBLE.get_unchecked(idx).as_ptr() }
 }
 
@@ -147,9 +147,7 @@ pub(crate) fn double(idx: usize) -> [u8; 2] { DOUBLE[idx] }
 /// This will panic if the denominator is set to zero or if the result of
 /// either operation would overflow, like `i8::MIN / -1_i8`.
 pub fn div_mod<T>(e: T, d: T) -> (T, T)
-where T: Copy + std::ops::Div<Output=T> + std::ops::Rem<Output=T> {
-	(e / d, e % d)
-}
+where T: Copy + std::ops::Div<Output=T> + std::ops::Rem<Output=T> { (e / d, e % d) }
 
 #[must_use]
 /// # Integer to Float Division.
@@ -170,53 +168,6 @@ where T: AsPrimitive<f64> {
 	}
 }
 
-#[allow(unsafe_code)]
-/// # Write u8.
-///
-/// This will quickly write a `u8` number as a UTF-8 byte slice to the provided
-/// pointer.
-///
-/// ## Safety
-///
-/// The pointer must have enough space for the value, i.e. 1-3 digits, or
-/// undefined things will happen.
-pub unsafe fn write_u8(buf: *mut u8, num: u8) {
-	if 99 < num {
-		let (div, rem) = div_mod(num, 100);
-		std::ptr::write(buf, div + b'0');
-		std::ptr::copy_nonoverlapping(double_prt(rem as usize), buf.add(1), 2);
-	}
-	else if 9 < num {
-		std::ptr::copy_nonoverlapping(double_prt(num as usize), buf, 2);
-	}
-	else {
-		std::ptr::write(buf, num + b'0');
-	}
-}
-
-#[allow(unsafe_code)]
-/// # Write Time.
-///
-/// This writes HH:MM:SS to the provided pointer.
-///
-/// ## Panics
-///
-/// This method is only intended to cover values that fit in a day and will
-/// panic if `h`, `m`, or `s` is outside the range of `0..60`.
-///
-/// ## Safety
-///
-/// The pointer must have 8 bytes free or undefined things will happen.
-pub unsafe fn write_time(buf: *mut u8, h: u8, m: u8, s: u8) {
-	assert!(h < 60 && m < 60 && s < 60);
-
-	std::ptr::copy_nonoverlapping(double_prt(h as usize), buf, 2);
-	std::ptr::write(buf.add(2), b':');
-	std::ptr::copy_nonoverlapping(double_prt(m as usize), buf.add(3), 2);
-	std::ptr::write(buf.add(5), b':');
-	std::ptr::copy_nonoverlapping(double_prt(s as usize), buf.add(6), 2);
-}
-
 
 
 #[cfg(test)]
@@ -230,46 +181,5 @@ mod tests {
 		assert_eq!(int_div_float(400_000_000_000_u64, 800_000_000_000_u64), Some(0.5));
 		assert_eq!(int_div_float(400_000_000_000_u64, 0_u64), None);
 		assert_eq!(int_div_float(4_u8, 8_u8), Some(0.5));
-	}
-
-	#[allow(unsafe_code)]
-	#[test]
-	fn t_write_u8() {
-		for i in 0..10 {
-			let mut buf = [0_u8];
-			unsafe {
-				write_u8(buf.as_mut_ptr(), i);
-				assert_eq!(buf, format!("{}", i).as_bytes());
-			}
-		}
-
-		for i in 10..100 {
-			let mut buf = [0_u8, 0_u8];
-			unsafe {
-				write_u8(buf.as_mut_ptr(), i);
-				assert_eq!(buf, format!("{}", i).as_bytes());
-			}
-		}
-
-		for i in 100..u8::MAX {
-			let mut buf = [0_u8, 0_u8, 0_u8];
-			unsafe {
-				write_u8(buf.as_mut_ptr(), i);
-				assert_eq!(buf, format!("{}", i).as_bytes());
-			}
-		}
-	}
-
-	#[allow(unsafe_code)]
-	#[test]
-	fn t_write_time() {
-		let mut buf = [0_u8; 8];
-		unsafe {
-			write_time(buf.as_mut_ptr(), 1, 2, 3);
-			assert_eq!(buf, *b"01:02:03");
-
-			write_time(buf.as_mut_ptr(), 10, 26, 37);
-			assert_eq!(buf, *b"10:26:37");
-		}
 	}
 }

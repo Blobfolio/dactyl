@@ -14,10 +14,10 @@
 ### Added
 
 * `dactyl::div_mod` (generic)
-* impl `From<NicePercent>` for String
-* impl `From<NicePercent>` for Vec<u8>
-* impl `From<NiceU*>` for String
-* impl `From<NiceU*>` for Vec<u8>
+* impl `From<NicePercent>` for `String`
+* impl `From<NicePercent>` for `Vec<u8>`
+* impl `From<NiceU*>` for `String`
+* impl `From<NiceU*>` for `Vec<u8>`
 * impl `From<Option<T>>` (where `From<T>`) for `NicePercent`
 * impl `From<Option<T>>` (where `From<T>`) for `NiceU*`
 
@@ -29,6 +29,8 @@
 * `dactyl::div_mod_u64`
 * `dactyl::div_mod_u128`
 * `dactyl::div_mod_usize`
+* `dactyl::write_time`
+* `dactyl::write_u8`
 * `NicePercent::as_string` (use `From<NicePercent>` instead)
 * `NicePercent::as_vec` (use `From<NicePercent>` instead)
 * `NiceU*::as_string` (use `From<NiceU*>` instead)

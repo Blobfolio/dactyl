@@ -1,5 +1,5 @@
 /*!
-# Dactyl: "Nice" Integers
+# Dactyl: "Nice" Unsigned Integers (and Percent)
 
 See the main crate documentation for details.
 */
@@ -216,8 +216,7 @@ pub(self) use {
 
 
 
-#[allow(clippy::cast_possible_truncation)] // One digit always fits u8.
-#[allow(unsafe_code)]
+#[allow(unsafe_code, clippy::cast_possible_truncation)] // One digit always fits u8.
 /// # Write `u8` x 3
 ///
 /// ## Safety
