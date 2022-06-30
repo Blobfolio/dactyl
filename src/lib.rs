@@ -52,7 +52,10 @@ This crate also contains two "in development" structs — [`NicePercent`] and [`
 	unused_import_braces,
 )]
 
-#![allow(clippy::module_name_repetitions)] // This is fine.
+#![allow(
+	clippy::module_name_repetitions,
+	clippy::redundant_pub_crate
+)] // This is fine.
 
 
 
