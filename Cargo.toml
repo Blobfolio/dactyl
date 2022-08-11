@@ -1,9 +1,9 @@
 [package]
 name = "dactyl"
-version = "0.4.0"
+version = "0.4.1"
 authors = ["Blobfolio, LLC. <hello@blobfolio.com>"]
 edition = "2021"
-rust-version = "1.61"
+rust-version = "1.63"
 description = "A small library to quickly stringify integers with basic formatting."
 license = "WTFPL"
 repository = "https://github.com/Blobfolio/dactyl"
@@ -32,7 +32,7 @@ num-traits = "0.2.*"
 
 [dev-dependencies]
 brunch = "0.2.*, >=0.2.5"
-fastrand = "1.7.*"
+fastrand = "1.8.*"
 num-format = "0.4.*"
 
 [[bench]]
