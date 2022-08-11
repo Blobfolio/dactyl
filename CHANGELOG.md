@@ -1,11 +1,19 @@
 # Changelog
 
 
+## [0.4.1](https://github.com/Blobfolio/dactyl/releases/tag/v0.4.1) - 2022-08-11
+
+### Changed
+
+* Bump MSRV `1.63`
+
+
+
 ## [0.4.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.4.0) - 2022-06-18
 
 ### Changed
 
-* The MSRV is now `1.61`
+* Bump MSRV `1.61`
 * The `NiceU*` and `NicePercent` structs are now type aliases
 * `NicePercent::default` is now equivalent to `From<0.0>`
 * `NiceU*::default` is now equivalent to `From<0>`

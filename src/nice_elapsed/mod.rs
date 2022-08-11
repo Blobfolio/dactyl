@@ -380,7 +380,7 @@ impl ElapsedKind {
 
 	#[allow(unsafe_code)]
 	/// # Write Label.
-	fn write_label(self, dst: *mut u8, singular: bool) -> *mut u8 {
+	const fn write_label(self, dst: *mut u8, singular: bool) -> *mut u8 {
 		let (mut len, label) = self.label();
 		if singular { len -= 1; }
 
@@ -400,7 +400,7 @@ impl ElapsedKind {
 	/// varies based on whether or not hours are involved.
 	///
 	/// Seconds and single-count values never write joiners.
-	fn write_joiner(self, dst: *mut u8, count: u8, any: bool) -> *mut u8 {
+	const fn write_joiner(self, dst: *mut u8, count: u8, any: bool) -> *mut u8 {
 		match (self, count, any) {
 			(Self::Hour, 3, _) => {
 				unsafe {
