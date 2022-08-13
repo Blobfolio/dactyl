@@ -1,6 +1,15 @@
 # Changelog
 
 
+## [0.4.2](https://github.com/Blobfolio/dactyl/releases/tag/v0.4.2) - 2022-08-13
+
+### New
+
+* `traits::Inflection`
+* `traits::NiceInflection`
+
+
+
 ## [0.4.1](https://github.com/Blobfolio/dactyl/releases/tag/v0.4.1) - 2022-08-11
 
 ### Changed

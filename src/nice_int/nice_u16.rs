@@ -153,7 +153,7 @@ mod tests {
 
 	#[test]
 	fn t_nice_u16() {
-		assert_eq!(NiceU16::default(), NiceU16::from(0));
+		assert_eq!(NiceU16::default(), NiceU16::from(0_u16));
 
 		#[cfg(not(miri))]
 		for i in 0..=u16::MAX {
@@ -185,8 +185,8 @@ mod tests {
 		assert_eq!(NiceU16::from(13_u16), NiceU16::from(foo));
 
 		// Check ordering too.
-		let one = NiceU16::from(10);
-		let two = NiceU16::from(90);
+		let one = NiceU16::from(10_u16);
+		let two = NiceU16::from(90_u16);
 		assert_eq!(one.cmp(&two), std::cmp::Ordering::Less);
 		assert_eq!(one.cmp(&one), std::cmp::Ordering::Equal);
 		assert_eq!(two.cmp(&one), std::cmp::Ordering::Greater);

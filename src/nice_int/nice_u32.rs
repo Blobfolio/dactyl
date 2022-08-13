@@ -135,8 +135,8 @@ mod tests {
 		assert_eq!(NiceU32::empty().as_str(), "");
 
 		// Check ordering too.
-		let one = NiceU32::from(10);
-		let two = NiceU32::from(90);
+		let one = NiceU32::from(10_u32);
+		let two = NiceU32::from(90_u32);
 		assert_eq!(one.cmp(&two), std::cmp::Ordering::Less);
 		assert_eq!(one.cmp(&one), std::cmp::Ordering::Equal);
 		assert_eq!(two.cmp(&one), std::cmp::Ordering::Greater);
