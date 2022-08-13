@@ -171,7 +171,7 @@ mod tests {
 
 	#[test]
 	fn t_nice_u8() {
-		assert_eq!(NiceU8::default(), NiceU8::from(0));
+		assert_eq!(NiceU8::default(), NiceU8::from(0_u8));
 
 		// Strings come from bytes, so this implicitly tests both.
 		for i in 0..=u8::MAX {
@@ -192,8 +192,8 @@ mod tests {
 		assert_eq!(NiceU8::from(13_u8), NiceU8::from(foo));
 
 		// Check ordering too.
-		let one = NiceU8::from(10);
-		let two = NiceU8::from(90);
+		let one = NiceU8::from(10_u8);
+		let two = NiceU8::from(90_u8);
 		assert_eq!(one.cmp(&two), std::cmp::Ordering::Less);
 		assert_eq!(one.cmp(&one), std::cmp::Ordering::Equal);
 		assert_eq!(two.cmp(&one), std::cmp::Ordering::Greater);
@@ -242,7 +242,7 @@ mod tests {
 
 	#[test]
 	fn t_as() {
-		let num = NiceU8::from(253);
+		let num = NiceU8::from(253_u8);
 		assert_eq!(num.as_str(), String::from(num));
 		assert_eq!(num.as_bytes(), Vec::<u8>::from(num));
 	}
