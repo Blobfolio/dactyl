@@ -7,34 +7,26 @@ use brunch::{
 	benches,
 };
 use dactyl::NiceU32;
-use std::time::Duration;
 
 benches!(
-	Bench::new("dactyl::NiceU32", "from(0)")
-		.timed(Duration::from_secs(1))
-		.with(|| NiceU32::from(0_u32)),
+	Bench::new("dactyl::NiceU32::from(0)")
+		.run(|| NiceU32::from(0_u32)),
 
-	Bench::new("dactyl::NiceU32", "from(100_020)")
-		.timed(Duration::from_secs(1))
-		.with(|| NiceU32::from(100_020_u32)),
+	Bench::new("dactyl::NiceU32::from(100_020)")
+		.run(|| NiceU32::from(100_020_u32)),
 
-	Bench::new("dactyl::NiceU32", "from(6_330_004)")
-		.timed(Duration::from_secs(1))
-		.with(|| NiceU32::from(6_330_004_u32)),
+	Bench::new("dactyl::NiceU32::from(6_330_004)")
+		.run(|| NiceU32::from(6_330_004_u32)),
 
-	Bench::new("dactyl::NiceU32", "from(57_444_000)")
-		.timed(Duration::from_secs(1))
-		.with(|| NiceU32::from(57_444_000_u32)),
+	Bench::new("dactyl::NiceU32::from(57_444_000)")
+		.run(|| NiceU32::from(57_444_000_u32)),
 
-	Bench::new("dactyl::NiceU32", "from(777_804_132)")
-		.timed(Duration::from_secs(1))
-		.with(|| NiceU32::from(777_804_132_u32)),
+	Bench::new("dactyl::NiceU32::from(777_804_132)")
+		.run(|| NiceU32::from(777_804_132_u32)),
 
-	Bench::new("dactyl::NiceU32", "from(u32::MAX)")
-		.timed(Duration::from_secs(1))
-		.with(|| NiceU32::from(u32::MAX)),
+	Bench::new("dactyl::NiceU32::from(u32::MAX)")
+		.run(|| NiceU32::from(u32::MAX)),
 
-	Bench::new("dactyl::NiceU32", "with_separator(777_804_132, b'_')")
-		.timed(Duration::from_secs(1))
-		.with(|| NiceU32::with_separator(777_804_132_u32, b'_')),
+	Bench::new("dactyl::NiceU32::with_separator(777_804_132, b'_')")
+		.run(|| NiceU32::with_separator(777_804_132_u32, b'_')),
 );

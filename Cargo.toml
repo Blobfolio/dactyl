@@ -31,7 +31,7 @@ credits-dir = "./"
 num-traits = "0.2.*"
 
 [dev-dependencies]
-brunch = "0.2.*, >=0.2.5"
+brunch = "0.3.*"
 fastrand = "1.8.*"
 num-format = "0.4.*"
 
