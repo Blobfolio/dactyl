@@ -32,7 +32,7 @@ benches!(
 
 	Bench::spacer(),
 
-	Bench::new("String::from::dactyl::NiceU16")
+	Bench::new("String::from::<dactyl::NiceU16>()")
 		.run_seeded(NiceU16::from(40_999_u16), String::from),
 
 	Bench::new("dactyl::NiceU16::to_string()")
