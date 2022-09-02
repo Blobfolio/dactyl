@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [0.4.3](https://github.com/Blobfolio/dactyl/releases/tag/v0.4.3) - TBD
+
+### New
+
+* `NiceElapsed::dhms`
+
+
+
 ## [0.4.2](https://github.com/Blobfolio/dactyl/releases/tag/v0.4.2) - 2022-08-13
 
 ### New

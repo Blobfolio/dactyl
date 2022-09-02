@@ -197,6 +197,30 @@ impl NiceElapsed {
 		}
 	}
 
+	#[allow(clippy::integer_division)] // It's fine.
+	#[must_use]
+	/// # Time Chunks (with Days).
+	///
+	/// This works just like [`NiceElapsed::hms`], but counts up days too.
+	///
+	/// ## Example.
+	///
+	/// ```
+	/// use dactyl::NiceElapsed;
+	/// assert_eq!(NiceElapsed::dhms(1_123_321), (13_u16, 0_u8, 2_u8, 1_u8));
+	/// ```
+	pub const fn dhms(num: u32) -> (u16, u8, u8, u8) {
+		let (d, [h, m, s]) =
+			if num < 86_400 {
+				(0, Self::hms(num))
+			}
+			else {
+				((num / 86_400) as u16, Self::hms(num % 86_400))
+			};
+
+		(d, h, m, s)
+	}
+
 	#[allow(clippy::cast_possible_truncation)] // Size is previously asserted.
 	#[must_use]
 	/// # Time Chunks.

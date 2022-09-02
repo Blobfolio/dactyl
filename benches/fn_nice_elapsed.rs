@@ -19,6 +19,12 @@ benches!(
 	Bench::new("dactyl::NiceElapsed::hms(10502)")
 		.run(|| NiceElapsed::hms(10502_u32)),
 
+	Bench::new("dactyl::NiceElapsed::dhms(10502)")
+		.run(|| NiceElapsed::hms(10502_u32)),
+
+	Bench::new("dactyl::NiceElapsed::dhms(269702)")
+		.run(|| NiceElapsed::hms(269702_u32)),
+
 	Bench::spacer(),
 
 	Bench::new("dactyl::NiceElapsed::from(1)")
