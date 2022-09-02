@@ -46,5 +46,8 @@ benches!(
 		.run(|| NiceElapsed::from(Duration::from_millis(37732030))),
 
 	Bench::new("dactyl::NiceElapsed::from(428390)")
-		.run(|| NiceElapsed::from(428390_u32))
+		.run(|| NiceElapsed::from(428390_u32)),
+
+	Bench::new("dactyl::NiceElapsed::from(428390_u64)")
+		.run(|| NiceElapsed::from(428390_u64)),
 );

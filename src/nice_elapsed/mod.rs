@@ -1,9 +1,11 @@
 /*!
 # Dactyl: "Nice" Elapsed
-
-Note: this module is "in development". It is subject to change, and may eventually be spun off into its own crate.
 */
 
+use crate::{
+	NiceU16,
+	traits::SaturatingFrom,
+};
 use std::{
 	fmt,
 	hash::{
@@ -20,7 +22,7 @@ use std::{
 
 
 /// # Array Size.
-const SIZE: usize = 39;
+const SIZE: usize = 52;
 
 /// # Helper: `AsRef` and `Borrow`.
 macro_rules! as_ref_borrow_cast {
@@ -38,16 +40,16 @@ macro_rules! as_ref_borrow_cast {
 macro_rules! elapsed_from {
 	($($type:ty),+) => ($(
 		impl From<$type> for NiceElapsed {
+			/// This will never fail, however large values will be capped to
+			/// [`u32::MAX`] before parsing, so may not reflect all the seconds
+			/// you hoped they would.
 			fn from(num: $type) -> Self {
 				// Nothing!
 				if 0 == num { Self::min() }
-				// Hours, minutes, and/or seconds.
-				else if num < 86_400 {
-					let [h, m, s] = Self::hms(num as u32);
-					Self::from_hms(h, m, s)
+				// Something!
+				else {
+					Self::from(u32::saturating_from(num))
 				}
-				// We're into days, which we don't do.
-				else { Self::max() }
 			}
 		}
 	)+);
@@ -60,8 +62,9 @@ macro_rules! elapsed_from {
 /// seconds (`u32`) into a nice, human-readable Oxford-joined byte string, like
 /// `3 hours, 2 minutes, and 1 second`.
 ///
-/// Note: days are unsupported, or more specifically, any value over `23:59:59`
-/// (or `86400+` seconds) will return a fixed value of `>1 day`.
+/// The largest unit is days. The smallest unit is seconds, unless created with
+/// `From<Duration>` or `From<Instant>`, in which case milliseconds (to two
+/// decimal places) will be included, unless zero.
 ///
 /// ## Examples
 ///
@@ -72,10 +75,6 @@ macro_rules! elapsed_from {
 ///     "1 minute and 1 second"
 /// );
 /// ```
-///
-/// ## Note
-///
-/// This module is "in development". It is subject to change, and may eventually be spun off into its own crate.
 pub struct NiceElapsed {
 	inner: [u8; SIZE],
 	len: usize,
@@ -122,19 +121,19 @@ impl From<Duration> for NiceElapsed {
 	#[allow(clippy::cast_sign_loss)] // It is positive.
 	fn from(src: Duration) -> Self {
 		let s = src.as_secs();
-		if s < 86_400 {
-			// Tease out the milliseconds as hundredths.
-			let ms: u64 = (src.as_millis() as u64 - s * 1000).wrapping_div(10);
+		let ms =
+			(src.as_millis() - u128::from(s) * 1000) // Only ms.
+			.wrapping_div(10) // Truncate to max 2 digits (from possible 3).
+			as u8; // 0-99 fits u8.
 
-			if 0 < ms && ms < 100 {
-				let [h, m, s] = Self::hms(s as u32);
-				Self::from_hmsm(h, m, s, ms as u8)
-			}
-			// Cap precision to seconds.
-			else { Self::from(s) }
+		// Nothing.
+		if s == 0 && ms == 0 { Self::min() }
+		// Something.
+		else {
+			debug_assert!(ms < 100, "BUG: Milliseconds should never be more than two digits.");
+			let (d, h, m, s) = Self::dhms(u32::saturating_from(s));
+			Self::from_parts(d, h, m, s, ms)
 		}
-		// We're into days, which we don't do.
-		else { Self::max() }
 	}
 }
 
@@ -146,13 +145,11 @@ impl From<u32> for NiceElapsed {
 	fn from(num: u32) -> Self {
 		// Nothing!
 		if 0 == num { Self::min() }
-		// Hours, and maybe minutes and/or seconds.
-		else if num < 86_400 {
-			let [h, m, s] = Self::hms(num);
-			Self::from_hms(h, m, s)
+		// Something.
+		else {
+			let (d, h, m, s) = Self::dhms(num);
+			Self::from_parts(d, h, m, s, 0)
 		}
-		// We're into days, which we don't do.
-		else { Self::max() }
 	}
 }
 
@@ -175,24 +172,37 @@ impl NiceElapsed {
 	///
 	/// We can save some processing time by hard-coding the value for `0`,
 	/// which comes out to `0 seconds`.
+	///
+	/// ## Examples
+	///
+	/// ```
+	/// use dactyl::NiceElapsed;
+	/// assert_eq!(NiceElapsed::min().as_str(), "0 seconds");
+	/// ```
 	pub const fn min() -> Self {
 		Self {
 			//       0   •    s    e   c    o    n    d    s
-			inner: [48, 32, 115, 101, 99, 111, 110, 100, 115, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			inner: [48, 32, 115, 101, 99, 111, 110, 100, 115, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			len: 9,
 		}
 	}
 
+	#[deprecated(since = "0.4.3", note = "NiceElapsed now supports days; this method is now moot")]
 	#[must_use]
 	/// # Maximum Value
 	///
-	/// We can save some processing time by hard-coding the maximum value.
-	/// Because `NiceElapsed` does not support days, this is equivalent to
-	/// `86_400`, which comes out to `>1 day`.
+	/// This returns a value that prints as `>1 day`.
+	///
+	/// ## Examples
+	///
+	/// ```
+	/// use dactyl::NiceElapsed;
+	/// assert_eq!(NiceElapsed::max().as_str(), ">1 day");
+	/// ```
 	pub const fn max() -> Self {
 		Self {
 			//       >   1   •    d   a    y
-			inner: [62, 49, 32, 100, 97, 121, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			inner: [62, 49, 32, 100, 97, 121, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			len: 6,
 		}
 	}
@@ -203,11 +213,15 @@ impl NiceElapsed {
 	///
 	/// This works just like [`NiceElapsed::hms`], but counts up days too.
 	///
-	/// ## Example.
+	/// Note that unlike the time units, which have really small caps, days can
+	/// reach up to `49,710`, so are returned as a `u16`.
+	///
+	/// ## Examples
 	///
 	/// ```
 	/// use dactyl::NiceElapsed;
 	/// assert_eq!(NiceElapsed::dhms(1_123_321), (13_u16, 0_u8, 2_u8, 1_u8));
+	/// assert_eq!(NiceElapsed::dhms(3661), (0_u16, 1_u8, 1_u8, 1_u8));
 	/// ```
 	pub const fn dhms(num: u32) -> (u16, u8, u8, u8) {
 		let (d, [h, m, s]) =
@@ -232,7 +246,7 @@ impl NiceElapsed {
 	/// rounding trickery to achieve conversion, bypassing the need for
 	/// (relatively) expensive division and remainder calculations.
 	///
-	/// ## Example.
+	/// ## Examples
 	///
 	/// ```
 	/// use dactyl::NiceElapsed;
@@ -267,6 +281,16 @@ impl NiceElapsed {
 	/// # As Bytes.
 	///
 	/// Return the nice value as a byte string.
+	///
+	/// ## Examples
+	///
+	/// ```
+	/// use dactyl::NiceElapsed;
+	/// assert_eq!(
+	///     NiceElapsed::from(61_u32).as_bytes(),
+	///     b"1 minute and 1 second"
+	/// );
+	/// ```
 	pub fn as_bytes(&self) -> &[u8] { &self.inner[0..self.len] }
 
 	#[allow(unsafe_code)]
@@ -275,6 +299,16 @@ impl NiceElapsed {
 	/// # As Str.
 	///
 	/// Return the nice value as a string slice.
+	///
+	/// ## Examples
+	///
+	/// ```
+	/// use dactyl::NiceElapsed;
+	/// assert_eq!(
+	///     NiceElapsed::from(61_u32).as_str(),
+	///     "1 minute and 1 second"
+	/// );
+	/// ```
 	pub fn as_str(&self) -> &str {
 		// Safety: numbers and labels are valid ASCII.
 		unsafe { std::str::from_utf8_unchecked(self.as_bytes()) }
@@ -282,91 +316,87 @@ impl NiceElapsed {
 }
 
 impl NiceElapsed {
-	#[allow(clippy::cast_sign_loss)] // The value is >= 0.
+	#[allow(clippy::cast_possible_truncation)] // We're checking first.
+	#[allow(clippy::cast_sign_loss)] // Values are unsigned.
+	#[allow(clippy::similar_names)] // It's that or the names become tedious.
 	#[allow(unsafe_code)]
-	/// # From HMS.
+	/// # From DHMS.ms.
 	///
-	/// Build with hours, minutes, and seconds.
-	fn from_hms(h: u8, m: u8, s: u8) -> Self {
+	/// Build with days, hours, minutes, seconds, and milliseconds (hundredths).
+	fn from_parts(d: u16, h: u8, m: u8, s: u8, ms: u8) -> Self {
+		let has_d = 0 < d;
 		let has_h = 0 < h;
 		let has_m = 0 < m;
-		let has_s = 0 < s;
-
-		let count: u8 = u8::from(has_h) + u8::from(has_m) + u8::from(has_s);
-
-		let mut buf = [0_u8; SIZE];
-		let mut end = buf.as_mut_ptr();
-
-		// Hours.
-		if has_h {
-			end = unsafe { write_u8_advance(end, h) };
-			end = ElapsedKind::Hour.write_label(end, h == 1);
-			end = ElapsedKind::Hour.write_joiner(end, count, false);
-		}
-
-		// Minutes.
-		if has_m {
-			end = unsafe { write_u8_advance(end, m) };
-			end = ElapsedKind::Minute.write_label(end, m == 1);
-			end = ElapsedKind::Minute.write_joiner(end, count, has_h);
-		}
-
-		// Seconds.
-		if has_s {
-			end = unsafe { write_u8_advance(end, s) };
-			end = ElapsedKind::Second.write_label(end, s == 1);
-		}
-
-		// Put it all together!
-		Self {
-			inner: buf,
-			len: unsafe { end.offset_from(buf.as_ptr()) as usize },
-		}
-	}
-
-	#[allow(clippy::cast_sign_loss)] // The value is >= 0.
-	#[allow(unsafe_code)]
-	/// # From HMS.ms.
-	///
-	/// Build with hours, minutes, seconds, and milliseconds (hundredths).
-	fn from_hmsm(h: u8, m: u8, s: u8, ms: u8) -> Self {
-		let has_h = 0 < h;
-		let has_m = 0 < m;
+		let has_ms = 0 < ms;
+		let has_s = has_ms || 0 < s;
 
 		// How many elements are there?
-		let count: u8 = u8::from(has_h) + u8::from(has_m) + 1;
+		let total: u8 =
+			u8::from(has_d) +
+			u8::from(has_h) +
+			u8::from(has_m) +
+			u8::from(has_s);
+
+		debug_assert!(
+			0 < total,
+			"BUG: NiceElapsed::from_parts should always have a part!"
+		);
 
 		let mut buf = [0_u8; SIZE];
 		let mut end = buf.as_mut_ptr();
+		let mut idx: u8 = 0;
+
+		// Days.
+		if has_d {
+			idx += 1;
+
+			// If this fits within a u8 range, it is much cheaper to cast down.
+			if d <= 255 {
+				end = ElapsedKind::Day.write(end, d as u8, idx, total);
+			}
+			// Otherwise we need to invoke NiceU16 to handle commas, etc.
+			else {
+				let tmp = NiceU16::from(d);
+				let len = tmp.len();
+				unsafe {
+					std::ptr::copy_nonoverlapping(
+						tmp.as_bytes().as_ptr(),
+						end,
+						len
+					);
+					end = end.add(len);
+				}
+				end = ElapsedKind::Day.write_label(end, d == 1);
+			}
+		}
 
 		// Hours.
 		if has_h {
-			end = unsafe { write_u8_advance(end, h) };
-			end = ElapsedKind::Hour.write_label(end, h == 1);
-			end = ElapsedKind::Hour.write_joiner(end, count, false);
+			idx += 1;
+			end = ElapsedKind::Hour.write(end, h, idx, total);
 		}
 
 		// Minutes.
 		if has_m {
-			end = unsafe { write_u8_advance(end, m) };
-			end = ElapsedKind::Minute.write_label(end, m == 1);
-			end = ElapsedKind::Minute.write_joiner(end, count, has_h);
+			idx += 1;
+			end = ElapsedKind::Minute.write(end, m, idx, total);
 		}
 
-		// Seconds and milliseconds. These always apply.
-		end = unsafe { write_u8_advance(end, s) };
-		unsafe { std::ptr::write(end, b'.'); }
-		if ms < 10 {
-			unsafe {
-				std::ptr::write(end.add(1), b'0');
-				std::ptr::write(end.add(2), ms + b'0');
-				end = end.add(3);
+		// Seconds and/or milliseconds.
+		if has_s {
+			idx += 1;
+			end = write_joiner(end, idx, total);
+			end = unsafe { write_u8_advance(end, s, false) };
+
+			if has_ms {
+				unsafe {
+					std::ptr::write(end, b'.');
+					end = write_u8_advance(end.add(1), ms, true);
+				}
 			}
+
+			end = ElapsedKind::Second.write_label(end, s == 1 && ms == 0);
 		}
-		else {
-			end = unsafe { write_u8_advance(end.add(1), ms) };
-		}
-		end = ElapsedKind::Second.write_label(end, false);
 
 		// Put it all together!
 		Self {
@@ -381,9 +411,9 @@ impl NiceElapsed {
 #[derive(Debug, Copy, Clone)]
 /// # Unit Helpers.
 ///
-/// This abstracts some of the verbosity of formatting, allowing us to
-/// instantiate [`NiceElapsed`] with an iterator.
+/// This abstracts some of the verbosity of formatting.
 enum ElapsedKind {
+	Day,
 	Hour,
 	Minute,
 	Second,
@@ -392,59 +422,35 @@ enum ElapsedKind {
 impl ElapsedKind {
 	/// # Label.
 	///
-	/// This is always plural, as singularity can be derived by reducing the
-	/// length by one.
-	const fn label(self) -> (usize, *const u8) {
+	/// Return the plural label with a leading space.
+	const fn label(self) -> &'static [u8] {
 		match self {
-			Self::Hour => (6, b" hours".as_ptr()),
-			Self::Minute => (8, b" minutes".as_ptr()),
-			Self::Second => (8, b" seconds".as_ptr()),
+			Self::Day => b" days",
+			Self::Hour => b" hours",
+			Self::Minute => b" minutes",
+			Self::Second => b" seconds",
 		}
+	}
+
+	#[allow(unsafe_code)]
+	/// # Write Joiner, Value, Label.
+	fn write(self, mut dst: *mut u8, val: u8, idx: u8, total: u8) -> *mut u8 {
+		dst = write_joiner(dst, idx, total);
+		dst = unsafe { write_u8_advance(dst, val, false) };
+		self.write_label(dst, val == 1)
 	}
 
 	#[allow(unsafe_code)]
 	/// # Write Label.
 	const fn write_label(self, dst: *mut u8, singular: bool) -> *mut u8 {
-		let (mut len, label) = self.label();
-		if singular { len -= 1; }
+		let label = self.label();
+		let len =
+			if singular { label.len() - 1 }
+			else { label.len() };
 
 		unsafe {
-			std::ptr::copy_nonoverlapping(label, dst, len);
+			std::ptr::copy_nonoverlapping(label.as_ptr(), dst, len);
 			dst.add(len)
-		}
-	}
-
-	#[allow(unsafe_code)]
-	/// # Write Joiner.
-	///
-	/// This will add commas and/or ands as necessary.
-	///
-	/// The `any` bool is used to indicate whether or not a value has
-	/// previously been printed. This affects the joiner of minutes, as it
-	/// varies based on whether or not hours are involved.
-	///
-	/// Seconds and single-count values never write joiners.
-	const fn write_joiner(self, dst: *mut u8, count: u8, any: bool) -> *mut u8 {
-		match (self, count, any) {
-			(Self::Hour, 3, _) => {
-				unsafe {
-					std::ptr::copy_nonoverlapping(b", ".as_ptr(), dst, 2);
-					dst.add(2)
-				}
-			},
-			(Self::Hour, 2, _) | (Self::Minute, 2, false) => {
-				unsafe {
-					std::ptr::copy_nonoverlapping(b" and ".as_ptr(), dst, 5);
-					dst.add(5)
-				}
-			},
-			(Self::Minute, 3, _) => {
-				unsafe {
-					std::ptr::copy_nonoverlapping(b", and ".as_ptr(), dst, 6);
-					dst.add(6)
-				}
-			},
-			_ => { dst },
 		}
 	}
 }
@@ -455,21 +461,65 @@ impl ElapsedKind {
 /// # Write u8.
 ///
 /// This will quickly write a `u8` number as a UTF-8 byte slice to the provided
-/// pointer.
+/// pointer, and return a new pointer advanced to the next position (after
+/// however many digits were written).
+///
+/// If `two == true`, a leading zero will be printed for single-digit values.
+/// In practice, this only applies when writing milliseconds.
 ///
 /// ## Safety
 ///
 /// The pointer must have enough space for the value, i.e. 1-2 digits. This
 /// isn't a problem in practice given the method calls are all private.
-unsafe fn write_u8_advance(buf: *mut u8, num: u8) -> *mut u8 {
-	if 9 < num {
+unsafe fn write_u8_advance(buf: *mut u8, num: u8, two: bool) -> *mut u8 {
+	debug_assert!(num < 100, "BUG: write_u8_advance should always be under 100.");
+
+	// Two digits.
+	if two || 9 < num {
 		std::ptr::copy_nonoverlapping(crate::double_prt(num as usize), buf, 2);
 		buf.add(2)
 	}
+	// One digit.
 	else {
 		std::ptr::write(buf, num + b'0');
 		buf.add(1)
 	}
+}
+
+#[allow(unsafe_code)]
+/// # Write Joiner.
+///
+/// This will add commas and/or ands as necessary, based on how many entries
+/// there are, and where we're at in that list.
+const fn write_joiner(dst: *mut u8, idx: u8, total: u8) -> *mut u8 {
+	// No joiner ever needed.
+	if total < 2 || idx < 2 { dst }
+	// We're at the end.
+	else if idx == total {
+		// Two items need a naked "and" between them.
+		if 2 == total {
+			unsafe {
+				std::ptr::copy_nonoverlapping(b" and ".as_ptr(), dst, 5);
+				dst.add(5)
+			}
+		}
+		// More than two items need a "comma-and" between them.
+		else {
+			unsafe {
+				std::ptr::copy_nonoverlapping(b", and ".as_ptr(), dst, 6);
+				dst.add(6)
+			}
+		}
+	}
+	// We just need a comma.
+	else if 2 < total {
+		unsafe {
+			std::ptr::copy_nonoverlapping(b", ".as_ptr(), dst, 2);
+			dst.add(2)
+		}
+	}
+	// No joiner needed this time.
+	else { dst }
 }
 
 
@@ -505,7 +555,12 @@ mod tests {
 		_from(37732, "10 hours, 28 minutes, and 52 seconds");
 		_from(37740, "10 hours and 29 minutes");
 
-		_from(428390, ">1 day");
+		_from(86400, "1 day");
+		_from(86401, "1 day and 1 second");
+		_from(86461, "1 day, 1 minute, and 1 second");
+		_from(428390, "4 days, 22 hours, 59 minutes, and 50 seconds");
+		_from(878428390, "10,166 days, 23 hours, 53 minutes, and 10 seconds");
+		_from(u32::MAX, "49,710 days, 6 hours, 28 minutes, and 15 seconds");
 	}
 
 	#[test]
@@ -527,6 +582,7 @@ mod tests {
 		_from_d(Duration::from_millis(2101050), "35 minutes and 1.05 seconds");
 		_from_d(Duration::from_millis(2121000), "35 minutes and 21 seconds");
 		_from_d(Duration::from_millis(2121820), "35 minutes and 21.82 seconds");
+		_from_d(Duration::from_nanos(2121999999999), "35 minutes and 21.99 seconds");
 
 		_from_d(Duration::from_millis(3600000), "1 hour");
 		_from_d(Duration::from_millis(3600300), "1 hour and 0.30 seconds");
@@ -538,17 +594,19 @@ mod tests {
 		_from_d(Duration::from_millis(37740000), "10 hours and 29 minutes");
 		_from_d(Duration::from_millis(37740030), "10 hours, 29 minutes, and 0.03 seconds");
 
-		_from_d(Duration::from_millis(428390000), ">1 day");
-		_from_d(Duration::from_millis(428390999), ">1 day");
+		_from_d(Duration::from_millis(428390000), "4 days, 22 hours, 59 minutes, and 50 seconds");
+		_from_d(Duration::from_millis(428390999), "4 days, 22 hours, 59 minutes, and 50.99 seconds");
+		_from_d(Duration::from_millis(878428390999), "10,166 days, 23 hours, 53 minutes, and 10.99 seconds");
 	}
 
 	fn _from(num: u32, expected: &str) {
 		assert_eq!(
 			&*NiceElapsed::from(num),
 			expected.as_bytes(),
-			"{} should be equivalent to {:?}",
+			"{} should be equivalent to {:?}, not {:?}",
 			num,
-			expected
+			expected,
+			NiceElapsed::from(num).as_str(),
 		);
 	}
 
@@ -556,9 +614,10 @@ mod tests {
 		assert_eq!(
 			&*NiceElapsed::from(num),
 			expected.as_bytes(),
-			"{:?} should be equivalent to {:?}",
+			"{:?} should be equivalent to {:?}, not {:?}",
 			num,
-			expected
+			expected,
+			NiceElapsed::from(num).as_str(),
 		);
 	}
 }
