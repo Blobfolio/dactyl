@@ -7,10 +7,7 @@ use brunch::{
 	benches,
 };
 use dactyl::NoHash;
-use std::{
-	collections::HashSet,
-	time::Duration,
-};
+use std::collections::HashSet;
 
 
 
@@ -23,11 +20,9 @@ fn t_nohash() -> HashSet<u16, NoHash> { (u16::MIN..=u16::MAX).collect() }
 
 
 benches!(
-	Bench::new("(u16::MIN..=u16::MAX).collect", "<HashSet<u16>>()")
-		.timed(Duration::from_secs(2))
-		.with(|| t_hash()),
+	Bench::new("(u16::MIN..=u16::MAX).collect::<HashSet<u16>>()")
+		.run(|| t_hash()),
 
-	Bench::new("(u16::MIN..=u16::MAX).collect", "<HashSet<u16, NoHash>>()")
-		.timed(Duration::from_secs(2))
-		.with(|| t_nohash()),
+	Bench::new("(u16::MIN..=u16::MAX).collect::<HashSet<u16, NoHash>>()")
+		.run(|| t_nohash()),
 );
