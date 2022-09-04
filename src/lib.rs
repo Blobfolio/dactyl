@@ -59,6 +59,7 @@ This crate also contains two "in development" structs — [`NicePercent`] and [`
 
 
 
+#[macro_use] mod macros;
 mod hash;
 mod nice_elapsed;
 mod nice_int;
