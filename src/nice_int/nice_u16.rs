@@ -76,7 +76,7 @@ impl From<u16> for NiceU16 {
 			if 9 < num {
 				unsafe {
 					std::ptr::copy_nonoverlapping(
-						crate::double_prt(num as usize),
+						crate::double_ptr(num as usize),
 						ptr,
 						2
 					);

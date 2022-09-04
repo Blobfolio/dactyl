@@ -104,7 +104,7 @@ static DOUBLE: [[u8; 2]; 100] = [
 /// ## Panics
 ///
 /// This will panic if the number is greater than 99.
-pub(crate) fn double_prt(idx: usize) -> *const u8 {
+pub(crate) fn double_ptr(idx: usize) -> *const u8 {
 	debug_assert!(idx < 100, "BUG: Invalid index passed to double_ptr.");
 	unsafe { DOUBLE.get_unchecked(idx).as_ptr() }
 }

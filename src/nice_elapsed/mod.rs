@@ -476,7 +476,7 @@ unsafe fn write_u8_advance(buf: *mut u8, num: u8, two: bool) -> *mut u8 {
 
 	// Two digits.
 	if two || 9 < num {
-		std::ptr::copy_nonoverlapping(crate::double_prt(num as usize), buf, 2);
+		std::ptr::copy_nonoverlapping(crate::double_ptr(num as usize), buf, 2);
 		buf.add(2)
 	}
 	// One digit.

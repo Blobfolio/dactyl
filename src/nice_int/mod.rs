@@ -193,7 +193,7 @@ macro_rules! nice_parse {
 					self.from -= 2;
 					unsafe {
 						std::ptr::copy_nonoverlapping(
-							crate::double_prt(num as usize),
+							crate::double_ptr(num as usize),
 							ptr.add(self.from),
 							2
 						);
@@ -226,5 +226,5 @@ pub(self) use {
 unsafe fn write_u8_3(buf: *mut u8, num: u16) {
 	let (div, rem) = crate::div_mod(num, 100);
 	std::ptr::write(buf, div as u8 + b'0');
-	std::ptr::copy_nonoverlapping(crate::double_prt(rem as usize), buf.add(1), 2);
+	std::ptr::copy_nonoverlapping(crate::double_ptr(rem as usize), buf.add(1), 2);
 }
