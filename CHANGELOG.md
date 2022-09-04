@@ -2,6 +2,14 @@
 
 
 
+## [0.4.4](https://github.com/Blobfolio/dactyl/releases/tag/v0.4.4) - TBD
+
+### Changed
+
+* `NicePercent` output is now closer to `format!("{:0.02}%", num * 100.0)`, but will occasionally vary ±0.01% due to differences in rounding (`NicePercent` rounds up on 0.00005).
+
+
+
 ## [0.4.3](https://github.com/Blobfolio/dactyl/releases/tag/v0.4.3) - 2022-09-02
 
 ### New

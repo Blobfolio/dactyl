@@ -71,49 +71,53 @@ macro_rules! nice_from {
 	($($float:ty),+ $(,)?) => ($(
 		impl From<$float> for NicePercent {
 			#[allow(unsafe_code)]
-			fn from(mut num: $float) -> Self {
+			fn from(num: $float) -> Self {
 				// Shortcut for overflowing values.
-				if num <= 0.0 || ! num.is_normal() {
-					return Self::min();
-				}
-				else if 1.0 <= num {
-					return Self::max();
-				}
+				if num <= 0.0 || ! num.is_normal() { return Self::min(); }
+				else if 1.0 <= num { return Self::max(); }
 
-				// Start with the bits we know.
-				let mut out = Self {
-					inner: ZERO,
-					from: SIZE - 4,
-				};
+				// We can maintain precision better by working from an integer.
+				// We know there is no existing integer part, so at most we'll
+				// wind up with four digits, which fits nicely in a u16.
+				let whole = (num * 10_000.0).round() as u16;
+
+				// Recheck the boundaries because of the rounding.
+				if whole == 0 { return Self::min(); }
+				else if 9999 < whole { return Self::max(); }
+
+				// Start with 0.00%.
+				let mut out = Self::min();
 				let ptr = out.inner.as_mut_ptr();
 
-				// Convert it to the kind of percent people think about.
-				num *= 100.0;
+				// Split the top and bottom.
+				let (top, bottom) = crate::div_mod(whole, 100);
 
-				// Write the integer parts.
-				let base = num.trunc() as usize;
-				if 9 < base {
-					out.from -= 2;
+				// Write the integer part.
+				if 9 < top {
+					out.from -= 1;
 					unsafe {
 						std::ptr::copy_nonoverlapping(
-							crate::double_prt(base),
+							crate::double_ptr(top as usize),
 							ptr.add(out.from),
 							2
 						);
 					}
 				}
-				else {
-					out.from -= 1;
-					unsafe { std::ptr::write(ptr.add(out.from), base as u8 + b'0'); }
+				else if 0 < top {
+					unsafe {
+						std::ptr::write(ptr.add(out.from), top as u8 + b'0');
+					}
 				}
 
-				// Write the fraction.
-				unsafe {
-					std::ptr::copy_nonoverlapping(
-						crate::double_prt(<$float>::floor(num.fract() * 100.0) as usize),
-						ptr.add(IDX_PERCENT_DECIMAL),
-						2
-					);
+				// Write the fractional part.
+				if 0 < bottom {
+					unsafe {
+						std::ptr::copy_nonoverlapping(
+							crate::double_ptr(bottom as usize),
+							ptr.add(IDX_PERCENT_DECIMAL),
+							2
+						);
+					}
 				}
 
 				out
@@ -186,19 +190,28 @@ mod tests {
 
 	#[test]
 	fn t_nice_percent() {
-		for i in 0..1_000 {
-			let fraction = i as f32 / 1000_f32;
-			let num = fraction * 100_f32;
-			let base = f32::floor(num);
+		const TOTAL: u32 = 10_000_u32;
 
+		// There will be disagreements with a denominator of 100_000.
+		for i in 0..TOTAL {
+			let fraction = i as f32 / TOTAL as f32;
 			assert_eq!(
 				NicePercent::from(fraction).as_str(),
-				format!("{}.{:02}%", base, f32::floor((num - base) * 100_f32)),
+				format!("{:0.02}%", fraction * 100_f32),
+				"{}/{} (f32)", i, TOTAL
+			);
+
+			let fraction = i as f64 / TOTAL as f64;
+			assert_eq!(
+				NicePercent::from(fraction).as_str(),
+				format!("{:0.02}%", fraction * 100_f64),
+				"{}/{} (f64)", i, TOTAL
 			);
 		}
 
 		// And a few edge cases.
 		assert_eq!(NicePercent::from(0_f64).as_str(), "0.00%");
+		assert_eq!(NicePercent::from(f64::NAN).as_str(), "0.00%");
 		assert_eq!(NicePercent::from(-10_f64).as_str(), "0.00%");
 		assert_eq!(NicePercent::from(1.03_f64).as_str(), "100.00%");
 		assert_eq!(NicePercent::from(10_f64).as_str(), "100.00%");
