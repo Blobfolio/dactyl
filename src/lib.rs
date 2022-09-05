@@ -25,7 +25,11 @@ assert_eq!(NiceU16::from(11234_u16).as_str(), "11,234");
 assert_eq!(NiceU16::from(11234_u16).as_bytes(), b"11,234");
 ```
 
-This crate also contains two "in development" structs — [`NicePercent`] and [`NiceElapsed`] — that can be useful for formatting percentages and durations, however their implementations are subject to change and they might eventually be split off into their own crates.
+This crate also contains a few more specialized "nice" structs:
+* [`NiceFloat`]
+* [`NiceElapsed`]
+* [`NicePercent`]
+
 */
 
 #![deny(unsafe_code)]
@@ -72,6 +76,10 @@ pub use nice_int::{
 	nice_u16::NiceU16,
 	nice_u32::NiceU32,
 	nice_u64::NiceU64,
+	nice_float::{
+		FloatKind,
+		NiceFloat,
+	},
 	nice_percent::NicePercent,
 };
 

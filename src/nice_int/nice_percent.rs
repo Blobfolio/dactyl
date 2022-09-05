@@ -1,7 +1,5 @@
 /*!
 # Dactyl: Nice Percent.
-
-Note: this module is "in development". It is subject to change, and may eventually be spun off into its own crate.
 */
 
 use crate::NiceWrapper;
@@ -19,14 +17,16 @@ const ZERO: [u8; SIZE] = [b'0', b'0', b'0', b'.', b'0', b'0', b'%'];
 
 
 
-/// `NicePercent` provides a quick way to convert an `f32` or `f64` into a
-/// formatted byte string for e.g. printing.
+/// `NicePercent` provides a quick way to convert an `f32` or `f64` percent
+/// — a value `0.0..=1.0` — into a formatted byte string for e.g. printing.
 ///
-/// The precision is fixed at two decimal places — truncated, not rounded —
-/// with values ranging from `0.00%` to `100.00%`.
+/// The precision is fixed at two decimal places (rounded at the thousandth),
+/// with output ranging from `0.00%` to `100.00%`.
 ///
-/// Inputs are expected to be in `0..=1`. Values less than zero are cast to
-/// `0.00%`, while values greater than `1` are cast to `100.00%`.
+/// Inputs are expected to be in `0..=1`. Values less than zero are clamped to
+/// `0.00%`, while values greater than `1` are clamped to `100.00%`.
+///
+/// For other types of floats, see [`NiceFloat`](crate::NiceFloat) instead.
 ///
 /// That's it!
 ///
@@ -54,10 +54,6 @@ const ZERO: [u8; SIZE] = [b'0', b'0', b'0', b'.', b'0', b'0', b'%'];
 /// * `Eq` / `PartialEq`
 /// * `Hash`
 /// * `Ord` / `PartialOrd`
-///
-/// ## Note
-///
-/// This module is "in development". It is subject to change, and may eventually be spun off into its own crate.
 pub type NicePercent = NiceWrapper<SIZE>;
 
 impl Default for NicePercent {

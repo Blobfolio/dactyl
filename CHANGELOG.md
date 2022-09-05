@@ -7,6 +7,8 @@
 ### New
 
 * `dactyl::total_cmp!` (total float comparison)
+* `FloatKind`
+* `NiceFloat`
 
 ### Changed
 

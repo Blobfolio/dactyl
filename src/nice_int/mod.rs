@@ -1,5 +1,5 @@
 /*!
-# Dactyl: "Nice" Unsigned Integers (and Percent)
+# Dactyl: "Nice" Unsigned Integers (and Floats)
 
 See the main crate documentation for details.
 */
@@ -8,6 +8,7 @@ pub(super) mod nice_u8;
 pub(super) mod nice_u16;
 pub(super) mod nice_u32;
 pub(super) mod nice_u64;
+pub(super) mod nice_float;
 pub(super) mod nice_percent;
 
 

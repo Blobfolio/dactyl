@@ -48,6 +48,10 @@ name = "fn_nice_elapsed"
 harness = false
 
 [[bench]]
+name = "fn_nice_float"
+harness = false
+
+[[bench]]
 name = "fn_nice_percent"
 harness = false
 
