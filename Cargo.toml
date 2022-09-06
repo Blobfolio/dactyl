@@ -1,6 +1,6 @@
 [package]
 name = "dactyl"
-version = "0.4.3"
+version = "0.4.4"
 authors = ["Blobfolio, LLC. <hello@blobfolio.com>"]
 edition = "2021"
 rust-version = "1.63"
@@ -45,6 +45,10 @@ harness = false
 
 [[bench]]
 name = "fn_nice_elapsed"
+harness = false
+
+[[bench]]
+name = "fn_nice_float"
 harness = false
 
 [[bench]]

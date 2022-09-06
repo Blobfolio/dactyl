@@ -25,7 +25,11 @@ assert_eq!(NiceU16::from(11234_u16).as_str(), "11,234");
 assert_eq!(NiceU16::from(11234_u16).as_bytes(), b"11,234");
 ```
 
-This crate also contains two "in development" structs — [`NicePercent`] and [`NiceElapsed`] — that can be useful for formatting percentages and durations, however their implementations are subject to change and they might eventually be split off into their own crates.
+This crate also contains a few more specialized "nice" structs:
+* [`NiceFloat`]
+* [`NiceElapsed`]
+* [`NicePercent`]
+
 */
 
 #![deny(unsafe_code)]
@@ -59,6 +63,7 @@ This crate also contains two "in development" structs — [`NicePercent`] and [`
 
 
 
+#[macro_use] mod macros;
 mod hash;
 mod nice_elapsed;
 mod nice_int;
@@ -71,6 +76,10 @@ pub use nice_int::{
 	nice_u16::NiceU16,
 	nice_u32::NiceU32,
 	nice_u64::NiceU64,
+	nice_float::{
+		FloatKind,
+		NiceFloat,
+	},
 	nice_percent::NicePercent,
 };
 
@@ -104,7 +113,7 @@ static DOUBLE: [[u8; 2]; 100] = [
 /// ## Panics
 ///
 /// This will panic if the number is greater than 99.
-pub(crate) fn double_prt(idx: usize) -> *const u8 {
+pub(crate) fn double_ptr(idx: usize) -> *const u8 {
 	debug_assert!(idx < 100, "BUG: Invalid index passed to double_ptr.");
 	unsafe { DOUBLE.get_unchecked(idx).as_ptr() }
 }
