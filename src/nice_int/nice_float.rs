@@ -296,15 +296,22 @@ impl NiceFloat {
 	/// assert_eq!(nice.compact_bytes(), b"12,345.67833333"); // Nothing to trim.
 	/// ```
 	pub fn compact_bytes(&self) -> &[u8] {
+		let mut out = self.as_bytes();
 		if self.from < IDX_DOT {
-			let pos = self.inner.iter()
-				.rposition(|b| matches!(*b, b'1'..=b'9'))
-				.unwrap_or(IDX_DOT);
-
-			if pos <= IDX_DOT { &self.inner[self.from..IDX_DOT] }
-			else { &self.inner[self.from..=pos] }
+			let mut idx: u8 = 0;
+			while let [rest @ .., last] = out {
+				if idx == 8 {
+					out = rest;
+					break;
+				}
+				else if b'0'.eq(last) {
+					out = rest;
+				}
+				else { break; }
+				idx += 1;
+			}
 		}
-		else { self.as_bytes() }
+		out
 	}
 
 	#[allow(unsafe_code)]
