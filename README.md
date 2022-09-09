@@ -1,6 +1,7 @@
 # Dactyl
 
 [![Documentation](https://docs.rs/dactyl/badge.svg)](https://docs.rs/dactyl/)
+[![Changelog](https://img.shields.io/crates/v/dactyl.svg?label=Changelog&color=9cf)](https://github.com/Blobfolio/dactyl/blob/master/CHANGELOG.md)
 [![crates.io](https://img.shields.io/crates/v/dactyl.svg)](https://crates.io/crates/dactyl)
 [![Build Status](https://github.com/Blobfolio/dactyl/workflows/Build/badge.svg)](https://github.com/Blobfolio/dactyl/actions)
 [![Dependency Status](https://deps.rs/repo/github/blobfolio/dactyl/status.svg)](https://deps.rs/repo/github/blobfolio/dactyl)

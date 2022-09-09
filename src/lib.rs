@@ -1,6 +1,11 @@
 /*!
 # Dactyl
 
+[![Documentation](https://docs.rs/dactyl/badge.svg)](https://docs.rs/dactyl/)
+[![Changelog](https://img.shields.io/crates/v/dactyl.svg?label=Changelog&color=9cf)](https://github.com/Blobfolio/dactyl/blob/master/CHANGELOG.md)
+[![crates.io](https://img.shields.io/crates/v/dactyl.svg)](https://crates.io/crates/dactyl)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/Blobfolio/dactyl)
+
 This crate provides a fast interface to "stringify" unsigned integers, formatted with commas at each thousand. It prioritizes speed and simplicity over configurability.
 
 If your application just wants to turn `1010` into `"1,010"`, `Dactyl` is a great choice. If your application requires locale awareness or other options, something like [`num-format`](https://crates.io/crates/num-format) would probably make more sense.
