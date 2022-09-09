@@ -2,6 +2,18 @@
 
 
 
+## [0.4.5](https://github.com/Blobfolio/dactyl/releases/tag/v0.4.5) - 2022-09-09
+
+### Changed
+
+* Optimize `NiceFloat::compact_bytes`/`NiceFloat::compact_str`
+
+### Fixed
+
+* `NiceFloat::precise_bytes`/`NiceFloat::precise_str` incorrectly truncated `NiceFloat::overflow`
+
+
+
 ## [0.4.4](https://github.com/Blobfolio/dactyl/releases/tag/v0.4.4) - 2022-09-06
 
 ### New

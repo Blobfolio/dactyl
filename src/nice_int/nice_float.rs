@@ -11,8 +11,14 @@ use crate::NiceWrapper;
 /// 1 sign + 18446744073709551615 + 6 commas + 1 decimal + 8 fractionals = 36 bytes.
 const SIZE: usize = 36;
 
+/// # Min Overflow From.
+const MIN_OVERFLOW_FROM: usize = SIZE - 29;
+
+/// # Max Overflow From.
+const MAX_OVERFLOW_FROM: usize = SIZE - 28;
+
 /// # Index for Dot.
-const IDX_DOT: usize = 27;
+const IDX_DOT: usize = 27; // 36 - 8 - 1.
 
 /// # Precision Multiplier.
 const PRECISION: u32 = 100_000_000;
@@ -190,13 +196,13 @@ impl NiceFloat {
 		if neg {
 			Self {
 				inner: *b"0000000< -18,446,744,073,709,551,615",
-				from: SIZE - 29,
+				from: MIN_OVERFLOW_FROM,
 			}
 		}
 		else {
 			Self {
 				inner: *b"00000000> 18,446,744,073,709,551,615",
-				from: SIZE - 28,
+				from: MAX_OVERFLOW_FROM,
 			}
 		}
 	}
@@ -296,15 +302,22 @@ impl NiceFloat {
 	/// assert_eq!(nice.compact_bytes(), b"12,345.67833333"); // Nothing to trim.
 	/// ```
 	pub fn compact_bytes(&self) -> &[u8] {
+		let mut out = self.as_bytes();
 		if self.from < IDX_DOT {
-			let pos = self.inner.iter()
-				.rposition(|b| matches!(*b, b'1'..=b'9'))
-				.unwrap_or(IDX_DOT);
-
-			if pos <= IDX_DOT { &self.inner[self.from..IDX_DOT] }
-			else { &self.inner[self.from..=pos] }
+			let mut idx: u8 = 0;
+			while let [rest @ .., last] = out {
+				if idx == 8 {
+					out = rest;
+					break;
+				}
+				else if b'0'.eq(last) {
+					out = rest;
+				}
+				else { break; }
+				idx += 1;
+			}
 		}
-		else { self.as_bytes() }
+		out
 	}
 
 	#[allow(unsafe_code)]
@@ -363,7 +376,7 @@ impl NiceFloat {
 	/// assert_eq!(nice.precise_bytes(8), b"12,345.67800000");
 	/// ```
 	pub fn precise_bytes(&self, precision: usize) -> &[u8] {
-		if precision < 8 && self.from < IDX_DOT {
+		if precision < 8 && self.has_dot() {
 			if precision == 0 { &self.inner[self.from..IDX_DOT] }
 			else { &self.inner[self.from..=IDX_DOT + precision] }
 		}
@@ -403,6 +416,22 @@ impl NiceFloat {
 }
 
 impl NiceFloat {
+	/// # Has Dot?
+	///
+	/// This would be easy if we didn't allow customization, but, well, here we
+	/// are. Haha.
+	const fn has_dot(&self) -> bool {
+		self.from < IDX_DOT &&
+		! (
+			self.from == MIN_OVERFLOW_FROM &&
+			self.inner[MIN_OVERFLOW_FROM] == b'<'
+		) &&
+		! (
+			self.from == MAX_OVERFLOW_FROM &&
+			self.inner[MAX_OVERFLOW_FROM] == b'>'
+		)
+	}
+
 	#[allow(unsafe_code)]
 	#[allow(clippy::cast_possible_truncation)] // They fit.
 	/// # Parse Top.
@@ -766,5 +795,40 @@ mod tests {
 		assert_eq!(NiceFloat::from(f64::INFINITY).compact_str(), "∞");
 		assert_eq!(NiceFloat::with_separator(f64::NAN, b'-', b'_').compact_str(), "NaN");
 		assert_eq!(NiceFloat::with_separator(f64::INFINITY, b'-', b'_').compact_str(), "∞");
+		assert_eq!(NiceFloat::overflow(true).compact_str(), "< -18,446,744,073,709,551,615");
+		assert_eq!(NiceFloat::overflow(false).compact_str(), "> 18,446,744,073,709,551,615");
+		assert_eq!(NiceFloat::with_separator(f64::MIN, b'!', b'?').compact_str(), "< -18!446!744!073!709!551!615");
+		assert_eq!(NiceFloat::with_separator(f64::MAX, b'!', b'?').compact_str(), "> 18!446!744!073!709!551!615");
+	}
+
+	#[test]
+	fn t_precise() {
+		// Normal numbers are tested inline, but let's make sure zero works as
+		// expected real quick.
+		assert_eq!(NiceFloat::from(0_f64).precise_str(1), "0.0");
+		assert_eq!(NiceFloat::from(0_f64).precise_str(0), "0");
+
+		// A few weird ones.
+		assert_eq!(NiceFloat::nan().precise_str(3), "NaN");
+		assert_eq!(NiceFloat::infinity().precise_str(3), "∞");
+		assert_eq!(NiceFloat::overflow(true).precise_str(3), "< -18,446,744,073,709,551,615");
+		assert_eq!(NiceFloat::overflow(false).precise_str(3), "> 18,446,744,073,709,551,615");
+		assert_eq!(NiceFloat::with_separator(f64::MIN, b'!', b'?').precise_str(3), "< -18!446!744!073!709!551!615");
+		assert_eq!(NiceFloat::with_separator(f64::MAX, b'!', b'?').precise_str(3), "> 18!446!744!073!709!551!615");
+	}
+
+	#[test]
+	fn t_has_dot() {
+		// Basic things should have dots.
+		assert!(NiceFloat::from(0_f64).has_dot());
+		assert!(NiceFloat::from(1.234_f64).has_dot());
+		assert!(NiceFloat::with_separator(1.234_f64, b'!', b'?').has_dot());
+
+		assert!(! NiceFloat::nan().has_dot());
+		assert!(! NiceFloat::infinity().has_dot());
+		assert!(! NiceFloat::overflow(true).has_dot());
+		assert!(! NiceFloat::overflow(false).has_dot());
+		assert!(! NiceFloat::with_separator(f64::MIN, b'!', b'?').has_dot());
+		assert!(! NiceFloat::with_separator(f64::MAX, b'!', b'?').has_dot());
 	}
 }
