@@ -69,7 +69,7 @@ pub trait NiceInflection: Inflection {
 
 
 
-/// # Helper: Genererate `Inflection` impls.
+/// # Helper: Generate `Inflection` impls.
 macro_rules! inflect {
 	// Unsigned.
 	($ty:ty, $one:literal) => (
@@ -100,7 +100,7 @@ macro_rules! inflect {
 	);
 }
 
-/// # Helper: Genererate `Inflection` and `NiceInflection` impls.
+/// # Helper: Generate `Inflection` and `NiceInflection` impls.
 macro_rules! inflect_nice {
 	// Unsigned.
 	($ty:ty, $nice:ty) => (
