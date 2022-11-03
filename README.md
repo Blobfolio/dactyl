@@ -1,11 +1,12 @@
 # Dactyl
 
-[![Documentation](https://docs.rs/dactyl/badge.svg)](https://docs.rs/dactyl/)
-[![Changelog](https://img.shields.io/crates/v/dactyl.svg?label=Changelog&color=9cf)](https://github.com/Blobfolio/dactyl/blob/master/CHANGELOG.md)
-[![crates.io](https://img.shields.io/crates/v/dactyl.svg)](https://crates.io/crates/dactyl)
-[![Build Status](https://github.com/Blobfolio/dactyl/workflows/Build/badge.svg)](https://github.com/Blobfolio/dactyl/actions)
-[![Dependency Status](https://deps.rs/repo/github/blobfolio/dactyl/status.svg)](https://deps.rs/repo/github/blobfolio/dactyl)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://github.com/Blobfolio/dactyl)
+[![docs.rs](https://img.shields.io/docsrs/dactyl.svg?style=flat-square&label=docs.rs)](https://docs.rs/dactyl/)
+[![changelog](https://img.shields.io/crates/v/dactyl.svg?style=flat-square&label=changelog&color=9b59b6)](https://github.com/Blobfolio/dactyl/blob/master/CHANGELOG.md)<br>
+[![crates.io](https://img.shields.io/crates/v/dactyl.svg?style=flat-square&label=crates.io)](https://crates.io/crates/dactyl)
+[![ci](https://img.shields.io/github/workflow/status/Blobfolio/dactyl/Build.svg?style=flat-square&label=ci)](https://github.com/Blobfolio/dactyl/actions)
+[![deps.rs](https://deps.rs/repo/github/blobfolio/dactyl/status.svg?style=flat-square&label=deps.rs)](https://deps.rs/repo/github/blobfolio/dactyl)<br>
+[![license](https://img.shields.io/badge/license-wtfpl-ff1493?style=flat-square)](https://en.wikipedia.org/wiki/WTFPL)
+[![contributions welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square&label=contributions)](https://github.com/Blobfolio/dactyl/issues)
 
 This crate provides a fast interface to "stringify" unsigned integers, formatted with commas at each thousand. It prioritizes speed and simplicity over configurability.
 

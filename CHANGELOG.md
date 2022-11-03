@@ -2,6 +2,14 @@
 
 
 
+## [0.4.6](https://github.com/Blobfolio/dactyl/releases/tag/v0.4.6) - 2022-11-03
+
+### Changed
+
+* Improved documentation.
+
+
+
 ## [0.4.5](https://github.com/Blobfolio/dactyl/releases/tag/v0.4.5) - 2022-09-09
 
 ### Changed
