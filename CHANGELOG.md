@@ -2,6 +2,15 @@
 
 
 
+## [0.4.7](https://github.com/Blobfolio/dactyl/releases/tag/v0.4.7) - 2023-01-26
+
+### Changed
+
+* Bump brunch `0.4`
+* Fix ci badge (docs)
+
+
+
 ## [0.4.6](https://github.com/Blobfolio/dactyl/releases/tag/v0.4.6) - 2022-11-03
 
 ### Changed

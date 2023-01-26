@@ -54,7 +54,7 @@ as_ref_borrow_cast!(as_bytes [u8], as_str str);
 
 impl<const S: usize> fmt::Debug for NiceWrapper<S> {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		f.debug_tuple(&format!("NiceWrapper<{}>", S))
+		f.debug_tuple(&format!("NiceWrapper<{S}>"))
 			.field(&self.as_str())
 			.finish()
 	}

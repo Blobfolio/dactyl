@@ -1,6 +1,6 @@
 [package]
 name = "dactyl"
-version = "0.4.6"
+version = "0.4.7"
 authors = ["Blobfolio, LLC. <hello@blobfolio.com>"]
 edition = "2021"
 rust-version = "1.63"
@@ -31,7 +31,7 @@ credits-dir = "./"
 num-traits = "0.2.*"
 
 [dev-dependencies]
-brunch = "0.3.*"
+brunch = "0.4.*"
 fastrand = "1.8.*"
 num-format = "0.4.*"
 
