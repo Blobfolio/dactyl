@@ -32,7 +32,7 @@ num-traits = "0.2.*"
 
 [dev-dependencies]
 brunch = "0.4.*"
-fastrand = "1.8.*"
+fastrand = "1.9.*"
 num-format = "0.4.*"
 
 [[bench]]
