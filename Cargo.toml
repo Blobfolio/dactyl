@@ -44,6 +44,10 @@ name = "fn_btou"
 harness = false
 
 [[bench]]
+name = "fn_htou"
+harness = false
+
+[[bench]]
 name = "fn_nice_elapsed"
 harness = false
 
