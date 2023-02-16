@@ -7,6 +7,7 @@
 ### New
 
 * `traits::HexToUnsigned`
+* `traits::HexToSigned`
 
 
 

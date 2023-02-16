@@ -37,6 +37,8 @@ static UNHEX: [u8; 256] = [
 ///
 /// Invalid slices, overflows, etc., will result in `None` being returned.
 ///
+/// For signed integers, see [`HexToSigned`].
+///
 /// ## Examples
 ///
 /// ```
@@ -104,6 +106,26 @@ impl HexToUnsigned for u32 {
 		}
 		else { None }
 	}
+}
+
+#[cfg(target_pointer_width = "16")]
+impl HexToUnsigned for usize {
+	/// # Hex (Bytes) to Unsigned.
+	fn htou(src: &[u8]) -> Option<Self> { u16::htou(src).map(Self::from) }
+}
+
+#[cfg(target_pointer_width = "32")]
+#[allow(clippy::cast_possible_truncation)]
+impl HexToUnsigned for usize {
+	/// # Hex (Bytes) to Unsigned.
+	fn htou(src: &[u8]) -> Option<Self> { u32::htou(src).map(|n| n as Self) }
+}
+
+#[cfg(target_pointer_width = "64")]
+#[allow(clippy::cast_possible_truncation)]
+impl HexToUnsigned for usize {
+	/// # Hex (Bytes) to Unsigned.
+	fn htou(src: &[u8]) -> Option<Self> { u64::htou(src).map(|n| n as Self) }
 }
 
 impl HexToUnsigned for u64 {
@@ -178,6 +200,56 @@ impl HexToUnsigned for u128 {
 
 
 
+/// # Hex (Bytes) to Signed.
+///
+/// This trait exposes the method `htoi` which converts Hex byte slices to
+/// proper, signed integers. It works just like `i*::from_str_radix`, but
+/// faster, particularly for `i64` and `i128`.
+///
+/// Decoding is case-insensitive and padding-agnostic; slice lengths may be
+/// anything between `1..=std::mem::size_of::<Self>()*2`.
+///
+/// Invalid slices, overflows, etc., will result in `None` being returned.
+///
+/// For unsigned integers, see [`HexToUnsigned`].
+///
+/// ## Examples
+///
+/// ```
+/// use dactyl::traits::HexToSigned;
+///
+/// assert_eq!(i8::htoi(b"fb"), Some(-5));
+/// assert_eq!(i8::htoi(b"FB"), Some(-5));
+/// ```
+pub trait HexToSigned: Sized {
+	/// # Hex (Bytes) to Signed.
+	fn htoi(hex: &[u8]) -> Option<Self>;
+}
+
+/// # Helper: Signed Impls.
+///
+/// Signed types use their unsigned counterpart's decoder, then are transmuted
+/// after to handle any wrapping.
+macro_rules! signed {
+	($signed:ty, $unsigned:ty) => (
+		impl HexToSigned for $signed {
+			/// # Hex (Bytes) to Signed.
+			fn htoi(src: &[u8]) -> Option<Self> {
+				<$unsigned>::htou(src).map(|n| n as Self)
+			}
+		}
+	);
+}
+
+signed!(i8, u8);
+signed!(i16, u16);
+signed!(i32, u32);
+signed!(i64, u64);
+signed!(i128, u128);
+signed!(isize, usize);
+
+
+
 #[cfg(test)]
 mod tests {
 	use super::*;
@@ -188,69 +260,63 @@ mod tests {
 	#[cfg(miri)]
 	const SAMPLE_SIZE: usize = 1000; // Miri runs way too slow for a million tests.
 
-	macro_rules! hex {
-		($num:ident, $ty:ty, $len:literal) => (
-			let mut s = format!("{:x}", $num);
-			assert_eq!(<$ty>::htou(s.as_bytes()), Some($num));
-			s.make_ascii_uppercase();
-			assert_eq!(<$ty>::htou(s.as_bytes()), Some($num));
+	macro_rules! test_all {
+		($tfn:ident, $hfn:ident, $ty:ty) => (
+			#[test]
+			fn $tfn() {
+				for i in <$ty>::MIN..=<$ty>::MAX { hex!($hfn, i, $ty); }
+			}
+		);
+	}
+	macro_rules! test_rng {
+		($tfn:ident, $hfn:ident, $ty:ident) => (
+			#[test]
+			fn $tfn() {
+				// Test a reasonable random range of values.
+				let rng = fastrand::Rng::new();
+				for i in std::iter::repeat_with(|| rng.$ty(..)).take(SAMPLE_SIZE) {
+					hex!($hfn, i, $ty);
+				}
 
-			s = format!(concat!("{:0", $len, "x}"), $num);
-			assert_eq!(<$ty>::htou(s.as_bytes()), Some($num));
-			s.make_ascii_uppercase();
-			assert_eq!(<$ty>::htou(s.as_bytes()), Some($num));
+				// Explicitly test the min, max, and zero.
+				for i in [<$ty>::MIN, 0, <$ty>::MAX] { hex!($hfn, i, $ty); }
+			}
 		);
 	}
 
-	#[test]
-	fn t_u8() {
-		for i in 0..=u8::MAX { hex!(i, u8, "2"); }
+	macro_rules! hex {
+		($fn:ident, $num:ident, $ty:ty) => (
+			// Unpadded lower, upper.
+			let mut s = format!("{:x}", $num);
+			assert_eq!(<$ty>::$fn(s.as_bytes()), Some($num));
+			s.make_ascii_uppercase();
+			assert_eq!(<$ty>::$fn(s.as_bytes()), Some($num));
+
+			// Padded lower, upper.
+			s = format!("{:0width$x}", $num, width=std::mem::size_of::<$ty>() * 2);
+			assert_eq!(<$ty>::$fn(s.as_bytes()), Some($num));
+			s.make_ascii_uppercase();
+			assert_eq!(<$ty>::$fn(s.as_bytes()), Some($num));
+		);
 	}
 
-	#[cfg(not(miri))]
-	#[test]
-	fn t_u16() {
-		for i in 0..=u16::MAX { hex!(i, u16, "4"); }
-	}
+	// Test full set for small types.
+	test_all!(t_u8, htou, u8);
+	#[cfg(not(miri))] test_all!(t_u16, htou, u16);
 
-	#[cfg(miri)]
-	#[test]
-	fn t_u16() {
-		let rng = fastrand::Rng::new();
-		for i in std::iter::repeat_with(|| rng.u16(..)).take(SAMPLE_SIZE) {
-			hex!(i, u16, "4");
-		}
+	test_all!(t_i8, htoi, i8);
+	#[cfg(not(miri))] test_all!(t_i16, htoi, i16);
 
-		for i in [u16::MIN, u16::MAX] { hex!(i, u16, "4"); }
-	}
+	// Test random range for larger types.
+	#[cfg(miri)] test_rng!(t_u16, htou, u16);
+	test_rng!(t_u32, htou, u32);
+	test_rng!(t_u64, htou, u64);
+	test_rng!(t_u128, htou, u128);
+	test_rng!(t_usize, htou, usize);
 
-	#[test]
-	fn t_u32() {
-		let rng = fastrand::Rng::new();
-		for i in std::iter::repeat_with(|| rng.u32(..)).take(SAMPLE_SIZE) {
-			hex!(i, u32, "8");
-		}
-
-		for i in [u32::MIN, u32::MAX] { hex!(i, u32, "8"); }
-	}
-
-	#[test]
-	fn t_u64() {
-		let rng = fastrand::Rng::new();
-		for i in std::iter::repeat_with(|| rng.u64(..)).take(SAMPLE_SIZE) {
-			hex!(i, u64, "16");
-		}
-
-		for i in [u64::MIN, u64::MAX] { hex!(i, u64, "16"); }
-	}
-
-	#[test]
-	fn t_u128() {
-		let rng = fastrand::Rng::new();
-		for i in std::iter::repeat_with(|| rng.u128(..)).take(SAMPLE_SIZE) {
-			hex!(i, u128, "32");
-		}
-
-		for i in [u128::MIN, u128::MAX] { hex!(i, u128, "32"); }
-	}
+	#[cfg(miri)] test_rng!(t_i16, htoi, i16);
+	test_rng!(t_i32, htoi, i32);
+	test_rng!(t_i64, htoi, i64);
+	test_rng!(t_i128, htoi, i128);
+	test_rng!(t_isize, htoi, isize);
 }

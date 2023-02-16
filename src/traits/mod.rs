@@ -4,13 +4,16 @@
 
 mod btoi;
 mod btou;
-mod htou;
+mod hex;
 mod inflect;
 mod saturating_from;
 
 pub use btoi::BytesToSigned;
 pub use btou::BytesToUnsigned;
-pub use htou::HexToUnsigned;
+pub use hex::{
+	HexToSigned,
+	HexToUnsigned,
+};
 pub use inflect::{
 	Inflection,
 	NiceInflection,
