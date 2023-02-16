@@ -186,23 +186,36 @@ mod tests {
 
 	#[test]
 	fn t_nice_percent() {
+		// There will be disagreements with a denominator of 100_000.
 		const TOTAL: u32 = 10_000_u32;
 
-		// There will be disagreements with a denominator of 100_000.
-		for i in 0..TOTAL {
-			let fraction = i as f32 / TOTAL as f32;
-			assert_eq!(
-				NicePercent::from(fraction).as_str(),
-				format!("{:0.02}%", fraction * 100_f32),
-				"{}/{} (f32)", i, TOTAL
-			);
+		// Test as_str sanity for f32, f64.
+		macro_rules! t_str {
+			($var:ident) => (
+				let fraction = $var as f32 / TOTAL as f32;
+				assert_eq!(
+					NicePercent::from(fraction).as_str(),
+					format!("{:0.02}%", fraction * 100_f32),
+					"{}/{} (f32)", $var, TOTAL
+				);
 
-			let fraction = i as f64 / TOTAL as f64;
-			assert_eq!(
-				NicePercent::from(fraction).as_str(),
-				format!("{:0.02}%", fraction * 100_f64),
-				"{}/{} (f64)", i, TOTAL
+				let fraction = $var as f64 / TOTAL as f64;
+				assert_eq!(
+					NicePercent::from(fraction).as_str(),
+					format!("{:0.02}%", fraction * 100_f64),
+					"{}/{} (f64)", $var, TOTAL
+				);
 			);
+		}
+
+		// Either test everything or a subset depending on miri-ness.
+		#[cfg(not(miri))] for i in 0..TOTAL { t_str!(i); }
+		#[cfg(miri)]
+		{
+			let rng = fastrand::Rng::new();
+			for i in std::iter::repeat_with(|| rng.u32(0..TOTAL)).take(500) {
+				t_str!(i);
+			}
 		}
 
 		// And a few edge cases.

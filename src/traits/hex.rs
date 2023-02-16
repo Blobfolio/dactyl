@@ -258,7 +258,7 @@ mod tests {
 	const SAMPLE_SIZE: usize = 1_000_000;
 
 	#[cfg(miri)]
-	const SAMPLE_SIZE: usize = 1000; // Miri runs way too slow for a million tests.
+	const SAMPLE_SIZE: usize = 500; // Miri runs way too slow for a million tests.
 
 	macro_rules! test_all {
 		($tfn:ident, $hfn:ident, $ty:ty) => (
