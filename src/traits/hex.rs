@@ -292,11 +292,14 @@ mod tests {
 			s.make_ascii_uppercase();
 			assert_eq!(<$ty>::$fn(s.as_bytes()), Some($num));
 
-			// Padded lower, upper.
-			s = format!("{:0width$x}", $num, width=std::mem::size_of::<$ty>() * 2);
-			assert_eq!(<$ty>::$fn(s.as_bytes()), Some($num));
-			s.make_ascii_uppercase();
-			assert_eq!(<$ty>::$fn(s.as_bytes()), Some($num));
+			// Padded upper, lower.
+			let width = std::mem::size_of::<$ty>() * 2;
+			if s.len() < width {
+				while s.len() < width { s.insert(0, '0'); }
+				assert_eq!(<$ty>::$fn(s.as_bytes()), Some($num));
+				s.make_ascii_lowercase();
+				assert_eq!(<$ty>::$fn(s.as_bytes()), Some($num));
+			}
 		);
 	}
 
