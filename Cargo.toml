@@ -1,6 +1,6 @@
 [package]
 name = "dactyl"
-version = "0.4.7"
+version = "0.4.8"
 authors = ["Blobfolio, LLC. <hello@blobfolio.com>"]
 edition = "2021"
 rust-version = "1.63"
@@ -32,7 +32,7 @@ num-traits = "0.2.*"
 
 [dev-dependencies]
 brunch = "0.4.*"
-fastrand = "1.8.*"
+fastrand = "1.9.*"
 num-format = "0.4.*"
 
 [[bench]]
@@ -41,6 +41,10 @@ harness = false
 
 [[bench]]
 name = "fn_btou"
+harness = false
+
+[[bench]]
+name = "fn_htou"
 harness = false
 
 [[bench]]

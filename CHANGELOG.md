@@ -2,6 +2,19 @@
 
 
 
+## [0.4.8](https://github.com/Blobfolio/dactyl/releases/tag/v0.4.8) - 2023-02-16
+
+### New
+
+* `traits::HexToUnsigned`
+* `traits::HexToSigned`
+
+### Changed
+
+* Reduce sample sizes for miri tests (lower memory usage, etc)
+
+
+
 ## [0.4.7](https://github.com/Blobfolio/dactyl/releases/tag/v0.4.7) - 2023-01-26
 
 ### Changed

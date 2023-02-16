@@ -198,7 +198,7 @@ mod tests {
 	const SAMPLE_SIZE: usize = 1_000_000;
 
 	#[cfg(miri)]
-	const SAMPLE_SIZE: usize = 1000; // Miri runs way too slow for a million tests.
+	const SAMPLE_SIZE: usize = 250; // Miri runs way too slow for a million tests.
 
 	macro_rules! t_inflect {
 		($num:expr, $str:literal) => (
@@ -249,6 +249,7 @@ mod tests {
 		for i in i8::MIN..-1 { t_nice_inflect!(i, "books"); }
 	}
 
+	#[cfg(not(miri))]
 	#[test]
 	fn t_u16() {
 		t_nice_basics!(u16, NonZeroU16, i16);
@@ -259,6 +260,24 @@ mod tests {
 		}
 		for i in 2..=i16::MAX { t_nice_inflect!(i, "books"); }
 		for i in i16::MIN..-1 { t_nice_inflect!(i, "books"); }
+	}
+
+	#[cfg(miri)]
+	#[test]
+	fn t_u16() {
+		t_nice_basics!(u16, NonZeroU16, i16);
+
+		let rng = fastrand::Rng::new();
+		for i in std::iter::repeat_with(|| rng.u16(2..=u16::MAX)).take(SAMPLE_SIZE) {
+			t_nice_inflect!(i, "books");
+			t_nice_inflect!(NonZeroU16::new(i).unwrap(), "books");
+		}
+		for i in std::iter::repeat_with(|| rng.i16(i16::MIN..-1)).take(SAMPLE_SIZE.wrapping_div(2)) {
+			t_nice_inflect!(i, "books");
+		}
+		for i in std::iter::repeat_with(|| rng.i16(2..i16::MAX)).take(SAMPLE_SIZE.wrapping_div(2)) {
+			t_nice_inflect!(i, "books");
+		}
 	}
 
 	#[test]
