@@ -51,6 +51,7 @@ jobs:
 
     - name: Build
       run: |
+        cargo build --target ${{ matrix.target }}
         cargo build --release --target ${{ matrix.target }}
 
     - name: Clippy
@@ -59,5 +60,8 @@ jobs:
 
     - name: Tests
       run: |
+        cargo test --all-features --target ${{ matrix.target }}
+        cargo test --all-features --target ${{ matrix.target }} -- --ignored
+
         cargo test --release --all-features --target ${{ matrix.target }}
         cargo test --release --all-features --target ${{ matrix.target }} -- --ignored
