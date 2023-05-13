@@ -440,7 +440,6 @@ impl NiceFloat {
 		)
 	}
 
-	#[allow(unsafe_code)]
 	#[allow(clippy::cast_possible_truncation)] // They fit.
 	/// # Parse Top.
 	///
@@ -452,48 +451,42 @@ impl NiceFloat {
 		if 0 != top {
 			// Nudge the pointer to the dot; we'll re-rewind after each write.
 			self.from = IDX_DOT;
-			let ptr = self.inner.as_mut_ptr();
 
-			while 999 < top {
-				let (div, rem) = crate::div_mod(top, 1000);
-				self.from -= 4;
-				unsafe { super::write_u8_3(ptr.add(self.from + 1), rem as u16); }
-				top = div;
+			for chunk in self.inner[..IDX_DOT].rchunks_exact_mut(4) {
+				if 999 < top {
+					let (div, rem) = crate::div_mod(top, 1000);
+					chunk[1..].copy_from_slice(crate::triple(rem as usize).as_slice());
+					self.from -= 4;
+					top = div;
+				}
+				else { break; }
 			}
 
 			if 99 < top {
 				self.from -= 3;
-				unsafe { super::write_u8_3(ptr.add(self.from), top as u16); }
+				self.inner[self.from..self.from + 3].copy_from_slice(
+					crate::triple(top as usize).as_slice()
+				);
 			}
 			else if 9 < top {
 				self.from -= 2;
-				unsafe {
-					std::ptr::copy_nonoverlapping(
-						crate::double_ptr(top as usize),
-						ptr.add(self.from),
-						2
-					);
-				}
+				self.inner[self.from..self.from + 2].copy_from_slice(
+					crate::double(top as usize).as_slice()
+				);
 			}
 			else {
 				self.from -= 1;
-				unsafe { std::ptr::write(ptr.add(self.from), top as u8 + b'0'); }
+				self.inner[self.from] = top as u8 + b'0';
 			}
 
 			// Negative?
 			if neg {
 				self.from -= 1;
-
-				// Safety: there are (NiceU64::MAX + 1) spaces behind the dot so
-				// there will always be room.
-				unsafe {
-					std::ptr::write(ptr.add(self.from), b'-');
-				}
+				self.inner[self.from] = b'-';
 			}
 		}
 	}
 
-	#[allow(unsafe_code)]
 	/// # Parse Bottom.
 	///
 	/// This writes the fractional part of the float, if any.
@@ -503,33 +496,21 @@ impl NiceFloat {
 	/// write.
 	fn parse_bottom(&mut self, mut bottom: u32) {
 		if 0 != bottom {
-			let ptr = self.inner.as_mut_ptr();
 			let mut divisor = 1_000_000_u32;
-			let mut idx = IDX_DOT + 1;
 
-			for _ in 0..4 {
+			for chunk in self.inner[IDX_DOT + 1..].chunks_exact_mut(2) {
 				let (a, b) = crate::div_mod(bottom, divisor);
 
 				// Write the leftmost two digits.
 				if 0 != a {
-					// Safety: 2 bytes x 4 iterations = 8 bytes, the total
-					// number of bytes reserved to the right of the dot.
-					unsafe {
-						std::ptr::copy_nonoverlapping(
-							crate::double_ptr(a as usize),
-							ptr.add(idx),
-							2,
-						);
-					}
+					chunk.copy_from_slice(crate::double(a as usize).as_slice());
 				}
 
 				// Quitting time?
 				if 0 == b { break; }
 
-				// Ready the next round.
 				bottom = b;
 				divisor /= 100;
-				idx += 2;
 			}
 		}
 	}

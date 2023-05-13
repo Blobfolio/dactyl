@@ -62,21 +62,18 @@ pub type NiceU8 = NiceWrapper<SIZE>;
 
 impl From<u8> for NiceU8 {
 	#[allow(clippy::cast_lossless)] // Seems less performant.
-	#[allow(unsafe_code)]
 	fn from(num: u8) -> Self {
 		if 99 < num {
-			let mut inner = ZERO;
-			unsafe { super::write_u8_3(inner.as_mut_ptr(), num as u16); }
 			Self {
-				inner,
+				inner: crate::triple(num as usize),
 				from: 0,
 			}
 		}
 		else {
-			let [a, b] = crate::double(num as usize);
+			let [b, c] = crate::double(num as usize);
 			Self {
-				inner: [b'0', a, b],
-				from: if a == b'0' { 2 } else { 1 },
+				inner: [b'0', b, c],
+				from: if b == b'0' { 2 } else { 1 },
 			}
 		}
 	}

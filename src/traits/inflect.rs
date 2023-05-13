@@ -82,7 +82,6 @@ macro_rules! inflect {
 
 	// Nonzero.
 	($ty:ty, $one:expr) => (
-		#[allow(unsafe_code)]
 		impl Inflection for $ty {
 			fn inflect<'a>(self, singular: &'a str, plural: &'a str) -> &'a str {
 				if self == $one { singular } else { plural }
@@ -157,11 +156,11 @@ inflect_nice!(u16, NiceU16, 1);
 inflect_nice!(u32, NiceU32, 1);
 inflect_nice!(u64, NiceU64, 1);
 inflect_nice!(usize, NiceU64, 1);
-inflect_nice!(NonZeroU8, NiceU8, unsafe { Self::new_unchecked(1) });
-inflect_nice!(NonZeroU16, NiceU16, unsafe { Self::new_unchecked(1) });
-inflect_nice!(NonZeroU32, NiceU32, unsafe { Self::new_unchecked(1) });
-inflect_nice!(NonZeroU64, NiceU64, unsafe { Self::new_unchecked(1) });
-inflect_nice!(NonZeroUsize, NiceU64, unsafe { Self::new_unchecked(1) });
+inflect_nice!(NonZeroU8, NiceU8, Self::MIN);
+inflect_nice!(NonZeroU16, NiceU16, Self::MIN);
+inflect_nice!(NonZeroU32, NiceU32, Self::MIN);
+inflect_nice!(NonZeroU64, NiceU64, Self::MIN);
+inflect_nice!(NonZeroUsize, NiceU64, Self::MIN);
 inflect_nice!(i8, NiceU8, 1, unsigned_abs);
 inflect_nice!(i16, NiceU16, 1, unsigned_abs);
 inflect_nice!(i32, NiceU32, 1, unsigned_abs);
@@ -171,7 +170,7 @@ inflect_nice!(isize, NiceU64, 1, unsigned_abs);
 // These aren't nice, but we can still do basic inflection.
 inflect!(u128, 1);
 inflect!(i128, 1, unsigned_abs);
-inflect!(NonZeroU128, unsafe { Self::new_unchecked(1) });
+inflect!(NonZeroU128, Self::MIN);
 
 impl Inflection for f32 {
 	/// # Inflect a String.

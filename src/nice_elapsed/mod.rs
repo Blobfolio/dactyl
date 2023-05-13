@@ -86,7 +86,7 @@ impl Default for NiceElapsed {
 	#[inline]
 	fn default() -> Self {
 		Self {
-			inner: [0; SIZE],
+			inner: [b' '; SIZE],
 			len: 0,
 		}
 	}
@@ -181,8 +181,7 @@ impl NiceElapsed {
 	/// ```
 	pub const fn min() -> Self {
 		Self {
-			//       0   •    s    e   c    o    n    d    s
-			inner: [48, 32, 115, 101, 99, 111, 110, 100, 115, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			inner: *b"0 seconds                                           ",
 			len: 9,
 		}
 	}
@@ -201,8 +200,7 @@ impl NiceElapsed {
 	/// ```
 	pub const fn max() -> Self {
 		Self {
-			//       >   1   •    d   a    y
-			inner: [62, 49, 32, 100, 97, 121, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			inner: *b">1 day                                              ",
 			len: 6,
 		}
 	}
@@ -317,211 +315,209 @@ impl NiceElapsed {
 }
 
 impl NiceElapsed {
-	#[allow(clippy::cast_possible_truncation)] // We're checking first.
-	#[allow(clippy::cast_sign_loss)] // Values are unsigned.
-	#[allow(clippy::similar_names)] // It's that or the names become tedious.
-	#[allow(unsafe_code)]
+	#[allow(
+		clippy::similar_names,
+		clippy::many_single_char_names,
+		clippy::cast_possible_truncation,
+	)]
 	/// # From DHMS.ms.
 	///
 	/// Build with days, hours, minutes, seconds, and milliseconds (hundredths).
 	fn from_parts(d: u16, h: u8, m: u8, s: u8, ms: u8) -> Self {
-		let has_d = 0 < d;
-		let has_h = 0 < h;
-		let has_m = 0 < m;
-		let has_ms = 0 < ms;
-		let has_s = has_ms || 0 < s;
+		// Figure out which parts apply.
+		let has_d = 0 != d;
+		let has_h = 0 != h;
+		let has_m = 0 != m;
+		let has_ms = 0 != ms;
+		let has_s = has_ms || 0 != s;
 
-		// How many elements are there?
+		// How many sections are there to write?
 		let total: u8 =
 			u8::from(has_d) +
 			u8::from(has_h) +
 			u8::from(has_m) +
 			u8::from(has_s);
 
-		debug_assert_ne!(
-			total,
-			0,
-			"BUG: NiceElapsed::from_parts should always have a part!"
-		);
+		// This shouldn't hit, but just in case.
+		if total == 0 { return Self::min(); }
 
-		let mut buf = [0_u8; SIZE];
-		let mut end = buf.as_mut_ptr();
+		let mut inner = [b' '; SIZE];
+		let mut len = 0;
 		let mut idx: u8 = 0;
 
 		// Days.
 		if has_d {
 			idx += 1;
 
-			// If this fits within a u8 range, it is much cheaper to cast down.
-			if d <= 255 {
-				end = ElapsedKind::Day.write(end, d as u8, idx, total);
+			// If the days are small, we can handle the digits like normal.
+			if d < 10 {
+				inner[0] = d as u8 + b'0';
+				len = 1;
 			}
-			// Otherwise we need to invoke NiceU16 to handle commas, etc.
+			else if d < 100 {
+				inner[..2].copy_from_slice(crate::double(d as usize).as_slice());
+				len += 2;
+			}
+			else if d < 1000 {
+				inner[..3].copy_from_slice(crate::triple(d as usize).as_slice());
+				len += 3;
+			}
+			// Otherwise we'll need to leverage NiceU16.
 			else {
 				let tmp = NiceU16::from(d);
-				let len = tmp.len();
-				unsafe {
-					std::ptr::copy_nonoverlapping(
-						tmp.as_bytes().as_ptr(),
-						end,
-						len
-					);
-					end = end.add(len);
-				}
-				end = ElapsedKind::Day.write_label(end, d == 1);
+				len += tmp.len();
+				inner[..len].copy_from_slice(tmp.as_bytes());
 			}
+			len += LabelKind::Day.write_to_slice(1 == d, idx, total, &mut inner[len..]);
 		}
 
 		// Hours.
 		if has_h {
 			idx += 1;
-			end = ElapsedKind::Hour.write(end, h, idx, total);
+			len += write_u8_to_slice(h, &mut inner[len..]);
+			len += LabelKind::Hour.write_to_slice(1 == h, idx, total, &mut inner[len..]);
 		}
 
 		// Minutes.
 		if has_m {
 			idx += 1;
-			end = ElapsedKind::Minute.write(end, m, idx, total);
+			len += write_u8_to_slice(m, &mut inner[len..]);
+			len += LabelKind::Minute.write_to_slice(1 == m, idx, total, &mut inner[len..]);
 		}
 
-		// Seconds and/or milliseconds.
+		// Seconds.
 		if has_s {
 			idx += 1;
-			end = write_joiner(end, idx, total);
-			end = unsafe { write_u8_advance(end, s, false) };
+			len += write_u8_to_slice(s, &mut inner[len..]);
 
+			// They might need milliseconds before the label.
 			if has_ms {
-				unsafe {
-					std::ptr::write(end, b'.');
-					end = write_u8_advance(end.add(1), ms, true);
-				}
+				let [b, c] = crate::double(ms as usize);
+				inner[len..len + 3].copy_from_slice(&[b'.', b, c]);
+				len += 3;
 			}
 
-			end = ElapsedKind::Second.write_label(end, s == 1 && ms == 0);
+			len += LabelKind::Second.write_to_slice(1 == s && ! has_ms, idx, total, &mut inner[len..]);
 		}
 
-		// Put it all together!
-		Self {
-			inner: buf,
-			len: unsafe { end.offset_from(buf.as_ptr()) as usize },
-		}
+		Self { inner, len }
 	}
 }
 
 
 
-#[derive(Debug, Copy, Clone)]
-/// # Unit Helpers.
+#[derive(Debug, Clone, Copy)]
+/// # Join Style.
 ///
-/// This abstracts some of the verbosity of formatting.
-enum ElapsedKind {
+/// The labels are written with their joins in one go. These are the different
+/// options.
+enum JoinKind {
+	None,
+	And,
+	Comma,
+	CommaAnd,
+}
+
+
+
+#[derive(Debug, Copy, Clone)]
+/// # Labels.
+///
+/// This holds the different labels/units for each time part.
+enum LabelKind {
 	Day,
 	Hour,
 	Minute,
 	Second,
 }
 
-impl ElapsedKind {
-	/// # Label.
-	///
-	/// Return the plural label with a leading space.
-	const fn label(self) -> &'static [u8] {
-		match self {
-			Self::Day => b" days",
-			Self::Hour => b" hours",
-			Self::Minute => b" minutes",
-			Self::Second => b" seconds",
+impl LabelKind {
+	/// # Write Label to Slice.
+	fn write_to_slice(self, singular: bool, idx: u8, total: u8, buf: &mut [u8]) -> usize {
+		let join =
+			// The last section needs no joiner.
+			if idx == total { JoinKind::None }
+			// If there are two sections, this must be the first, and simply
+			// needs an " and ".
+			else if total == 2 { JoinKind::And }
+			// If this is the penultimate section (of more than two), we need
+			// a comma and an and.
+			else if idx + 1 == total { JoinKind::CommaAnd }
+			// Otherwise just a comma.
+			else { JoinKind::Comma };
+
+		let new =
+			if singular { self.as_bytes_singular(join) }
+			else { self.as_bytes_plural(join) };
+
+		let len = new.len();
+		buf[..len].copy_from_slice(new);
+		len
+	}
+
+	/// # As Bytes (Singular).
+	const fn as_bytes_singular(self, join: JoinKind) -> &'static [u8] {
+		match (self, join) {
+			(Self::Day, JoinKind::And) => b" day and ",
+			(Self::Day, JoinKind::Comma) => b" day, ",
+			(Self::Day, _) => b" day",
+
+			(Self::Hour, JoinKind::None) => b" hour",
+			(Self::Hour, JoinKind::And) => b" hour and ",
+			(Self::Hour, JoinKind::Comma) => b" hour, ",
+			(Self::Hour, JoinKind::CommaAnd) => b" hour, and ",
+
+			(Self::Minute, JoinKind::None) => b" minute",
+			(Self::Minute, JoinKind::And) => b" minute and ",
+			(Self::Minute, JoinKind::Comma) => b" minute, ",
+			(Self::Minute, JoinKind::CommaAnd) => b" minute, and ",
+
+			(Self::Second, _) => b" second",
 		}
 	}
 
-	#[allow(unsafe_code)]
-	/// # Write Joiner, Value, Label.
-	fn write(self, mut dst: *mut u8, val: u8, idx: u8, total: u8) -> *mut u8 {
-		dst = write_joiner(dst, idx, total);
-		dst = unsafe { write_u8_advance(dst, val, false) };
-		self.write_label(dst, val == 1)
-	}
+	/// # As Bytes (Plural).
+	const fn as_bytes_plural(self, join: JoinKind) -> &'static [u8] {
+		match (self, join) {
+			(Self::Day, JoinKind::And) => b" days and ",
+			(Self::Day, JoinKind::Comma) => b" days, ",
+			(Self::Day, _) => b" days",
 
-	#[allow(unsafe_code)]
-	/// # Write Label.
-	const fn write_label(self, dst: *mut u8, singular: bool) -> *mut u8 {
-		let label = self.label();
-		let len =
-			if singular { label.len() - 1 }
-			else { label.len() };
+			(Self::Hour, JoinKind::None) => b" hours",
+			(Self::Hour, JoinKind::And) => b" hours and ",
+			(Self::Hour, JoinKind::Comma) => b" hours, ",
+			(Self::Hour, JoinKind::CommaAnd) => b" hours, and ",
 
-		unsafe {
-			std::ptr::copy_nonoverlapping(label.as_ptr(), dst, len);
-			dst.add(len)
+			(Self::Minute, JoinKind::None) => b" minutes",
+			(Self::Minute, JoinKind::And) => b" minutes and ",
+			(Self::Minute, JoinKind::Comma) => b" minutes, ",
+			(Self::Minute, JoinKind::CommaAnd) => b" minutes, and ",
+
+			(Self::Second, _) => b" seconds",
 		}
 	}
 }
 
 
 
-#[allow(unsafe_code)]
-/// # Write u8.
+#[inline]
+/// # Write U8.
 ///
-/// This will quickly write a `u8` number as a UTF-8 byte slice to the provided
-/// pointer, and return a new pointer advanced to the next position (after
-/// however many digits were written).
-///
-/// If `two == true`, a leading zero will be printed for single-digit values.
-/// In practice, this only applies when writing milliseconds.
-///
-/// ## Safety
-///
-/// The pointer must have enough space for the value, i.e. 1-2 digits. This
-/// isn't a problem in practice given the method calls are all private.
-unsafe fn write_u8_advance(buf: *mut u8, num: u8, two: bool) -> *mut u8 {
-	debug_assert!(num < 100, "BUG: write_u8_advance should always be under 100.");
-
-	// Two digits.
-	if two || 9 < num {
-		std::ptr::copy_nonoverlapping(crate::double_ptr(num as usize), buf, 2);
-		buf.add(2)
+/// This converts a U8 to ASCII and writes it to the buffer without leading
+/// zeroes, returning the length written.
+fn write_u8_to_slice(num: u8, slice: &mut [u8]) -> usize {
+	if 99 < num {
+		slice[..3].copy_from_slice(crate::triple(num as usize).as_slice());
+		3
 	}
-	// One digit.
+	else if 9 < num {
+		slice[..2].copy_from_slice(crate::double(num as usize).as_slice());
+		2
+	}
 	else {
-		std::ptr::write(buf, num + b'0');
-		buf.add(1)
+		slice[0] = num + b'0';
+		1
 	}
-}
-
-#[allow(unsafe_code)]
-/// # Write Joiner.
-///
-/// This will add commas and/or ands as necessary, based on how many entries
-/// there are, and where we're at in that list.
-const fn write_joiner(dst: *mut u8, idx: u8, total: u8) -> *mut u8 {
-	// No joiner ever needed.
-	if total < 2 || idx < 2 { dst }
-	// We're at the end.
-	else if idx == total {
-		// Two items need a naked "and" between them.
-		if 2 == total {
-			unsafe {
-				std::ptr::copy_nonoverlapping(b" and ".as_ptr(), dst, 5);
-				dst.add(5)
-			}
-		}
-		// More than two items need a "comma-and" between them.
-		else {
-			unsafe {
-				std::ptr::copy_nonoverlapping(b", and ".as_ptr(), dst, 6);
-				dst.add(6)
-			}
-		}
-	}
-	// We just need a comma.
-	else if 2 < total {
-		unsafe {
-			std::ptr::copy_nonoverlapping(b", ".as_ptr(), dst, 2);
-			dst.add(2)
-		}
-	}
-	// No joiner needed this time.
-	else { dst }
 }
 
 

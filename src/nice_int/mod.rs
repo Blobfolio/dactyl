@@ -175,35 +175,34 @@ macro_rules! nice_parse {
 		}
 
 		impl $nice {
-			#[allow(clippy::cast_possible_truncation, unsafe_code)]
+			#[allow(clippy::cast_possible_truncation)]
 			/// # Parse.
 			fn parse(&mut self, mut num: $uint) {
-				let ptr = self.inner.as_mut_ptr();
-
-				while 999 < num {
-					let (div, rem) = crate::div_mod(num, 1000);
-					self.from -= 4;
-					unsafe { super::write_u8_3(ptr.add(self.from + 1), rem as u16); }
-					num = div;
+				for chunk in self.inner.rchunks_exact_mut(4) {
+					if 999 < num {
+						let (div, rem) = crate::div_mod(num, 1000);
+						chunk[1..].copy_from_slice(crate::triple(rem as usize).as_slice());
+						self.from -= 4;
+						num = div;
+					}
+					else { break; }
 				}
 
 				if 99 < num {
 					self.from -= 3;
-					unsafe { super::write_u8_3(ptr.add(self.from), num as u16); }
+					self.inner[self.from..self.from + 3].copy_from_slice(
+						crate::triple(num as usize).as_slice()
+					);
 				}
 				else if 9 < num {
 					self.from -= 2;
-					unsafe {
-						std::ptr::copy_nonoverlapping(
-							crate::double_ptr(num as usize),
-							ptr.add(self.from),
-							2
-						);
-					}
+					self.inner[self.from..self.from + 2].copy_from_slice(
+						crate::double(num as usize).as_slice()
+					);
 				}
 				else {
 					self.from -= 1;
-					unsafe { std::ptr::write(ptr.add(self.from), num as u8 + b'0'); }
+					self.inner[self.from] = num as u8 + b'0';
 				}
 			}
 		}
@@ -215,18 +214,3 @@ pub(self) use {
 	nice_from_nz,
 	nice_parse,
 };
-
-
-
-#[allow(unsafe_code, clippy::cast_possible_truncation)] // One digit always fits u8.
-/// # Write `u8` x 3
-///
-/// ## Safety
-///
-/// The destination pointer must have at least 3 bytes free or undefined
-/// things may happen!
-unsafe fn write_u8_3(buf: *mut u8, num: u16) {
-	let (div, rem) = crate::div_mod(num, 100);
-	std::ptr::write(buf, div as u8 + b'0');
-	std::ptr::copy_nonoverlapping(crate::double_ptr(rem as usize), buf.add(1), 2);
-}

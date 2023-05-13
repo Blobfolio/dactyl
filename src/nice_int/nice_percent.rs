@@ -9,9 +9,6 @@ use crate::NiceWrapper;
 /// # Total Buffer Size.
 const SIZE: usize = 7;
 
-/// # Starting Index For Percentage Decimal.
-const IDX_PERCENT_DECIMAL: usize = SIZE - 3;
-
 /// # Zero.
 const ZERO: [u8; SIZE] = [b'0', b'0', b'0', b'.', b'0', b'0', b'%'];
 
@@ -66,7 +63,6 @@ impl Default for NicePercent {
 macro_rules! nice_from {
 	($($float:ty),+ $(,)?) => ($(
 		impl From<$float> for NicePercent {
-			#[allow(unsafe_code)]
 			fn from(num: $float) -> Self {
 				// Shortcut for overflowing values.
 				if num <= 0.0 || ! num.is_normal() { return Self::min(); }
@@ -81,42 +77,17 @@ macro_rules! nice_from {
 				if whole == 0 { return Self::min(); }
 				else if 9999 < whole { return Self::max(); }
 
-				// Start with 0.00%.
-				let mut out = Self::min();
-				let ptr = out.inner.as_mut_ptr();
-
 				// Split the top and bottom.
 				let (top, bottom) = crate::div_mod(whole, 100);
 
-				// Write the integer part.
-				if 9 < top {
-					out.from -= 1;
-					unsafe {
-						std::ptr::copy_nonoverlapping(
-							crate::double_ptr(top as usize),
-							ptr.add(out.from),
-							2
-						);
-					}
-				}
-				else if 0 < top {
-					unsafe {
-						std::ptr::write(ptr.add(out.from), top as u8 + b'0');
-					}
-				}
+				let [a, b] = crate::double(top as usize);
+				let from = if a == b'0' { SIZE - 5 } else { SIZE - 6 };
+				let [c, d] = crate::double(bottom as usize);
 
-				// Write the fractional part.
-				if 0 < bottom {
-					unsafe {
-						std::ptr::copy_nonoverlapping(
-							crate::double_ptr(bottom as usize),
-							ptr.add(IDX_PERCENT_DECIMAL),
-							2
-						);
-					}
+				Self {
+					inner: [b'0', a, b, b'.', c, d, b'%'],
+					from,
 				}
-
-				out
 			}
 		}
 	)+);

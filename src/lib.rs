@@ -112,20 +112,7 @@ static DOUBLE: [[u8; 2]; 100] = [
 	[57, 48], [57, 49], [57, 50], [57, 51], [57, 52], [57, 53], [57, 54], [57, 55], [57, 56], [57, 57]
 ];
 
-#[allow(unsafe_code)]
 #[inline]
-/// # Double Pointer.
-///
-/// This produces a pointer to a specific two-digit subslice of `DOUBLE`.
-///
-/// ## Panics
-///
-/// This will panic if the number is greater than 99.
-pub(crate) fn double_ptr(idx: usize) -> *const u8 {
-	debug_assert!(idx < 100, "BUG: Invalid index passed to double_ptr.");
-	unsafe { DOUBLE.get_unchecked(idx).as_ptr() }
-}
-
 /// # Double Digits.
 ///
 /// Return both digits, ASCII-fied.
@@ -134,6 +121,23 @@ pub(crate) fn double_ptr(idx: usize) -> *const u8 {
 ///
 /// This will panic if the number is greater than 99.
 pub(crate) fn double(idx: usize) -> [u8; 2] { DOUBLE[idx] }
+
+#[inline]
+#[allow(clippy::cast_possible_truncation)]
+/// # Triple Digits.
+///
+/// Return both digits, ASCII-fied.
+///
+/// ## Panics
+///
+/// This will panic if the number is greater than 99.
+pub(crate) fn triple(idx: usize) -> [u8; 3] {
+	assert!(idx < 1000, "Bug: Triple must be less than 1000.");
+	let (div, rem) = div_mod(idx, 100);
+	let a = div as u8 + b'0';
+	let [b, c] = DOUBLE[rem];
+	[a, b, c]
+}
 
 
 

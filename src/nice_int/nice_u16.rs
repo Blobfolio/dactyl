@@ -65,48 +65,39 @@ super::nice_from_nz!(NiceU16, NonZeroU16);
 
 impl From<u16> for NiceU16 {
 	#[allow(clippy::cast_possible_truncation)] // One digit always fits u8.
-	#[allow(unsafe_code)]
+	#[allow(clippy::many_single_char_names)]   // ABCDE keeps the ordering straight.
 	fn from(num: u16) -> Self {
 		if 999 < num {
-			let mut inner = ZERO;
-			let ptr = inner.as_mut_ptr();
 			let (num, rem) = crate::div_mod(num, 1000);
-			unsafe { super::write_u8_3(ptr.add(3), rem); }
+			let [c, d, e] = crate::triple(rem as usize);
 
 			if 9 < num {
-				unsafe {
-					std::ptr::copy_nonoverlapping(
-						crate::double_ptr(num as usize),
-						ptr,
-						2
-					);
-				}
+				let [a, b] = crate::double(num as usize);
 				Self {
-					inner,
+					inner: [a, b, b',', c, d, e],
 					from: 0,
 				}
 			}
 			else {
-				unsafe { std::ptr::write(ptr.add(1), num as u8 + b'0'); }
+				let b = num as u8 + b'0';
 				Self {
-					inner,
+					inner: [b'0', b, b',', c, d, e],
 					from: 1,
 				}
 			}
 		}
 		else if 99 < num {
-			let mut inner = ZERO;
-			unsafe { super::write_u8_3(inner.as_mut_ptr().add(3), num); }
+			let [c, d, e] = crate::triple(num as usize);
 			Self {
-				inner,
+				inner: [b'0', b'0', b',', c, d, e],
 				from: 3,
 			}
 		}
 		else {
-			let [a, b] = crate::double(num as usize);
+			let [d, e] = crate::double(num as usize);
 			Self {
-				inner: [b'0', b'0', b',', b'0', a, b],
-				from: if a == b'0' { 5 } else { 4 },
+				inner: [b'0', b'0', b',', b'0', d, e],
+				from: if d == b'0' { 5 } else { 4 },
 			}
 		}
 	}
