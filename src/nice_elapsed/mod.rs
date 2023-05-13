@@ -311,6 +311,7 @@ impl NiceElapsed {
 	/// ```
 	pub fn as_str(&self) -> &str {
 		// Safety: numbers and labels are valid ASCII.
+		debug_assert!(self.as_bytes().is_ascii(), "Bug: NiceElapsed is not ASCII.");
 		unsafe { std::str::from_utf8_unchecked(self.as_bytes()) }
 	}
 }
@@ -337,8 +338,9 @@ impl NiceElapsed {
 			u8::from(has_m) +
 			u8::from(has_s);
 
-		debug_assert!(
-			0 < total,
+		debug_assert_ne!(
+			total,
+			0,
 			"BUG: NiceElapsed::from_parts should always have a part!"
 		);
 

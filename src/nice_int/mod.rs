@@ -126,6 +126,7 @@ impl<const S: usize> NiceWrapper<S> {
 	/// Return the value as a string slice.
 	pub fn as_str(&self) -> &str {
 		// Safety: numbers are valid ASCII.
+		debug_assert!(std::str::from_utf8(self.as_bytes()).is_ok(), "NiceWrapper is not UTF.");
 		unsafe { std::str::from_utf8_unchecked(self.as_bytes()) }
 	}
 }

@@ -346,6 +346,10 @@ impl NiceFloat {
 	/// assert_eq!(nice.compact_str(), "12,345.67833333"); // Nothing to trim.
 	/// ```
 	pub fn compact_str(&self) -> &str {
+		debug_assert!(
+			std::str::from_utf8(self.compact_bytes()).is_ok(),
+			"Bug: NiceFloat is not UTF."
+		);
 		unsafe { std::str::from_utf8_unchecked(self.compact_bytes()) }
 	}
 
@@ -411,6 +415,10 @@ impl NiceFloat {
 	/// assert_eq!(nice.precise_str(8), "12,345.67800000");
 	/// ```
 	pub fn precise_str(&self, precision: usize) -> &str {
+		debug_assert!(
+			std::str::from_utf8(self.precise_bytes(precision)).is_ok(),
+			"Bug: NiceFloat is not UTF."
+		);
 		unsafe { std::str::from_utf8_unchecked(self.precise_bytes(precision)) }
 	}
 }

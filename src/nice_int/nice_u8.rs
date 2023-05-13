@@ -138,6 +138,7 @@ impl NiceU8 {
 	/// ```
 	pub fn as_str2(&self) -> &str {
 		// Safety: numbers are valid ASCII.
+		debug_assert!(self.as_bytes2().is_ascii(), "Bug: NiceU8 is not ASCII.");
 		unsafe { std::str::from_utf8_unchecked(self.as_bytes2()) }
 	}
 
@@ -159,6 +160,12 @@ impl NiceU8 {
 	/// ```
 	pub const fn as_str3(&self) -> &str {
 		// Safety: numbers are valid ASCII.
+		debug_assert!(
+			self.inner[0].is_ascii_digit() &&
+			self.inner[1].is_ascii_digit() &&
+			self.inner[2].is_ascii_digit(),
+			"Bug: NiceU8 is not ASCII."
+		);
 		unsafe { std::str::from_utf8_unchecked(self.as_bytes3()) }
 	}
 }
