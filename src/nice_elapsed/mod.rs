@@ -186,25 +186,6 @@ impl NiceElapsed {
 		}
 	}
 
-	#[deprecated(since = "0.4.3", note = "NiceElapsed now supports days; this method is now moot")]
-	#[must_use]
-	/// # Maximum Value
-	///
-	/// This returns a value that prints as `>1 day`.
-	///
-	/// ## Examples
-	///
-	/// ```
-	/// use dactyl::NiceElapsed;
-	/// assert_eq!(NiceElapsed::max().as_str(), ">1 day");
-	/// ```
-	pub const fn max() -> Self {
-		Self {
-			inner: *b">1 day                                              ",
-			len: 6,
-		}
-	}
-
 	#[allow(clippy::integer_division)] // It's fine.
 	#[must_use]
 	/// # Time Chunks (with Days).

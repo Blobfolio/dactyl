@@ -4,15 +4,17 @@
 
 ## [0.5.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.5.0) - 2023-06-01
 
-### Breaking
-
-* Bump MSRV to `1.70`
 
 ### Changed
 
+* Bump MSRV to `1.70`
 * Replace (most) `unsafe` blocks w/ safe alternatives
 * Add debug assertions around remaining `unsafe` blocks for extra/redundant test coverage
 * Run CI build/test in both debug and release modes
+
+### Removed
+
+* `NiceElapsed::max`
 
 
 
