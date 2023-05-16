@@ -2,6 +2,20 @@
 
 
 
+## [0.5.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.5.0) - 2023-06-01
+
+### Breaking
+
+* Bump MSRV to `1.70`
+
+### Changed
+
+* Replace (most) `unsafe` blocks w/ safe alternatives
+* Add debug assertions around remaining `unsafe` blocks for extra/redundant test coverage
+* Run CI build/test in both debug and release modes
+
+
+
 ## [0.4.8](https://github.com/Blobfolio/dactyl/releases/tag/v0.4.8) - 2023-02-16
 
 ### New
