@@ -9,8 +9,9 @@
 
 * Bump MSRV to `1.70`
 * Replace (most) `unsafe` blocks w/ safe alternatives
-* Add debug assertions around remaining `unsafe` blocks for extra/redundant test coverage
-* Run CI build/test in both debug and release modes
+* Add debug/assertions around remaining `unsafe` blocks for extra/redundant test coverage
+* CI: run tests in both debug and release modes
+* CI: test MSRV
 
 ### Removed
 
