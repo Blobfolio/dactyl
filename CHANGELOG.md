@@ -4,7 +4,6 @@
 
 ## [0.5.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.5.0) - 2023-06-01
 
-
 ### Changed
 
 * Bump MSRV to `1.70`
