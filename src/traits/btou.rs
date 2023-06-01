@@ -419,14 +419,13 @@ const fn parse1(byte: u8) -> Option<u8> {
 }
 
 #[cfg(target_endian = "little")]
-#[allow(unsafe_code)]
 /// # Parse Two.
 ///
 /// This parses two digits as a single `u16`, reducing the number of
 /// operations that would otherwise be required.
 const fn parse2(src: &[u8]) -> Option<u16> {
-	debug_assert!(src.len() == 2);
-	let chunk = u16::from_le_bytes(unsafe { *(src.as_ptr().cast()) }) ^ 0x3030_u16;
+	assert!(src.len() == 2, "Bug: parse2 requires 2 bytes.");
+	let chunk = u16::from_le_bytes([src[0], src[1]]) ^ 0x3030_u16;
 
 	// Make sure the slice contains only ASCII digits.
 	if (chunk & 0xf0f0_u16) | (chunk.wrapping_add(0x7676_u16) & 0x8080_u16) == 0 {
@@ -441,15 +440,16 @@ const fn parse2(src: &[u8]) -> Option<u16> {
 
 #[cfg(target_endian = "little")]
 #[allow(clippy::cast_possible_truncation)] // Four digits always fit `u16`.
-#[allow(unsafe_code)]
 /// # Parse Four.
 ///
 /// This parses four digits as a single `u32`, reducing the number of
 /// operations that would otherwise be required. The return value is downcast
 /// to `u16` because four digits will always fit the type.
 const fn parse4(src: &[u8]) -> Option<u16> {
-	debug_assert!(src.len() == 4);
-	let chunk = u32::from_le_bytes(unsafe { *(src.as_ptr().cast()) }) ^ 0x3030_3030;
+	assert!(src.len() == 4, "Bug: parse4 requires 4 bytes.");
+	let chunk = u32::from_le_bytes([
+		src[0], src[1], src[2],  src[3],
+	]) ^ 0x3030_3030;
 
 	// Make sure the slice contains only ASCII digits.
 	if (chunk & 0xf0f0_f0f0_u32) | (chunk.wrapping_add(0x7676_7676_u32) & 0x8080_8080_u32) == 0 {
@@ -473,15 +473,16 @@ const fn parse4(src: &[u8]) -> Option<u16> {
 
 #[cfg(target_endian = "little")]
 #[allow(clippy::cast_possible_truncation)] // Eight digits always fit `u32`.
-#[allow(unsafe_code)]
 /// # Parse Eight.
 ///
 /// This parses eight digits as a single `u64`, reducing the number of
 /// operations that would otherwise be required. The return value is downcast
 /// to `u32` because eight digits will always fit the type.
 const fn parse8(src: &[u8]) -> Option<u32> {
-	debug_assert!(src.len() == 8);
-	let chunk = u64::from_le_bytes(unsafe { *(src.as_ptr().cast()) }) ^ 0x3030_3030_3030_3030_u64;
+	assert!(src.len() == 8, "Bug: parse8 requires 8 bytes.");
+	let chunk = u64::from_le_bytes([
+		src[0], src[1], src[2],  src[3],  src[4],  src[5],  src[6],  src[7],
+	]) ^ 0x3030_3030_3030_3030_u64;
 
 	// Make sure the slice contains only ASCII digits.
 	let chk = chunk.wrapping_add(0x7676_7676_7676_7676_u64);
@@ -507,16 +508,17 @@ const fn parse8(src: &[u8]) -> Option<u32> {
 
 #[cfg(target_endian = "little")]
 #[allow(clippy::cast_possible_truncation)] // Sixteen digits always fit `u16`.
-#[allow(unsafe_code)]
 /// # Parse Sixteen.
 ///
 /// This parses sixteen digits as a single `u128`, reducing the number of
 /// operations that would otherwise be required. The return value is downcast
 /// to `u64` because sixteen digits will always fit the type.
 const fn parse16(src: &[u8]) -> Option<u64> {
-	debug_assert!(src.len() == 16);
-
-	let chunk = u128::from_le_bytes(unsafe { *(src.as_ptr().cast()) }) ^
+	assert!(src.len() == 16, "Bug: parse16 requires 16 bytes.");
+	let chunk = u128::from_le_bytes([
+		src[0], src[1], src[2],  src[3],  src[4],  src[5],  src[6],  src[7],
+		src[8], src[9], src[10], src[11], src[12], src[13], src[14], src[15],
+	]) ^
 		0x3030_3030_3030_3030_3030_3030_3030_3030_u128;
 
 	// Make sure the slice contains only ASCII digits.

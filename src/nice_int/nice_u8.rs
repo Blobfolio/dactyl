@@ -62,21 +62,18 @@ pub type NiceU8 = NiceWrapper<SIZE>;
 
 impl From<u8> for NiceU8 {
 	#[allow(clippy::cast_lossless)] // Seems less performant.
-	#[allow(unsafe_code)]
 	fn from(num: u8) -> Self {
 		if 99 < num {
-			let mut inner = ZERO;
-			unsafe { super::write_u8_3(inner.as_mut_ptr(), num as u16); }
 			Self {
-				inner,
+				inner: crate::triple(num as usize),
 				from: 0,
 			}
 		}
 		else {
-			let [a, b] = crate::double(num as usize);
+			let [b, c] = crate::double(num as usize);
 			Self {
-				inner: [b'0', a, b],
-				from: if a == b'0' { 2 } else { 1 },
+				inner: [b'0', b, c],
+				from: if b == b'0' { 2 } else { 1 },
 			}
 		}
 	}
@@ -138,6 +135,7 @@ impl NiceU8 {
 	/// ```
 	pub fn as_str2(&self) -> &str {
 		// Safety: numbers are valid ASCII.
+		debug_assert!(self.as_bytes2().is_ascii(), "Bug: NiceU8 is not ASCII.");
 		unsafe { std::str::from_utf8_unchecked(self.as_bytes2()) }
 	}
 
@@ -159,6 +157,12 @@ impl NiceU8 {
 	/// ```
 	pub const fn as_str3(&self) -> &str {
 		// Safety: numbers are valid ASCII.
+		debug_assert!(
+			self.inner[0].is_ascii_digit() &&
+			self.inner[1].is_ascii_digit() &&
+			self.inner[2].is_ascii_digit(),
+			"Bug: NiceU8 is not ASCII."
+		);
 		unsafe { std::str::from_utf8_unchecked(self.as_bytes3()) }
 	}
 }
