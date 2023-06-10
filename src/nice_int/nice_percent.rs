@@ -183,7 +183,7 @@ mod tests {
 		#[cfg(not(miri))] for i in 0..TOTAL { t_str!(i); }
 		#[cfg(miri)]
 		{
-			let rng = fastrand::Rng::new();
+			let mut rng = fastrand::Rng::new();
 			for i in std::iter::repeat_with(|| rng.u32(0..TOTAL)).take(500) {
 				t_str!(i);
 			}

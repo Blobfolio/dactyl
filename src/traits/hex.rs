@@ -273,7 +273,7 @@ mod tests {
 			#[test]
 			fn $tfn() {
 				// Test a reasonable random range of values.
-				let rng = fastrand::Rng::new();
+				let mut rng = fastrand::Rng::new();
 				for i in std::iter::repeat_with(|| rng.$ty(..)).take(SAMPLE_SIZE) {
 					hex!($hfn, i, $ty);
 				}
