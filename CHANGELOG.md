@@ -2,6 +2,14 @@
 
 
 
+## [0.5.1](https://github.com/Blobfolio/dactyl/releases/tag/v0.5.1) - 2023-07-13
+
+### Changed
+
+* Update dev dependencies
+
+
+
 ## [0.5.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.5.0) - 2023-06-01
 
 ### Changed

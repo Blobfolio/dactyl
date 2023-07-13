@@ -142,7 +142,7 @@ mod tests {
 		assert_eq!(two.cmp(&one), std::cmp::Ordering::Greater);
 
 		// Check a subset of everything else.
-		let rng = fastrand::Rng::new();
+		let mut rng = fastrand::Rng::new();
 		for i in std::iter::repeat_with(|| rng.u32(..)).take(SAMPLE_SIZE) {
 			assert_eq!(
 				NiceU32::from(i).as_str(),

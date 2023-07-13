@@ -266,7 +266,7 @@ mod tests {
 	fn t_u16() {
 		t_nice_basics!(u16, NonZeroU16, i16);
 
-		let rng = fastrand::Rng::new();
+		let mut rng = fastrand::Rng::new();
 		for i in std::iter::repeat_with(|| rng.u16(2..=u16::MAX)).take(SAMPLE_SIZE) {
 			t_nice_inflect!(i, "books");
 			t_nice_inflect!(NonZeroU16::new(i).unwrap(), "books");
@@ -283,7 +283,7 @@ mod tests {
 	fn t_u32() {
 		t_nice_basics!(u32, NonZeroU32, i32);
 
-		let rng = fastrand::Rng::new();
+		let mut rng = fastrand::Rng::new();
 		for i in std::iter::repeat_with(|| rng.u32(2..=u32::MAX)).take(SAMPLE_SIZE) {
 			t_nice_inflect!(i, "books");
 			t_nice_inflect!(NonZeroU32::new(i).unwrap(), "books");
@@ -300,7 +300,7 @@ mod tests {
 	fn t_u64() {
 		t_nice_basics!(u64, NonZeroU64, i64);
 
-		let rng = fastrand::Rng::new();
+		let mut rng = fastrand::Rng::new();
 		for i in std::iter::repeat_with(|| rng.u64(2..=u64::MAX)).take(SAMPLE_SIZE) {
 			t_nice_inflect!(i, "books");
 			t_nice_inflect!(NonZeroU64::new(i).unwrap(), "books");
@@ -317,7 +317,7 @@ mod tests {
 	fn t_usize() {
 		t_nice_basics!(usize, NonZeroUsize, isize);
 
-		let rng = fastrand::Rng::new();
+		let mut rng = fastrand::Rng::new();
 		for i in std::iter::repeat_with(|| rng.usize(2..=usize::MAX)).take(SAMPLE_SIZE) {
 			t_nice_inflect!(i, "books");
 			t_nice_inflect!(NonZeroUsize::new(i).unwrap(), "books");
@@ -340,7 +340,7 @@ mod tests {
 		t_inflect!(0_i128, "books");
 		t_inflect!(1_i128, "book");
 
-		let rng = fastrand::Rng::new();
+		let mut rng = fastrand::Rng::new();
 		for i in std::iter::repeat_with(|| rng.u128(2..=u128::MAX)).take(SAMPLE_SIZE) {
 			t_inflect!(i, "books");
 			t_inflect!(NonZeroU128::new(i).unwrap(), "books");

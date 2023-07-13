@@ -156,7 +156,7 @@ mod tests {
 
 		#[cfg(miri)]
 		{
-			let rng = fastrand::Rng::new();
+			let mut rng = fastrand::Rng::new();
 			for i in std::iter::repeat_with(|| rng.u16(..)).take(1000) {
 				assert_eq!(
 					NiceU16::from(i).as_str(),

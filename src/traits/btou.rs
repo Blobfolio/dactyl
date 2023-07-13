@@ -606,7 +606,7 @@ mod tests {
 
 		#[cfg(miri)]
 		{
-			let rng = fastrand::Rng::new();
+			let mut rng = fastrand::Rng::new();
 			for i in std::iter::repeat_with(|| rng.u16(..)).take(SAMPLE_SIZE) {
 				let s = i.to_string();
 				assert_eq!(u16::btou(s.as_bytes()), Some(i));
@@ -623,7 +623,7 @@ mod tests {
 		assert_eq!(u32::btou(b"4294967296"), None);
 
 		// Now let's check ten million random values and hope they all hit.
-		let rng = fastrand::Rng::new();
+		let mut rng = fastrand::Rng::new();
 		for i in std::iter::repeat_with(|| rng.u32(..)).take(SAMPLE_SIZE) {
 			let s = i.to_string();
 			assert_eq!(u32::btou(s.as_bytes()), Some(i));
@@ -639,7 +639,7 @@ mod tests {
 		assert_eq!(u64::btou(b"18446744073709551616"), None);
 
 		// Now let's check ten million random values and hope they all hit.
-		let rng = fastrand::Rng::new();
+		let mut rng = fastrand::Rng::new();
 		for i in std::iter::repeat_with(|| rng.u64(..)).take(SAMPLE_SIZE) {
 			let s = i.to_string();
 			assert_eq!(u64::btou(s.as_bytes()), Some(i));
@@ -655,7 +655,7 @@ mod tests {
 		assert_eq!(u128::btou(b"340282366920938463463374607431768211456"), None);
 
 		// Now let's check ten million random values and hope they all hit.
-		let rng = fastrand::Rng::new();
+		let mut rng = fastrand::Rng::new();
 		for i in std::iter::repeat_with(|| rng.u128(..)).take(SAMPLE_SIZE) {
 			let s = i.to_string();
 			assert_eq!(u128::btou(s.as_bytes()), Some(i));
@@ -670,7 +670,7 @@ mod tests {
 
 		// Usize just wraps the appropriate sized type, but let's check some
 		// random values anyway.
-		let rng = fastrand::Rng::new();
+		let mut rng = fastrand::Rng::new();
 		for i in std::iter::repeat_with(|| rng.usize(..)).take(SAMPLE_SIZE.min(50_000)) {
 			let s = i.to_string();
 			assert_eq!(usize::btou(s.as_bytes()), Some(i));

@@ -336,7 +336,7 @@ mod tests {
 	/// testing large types to finish in a reasonable amount of time.
 	macro_rules! test_impl_subrange {
 		($type:ty:$fn:ident, ($($from:ty),+)) => {
-			let rng = fastrand::Rng::new();
+			let mut rng = fastrand::Rng::new();
 			for i in std::iter::repeat_with(|| rng.$fn(..)).take(SAMPLE_SIZE) {
 				$(
 					let test: $from = i.as_();
