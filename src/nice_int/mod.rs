@@ -209,7 +209,7 @@ macro_rules! nice_parse {
 	);
 }
 
-pub(self) use {
+use {
 	nice_default,
 	nice_from_nz,
 	nice_parse,

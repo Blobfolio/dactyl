@@ -592,7 +592,6 @@ pub enum FloatKind {
 }
 
 impl From<f32> for FloatKind {
-	#[allow(clippy::integer_division)]
 	fn from(num: f32) -> Self {
 		if num.is_nan() { Self::NaN }
 		else if num.is_infinite() { Self::Infinity }
@@ -601,7 +600,6 @@ impl From<f32> for FloatKind {
 }
 
 impl From<f64> for FloatKind {
-	#[allow(clippy::integer_division)]
 	fn from(num: f64) -> Self {
 		if num.is_nan() { Self::NaN }
 		else if num.is_infinite() { Self::Infinity }
