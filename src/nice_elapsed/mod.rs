@@ -186,7 +186,7 @@ impl NiceElapsed {
 		}
 	}
 
-	#[allow(clippy::integer_division)] // It's fine.
+	#[allow(clippy::cast_possible_truncation)] // u32::MAX/86400 fits u16.
 	#[must_use]
 	/// # Time Chunks (with Days).
 	///
@@ -208,7 +208,7 @@ impl NiceElapsed {
 				(0, Self::hms(num))
 			}
 			else {
-				((num / 86_400) as u16, Self::hms(num % 86_400))
+				(num.wrapping_div(86_400) as u16, Self::hms(num % 86_400))
 			};
 
 		(d, h, m, s)
