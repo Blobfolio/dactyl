@@ -38,7 +38,9 @@ macro_rules! impl_meta {
 			stringify!($from),
 			"` into a `",
 			stringify!($to),
-			"`, capping the values at `0` or `",
+			"`, clamping the values to `",
+			stringify!($to),
+			"::MIN..=",
 			stringify!($to),
 			"::MAX` to prevent overflow or wrapping."
 		)
@@ -163,8 +165,8 @@ macro_rules! float_to_unsigned {
 
 /// # Saturating From.
 ///
-/// Convert an unsigned integer of a larger type into `Self`, capping the
-/// maximum value to `Self::MAX` to prevent overflow or wrapping.
+/// Convert between numeric types, clamping to `Self::MIN..=Self::MAX` to
+/// prevent overflow or wrapping issues.
 pub trait SaturatingFrom<T> {
 	/// # Saturating From.
 	fn saturating_from(src: T) -> Self;

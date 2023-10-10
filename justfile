@@ -76,9 +76,9 @@ bench BENCH="":
 	env RUSTUP_PERMIT_COPY_RENAME=true rustup install nightly
 
 	# Make the docs.
-	cargo +nightly doc \
+	cargo +nightly rustdoc \
 		--release \
-		--no-deps \
+		--all-features \
 		--target x86_64-unknown-linux-gnu \
 		--target-dir "{{ cargo_dir }}"
 
