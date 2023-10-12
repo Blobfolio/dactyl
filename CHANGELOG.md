@@ -1,6 +1,13 @@
 # Changelog
 
 
+## [0.5.3](https://github.com/Blobfolio/dactyl/releases/tag/v0.5.3) - TBD
+
+### Changed
+
+* `SaturatingFrom` is now implemented to/from all primitive integer types, even in cases where saturation isn't ever necessary, like `T->T`
+
+
 
 ## [0.5.2](https://github.com/Blobfolio/dactyl/releases/tag/v0.5.2) - 2023-10-05
 
