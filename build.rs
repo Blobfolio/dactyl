@@ -68,7 +68,7 @@ macro_rules! into_any {
 	)+);
 }
 
-into_any!(u8, u16, u32, u64, u128, i8, i16, i32, i64, i128);
+into_any! { u8, u16, u32, u64, u128, i8, i16, i32, i64, i128 }
 
 impl fmt::Display for AnyNum {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -126,32 +126,6 @@ impl AnyNum {
 			Self::Signed(n) => n as u128,
 		}
 	}
-
-	/// # Floor to Use?
-	///
-	/// Compare TO and FROM minimums to see if the floor needs to be clamped
-	/// during saturation.
-	fn clamp_floor<TO: NumberExt + Into<Self>, FROM: NumberExt + Into<Self>>() -> Option<Self> {
-		let to: Self = TO::MIN_NUMBER.into();
-		let from: Self = FROM::MIN_NUMBER.into();
-
-		// Minimums will always fit in i128.
-		if from.signed_inner() < to.signed_inner() { Some(to) }
-		else { None }
-	}
-
-	/// # Ceiling to Use?
-	///
-	/// Compare TO and FROM maximums to see if the ceiling needs to be clamped
-	/// during saturation.
-	fn clamp_ceiling<TO: NumberExt + Into<Self>, FROM: NumberExt + Into<Self>>() -> Option<Self> {
-		let to: Self = TO::MAX_NUMBER.into();
-		let from: Self = FROM::MAX_NUMBER.into();
-
-		// Maximums will always fit in u128.
-		if to.unsigned_inner() < from.unsigned_inner() { Some(to) }
-		else { None }
-	}
 }
 
 
@@ -171,11 +145,7 @@ macro_rules! wrt {
 			),
 		).unwrap();
 		// The body.
-		write_condition(
-			&mut $out,
-			AnyNum::clamp_floor::<$alias, $from>(),
-			AnyNum::clamp_ceiling::<$alias, $from>(),
-		);
+		write_condition::<$alias, $from>(&mut $out);
 		// The bottom.
 		writeln!(
 			&mut $out,
@@ -325,7 +295,23 @@ fn out_path(name: &str) -> PathBuf {
 /// This writes the body of a `saturating_from()` block, clamping as needed.
 /// It feels wrong using a method for this, but because of the conditional
 /// logic it's cleaner than shoving it into a macro.
-fn write_condition(out: &mut String, min: Option<AnyNum>, max: Option<AnyNum>) {
+fn write_condition<TO, FROM>(out: &mut String)
+where TO: NumberExt + Into<AnyNum>, FROM: NumberExt + Into<AnyNum> {
+	// Minimum clamp.
+	let to: AnyNum = TO::MIN_NUMBER.into();
+	let from: AnyNum = FROM::MIN_NUMBER.into();
+	let min =
+		if from.signed_inner() < to.signed_inner() { Some(to) }
+		else { None };
+
+	// Maximum clamp.
+	let to: AnyNum = TO::MAX_NUMBER.into();
+	let from: AnyNum = FROM::MAX_NUMBER.into();
+	let max =
+		if to.unsigned_inner() < from.unsigned_inner() { Some(to) }
+		else { None };
+
+	// Write the conditions!
 	match (min, max) {
 		(Some(min), Some(max)) => writeln!(
 			out,
