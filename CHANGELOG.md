@@ -6,6 +6,8 @@
 ### Changed
 
 * `SaturatingFrom` is now implemented to/from all primitive integer types, even in cases where saturation isn't ever necessary, like `T->T`
+* `NiceU8::as_bytes2` is now `const`
+* `NiceU8::as_str2` is now `const`
 
 
 
