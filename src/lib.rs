@@ -11,7 +11,7 @@
 
 This crate provides a fast interface to "stringify" unsigned integers, formatted with commas at each thousand. It prioritizes speed and simplicity over configurability.
 
-If your application just wants to turn `1010` into `"1,010"`, `Dactyl` is a great choice. If your application requires locale awareness or other options, something like [`num-format`](https://crates.io/crates/num-format) would probably make more sense.
+If your application just wants to quickly turn `1010` into `"1,010"`, Dactyl is a great choice. If your application requires locale awareness or other options, something like [`num-format`](https://crates.io/crates/num-format) would probably make more sense.
 
 Similar to [`itoa`](https://crates.io/crates/itoa), Dactyl writes ASCII conversions to a temporary buffer, but does so using fixed arrays sized for each type's maximum value, minimizing the allocation overhead for, say, tiny little `u8`s.
 
@@ -20,9 +20,10 @@ Each type has its own struct, each of which works exactly the same way:
 * [`NiceU8`]
 * [`NiceU16`]
 * [`NiceU32`]
-* [`NiceU64`]
-
-(Note: support for `usize` values is folded into [`NiceU64`].)
+* [`NiceU64`] (also covers `usize`)
+* [`NiceFloat`]
+* [`NiceElapsed`] (for durations)
+* [`NicePercent`] (for floats representing percentages)
 
 The intended use case is to simply call the appropriate `from()` for the type, then use either the `as_str()` or `as_bytes()` struct methods to retrieve the output in the desired format. Each struct also implements traits like `Deref`, `Display`, `AsRef<str>`, `AsRef<[u8]>`, etc., if you prefer those.
 
@@ -33,10 +34,13 @@ assert_eq!(NiceU16::from(11234_u16).as_str(), "11,234");
 assert_eq!(NiceU16::from(11234_u16).as_bytes(), b"11,234");
 ```
 
-This crate also contains a few more specialized "nice" structs:
-* [`NiceFloat`]
-* [`NiceElapsed`]
-* [`NicePercent`]
+But the niceness doesn't stop there. Dactyl provides several other structs, methods, and traits to performantly work with integers, such as:
+
+* [`NoHash`]: a passthrough hasher for integer `HashSet`/`HashMap` collections
+* [`traits::BytesToSigned`]: signed integer parsing from byte slices
+* [`traits::BytesToUnsigned`]: unsigned integer parsing from byte slices
+* [`traits::HexToSigned`]: signed integer parsing from hex
+* [`traits::HexToUnsigned`]: unsigned integer parsing from hex
 
 */
 
