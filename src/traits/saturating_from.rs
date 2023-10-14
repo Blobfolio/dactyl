@@ -194,9 +194,33 @@ mod tests {
 		}
 	}
 
+	#[cfg(not(miri))]
 	#[test]
 	fn t_saturating_rng_i16min_i8min() {
 		for i in i16::MIN..i8::MIN as i16 {
+			// Floor reached.
+			cast_assert_min!( u8,    i, i16, i32, i64, i128, isize);
+			cast_assert_min!( u16,   i, i16, i32, i64, i128, isize);
+			cast_assert_min!( u32,   i, i16, i32, i64, i128, isize);
+			cast_assert_min!( u64,   i, i16, i32, i64, i128, isize);
+			cast_assert_min!( u128,  i, i16, i32, i64, i128, isize);
+			cast_assert_min!( usize, i, i16, i32, i64, i128, isize);
+			cast_assert_min!( i8,    i, i16, i32, i64, i128, isize);
+
+			// Still in range.
+			cast_assert_same!(i16,   i, i16, i32, i64, i128, isize);
+			cast_assert_same!(i32,   i, i16, i32, i64, i128, isize);
+			cast_assert_same!(i64,   i, i16, i32, i64, i128, isize);
+			cast_assert_same!(i128,  i, i16, i32, i64, i128, isize);
+			cast_assert_same!(isize, i, i16, i32, i64, i128, isize);
+		}
+	}
+
+	#[cfg(miri)]
+	#[test]
+	fn t_saturating_rng_i16min_i8min() {
+		let mut rng = fastrand::Rng::new();
+		for i in std::iter::repeat_with(|| rng.i16(i16::MIN..i8::MIN as i16)).take(SAMPLE_SIZE) {
 			// Floor reached.
 			cast_assert_min!( u8,    i, i16, i32, i64, i128, isize);
 			cast_assert_min!( u16,   i, i16, i32, i64, i128, isize);
@@ -277,6 +301,7 @@ mod tests {
 		}
 	}
 
+	#[cfg(not(miri))]
 	#[test]
 	fn t_saturating_rng_u8max_i16max() {
 		for i in (u8::MAX as i16 + 1)..=i16::MAX {
@@ -298,9 +323,55 @@ mod tests {
 		}
 	}
 
+	#[cfg(miri)]
+	#[test]
+	fn t_saturating_rng_u8max_i16max() {
+		let mut rng = fastrand::Rng::new();
+		for i in std::iter::repeat_with(|| rng.i16((u8::MAX as i16 + 1)..=i16::MAX)).take(SAMPLE_SIZE) {
+			// Ceiling reached.
+			cast_assert_max!( i8,    i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
+			cast_assert_max!( u8,    i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
+
+			// Still in range.
+			cast_assert_same!(i16,   i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
+			cast_assert_same!(i32,   i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
+			cast_assert_same!(i64,   i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
+			cast_assert_same!(i128,  i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
+			cast_assert_same!(isize, i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
+			cast_assert_same!(u16,   i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
+			cast_assert_same!(u32,   i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
+			cast_assert_same!(u64,   i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
+			cast_assert_same!(u128,  i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
+			cast_assert_same!(usize, i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
+		}
+	}
+
+	#[cfg(not(miri))]
 	#[test]
 	fn t_saturating_rng_i16max_u16max() {
 		for i in (i16::MAX as u16 + 1)..=u16::MAX {
+			// Ceiling reached.
+			cast_assert_max!( i8,    i, i32, i64, i128, u16, u32, u64, u128, usize);
+			cast_assert_max!( u8,    i, i32, i64, i128, u16, u32, u64, u128, usize);
+			cast_assert_max!( i16,   i, i32, i64, i128, u16, u32, u64, u128, usize);
+
+			// Still in range.
+			cast_assert_same!(i32,   i, i32, i64, i128, u16, u32, u64, u128, usize);
+			cast_assert_same!(i64,   i, i32, i64, i128, u16, u32, u64, u128, usize);
+			cast_assert_same!(i128,  i, i32, i64, i128, u16, u32, u64, u128, usize);
+			cast_assert_same!(u16,   i, i32, i64, i128, u16, u32, u64, u128, usize);
+			cast_assert_same!(u32,   i, i32, i64, i128, u16, u32, u64, u128, usize);
+			cast_assert_same!(u64,   i, i32, i64, i128, u16, u32, u64, u128, usize);
+			cast_assert_same!(u128,  i, i32, i64, i128, u16, u32, u64, u128, usize);
+			cast_assert_same!(usize, i, i32, i64, i128, u16, u32, u64, u128, usize);
+		}
+	}
+
+	#[cfg(miri)]
+	#[test]
+	fn t_saturating_rng_i16max_u16max() {
+		let mut rng = fastrand::Rng::new();
+		for i in std::iter::repeat_with(|| rng.u16((i16::MAX as u16 + 1)..=u16::MAX)).take(SAMPLE_SIZE) {
 			// Ceiling reached.
 			cast_assert_max!( i8,    i, i32, i64, i128, u16, u32, u64, u128, usize);
 			cast_assert_max!( u8,    i, i32, i64, i128, u16, u32, u64, u128, usize);
