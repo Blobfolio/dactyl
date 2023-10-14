@@ -98,12 +98,12 @@ pub use nice_int::{
 #[doc(hidden)]
 pub use nice_int::NiceWrapper;
 
-use num_traits::cast::AsPrimitive;
+use traits::IntDivFloat;
 
 
 
 /// # Decimals, 00-99.
-static DOUBLE: [[u8; 2]; 100] = [
+const DOUBLE: [[u8; 2]; 100] = [
 	[48, 48], [48, 49], [48, 50], [48, 51], [48, 52], [48, 53], [48, 54], [48, 55], [48, 56], [48, 57],
 	[49, 48], [49, 49], [49, 50], [49, 51], [49, 52], [49, 53], [49, 54], [49, 55], [49, 56], [49, 57],
 	[50, 48], [50, 49], [50, 50], [50, 51], [50, 52], [50, 53], [50, 54], [50, 55], [50, 56], [50, 57],
@@ -124,10 +124,10 @@ static DOUBLE: [[u8; 2]; 100] = [
 /// ## Panics
 ///
 /// This will panic if the number is greater than 99.
-pub(crate) fn double(idx: usize) -> [u8; 2] { DOUBLE[idx] }
+pub(crate) const fn double(idx: usize) -> [u8; 2] { DOUBLE[idx] }
 
 #[inline]
-#[allow(clippy::cast_possible_truncation)]
+#[allow(clippy::cast_possible_truncation, clippy::integer_division)]
 /// # Triple Digits.
 ///
 /// Return both digits, ASCII-fied.
@@ -135,9 +135,9 @@ pub(crate) fn double(idx: usize) -> [u8; 2] { DOUBLE[idx] }
 /// ## Panics
 ///
 /// This will panic if the number is greater than 99.
-pub(crate) fn triple(idx: usize) -> [u8; 3] {
+pub(crate) const fn triple(idx: usize) -> [u8; 3] {
 	assert!(idx < 1000, "Bug: Triple must be less than 1000.");
-	let (div, rem) = div_mod(idx, 100);
+	let (div, rem) = (idx / 100, idx % 100);
 	let a = div as u8 + b'0';
 	let [b, c] = DOUBLE[rem];
 	[a, b, c]
@@ -145,7 +145,9 @@ pub(crate) fn triple(idx: usize) -> [u8; 3] {
 
 
 
+#[deprecated(since = "0.5.3", note = "use (a / b, a % b) instead")]
 #[must_use]
+#[inline]
 /// # Combined Division/Remainder.
 ///
 /// Perform division and remainder operations in one go, returning both results
@@ -177,24 +179,30 @@ pub(crate) fn triple(idx: usize) -> [u8; 3] {
 pub fn div_mod<T>(e: T, d: T) -> (T, T)
 where T: Copy + std::ops::Div<Output=T> + std::ops::Rem<Output=T> { (e / d, e % d) }
 
+#[deprecated(since = "0.5.3", note = "use traits::IntDivFloat instead")]
 #[must_use]
+#[inline]
 /// # Integer to Float Division.
 ///
-/// This uses [`num_traits::cast`](https://docs.rs/num-traits/latest/num_traits/cast/index.html) to convert primitives to `f64` as accurately
-/// as possible, then performs the division. For very large numbers, some
-/// rounding may occur.
+/// Recast two integers to floats, then divide them and return the result, or
+/// `None` if the operation is invalid or yields `NaN` or infinity.
 ///
-/// If the result is invalid, NaN, or infinite, `None` is returned.
-pub fn int_div_float<T>(e: T, d: T) -> Option<f64>
-where T: AsPrimitive<f64> {
-	let d: f64 = d.as_();
-
-	// The denominator can't be zero.
-	if d == 0.0 { None }
-	else {
-		Some(e.as_() / d).filter(|x| x.is_finite())
-	}
-}
+/// This method accepts `u8`, `u16`, `u32`, `u64`, `u128`, `usize`, `i8`, `i16`,
+/// `i32`, `i64`, `i128`, and `isize`.
+///
+/// ## Examples
+///
+/// ```
+/// // Equivalent to 20_f64 / 16_f64.
+/// assert_eq!(
+///     dactyl::int_div_float(20_u8, 16_u8),
+///     Some(1.25_f64)
+/// );
+///
+/// // Division by zero is still a no-no.
+/// assert!(dactyl::int_div_float(100_i32, 0_i32).is_none());
+/// ```
+pub fn int_div_float<T: IntDivFloat>(e: T, d: T) -> Option<f64> { e.div_float(d) }
 
 
 
@@ -203,11 +211,38 @@ mod tests {
 	use super::*;
 	use brunch as _;
 
+	#[allow(deprecated)]
 	#[test]
 	fn t_int_div_float() {
-		assert_eq!(int_div_float(4_000_000_000_u64, 8_000_000_000_u64), Some(0.5));
-		assert_eq!(int_div_float(400_000_000_000_u64, 800_000_000_000_u64), Some(0.5));
-		assert_eq!(int_div_float(400_000_000_000_u64, 0_u64), None);
-		assert_eq!(int_div_float(4_u8, 8_u8), Some(0.5));
+		let mut rng = fastrand::Rng::new();
+
+		// Just make sure this produces the same result as the trait.
+		macro_rules! t_div {
+			($($rnd:ident $ty:ty),+ $(,)?) => ($(
+				for _ in 0..10 {
+					let a = rng.$rnd(<$ty>::MAX..=<$ty>::MAX);
+					let b = rng.$rnd(<$ty>::MAX..=<$ty>::MAX);
+					if b != 0 {
+						assert_eq!(int_div_float(a, b), a.div_float(b));
+					}
+				}
+			)+);
+		}
+
+		// Make sure we actually implemented all of these. Haha.
+		t_div! {
+			u8    u8,
+			u16   u16,
+			u32   u32,
+			u64   u64,
+			u128  u128,
+			usize usize,
+			i8    i8,
+			i16   i16,
+			i32   i32,
+			i64   i64,
+			i128  i128,
+			isize isize,
+		}
 	}
 }

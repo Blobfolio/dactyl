@@ -27,9 +27,6 @@ bash-dir = "./"
 man-dir = "./"
 credits-dir = "./"
 
-[dependencies]
-num-traits = "0.2.*"
-
 [dev-dependencies]
 brunch = "0.5.*"
 fastrand = "2"

@@ -3,11 +3,21 @@
 
 ## [0.5.3](https://github.com/Blobfolio/dactyl/releases/tag/v0.5.3) - TBD
 
+### New
+
+* `IntDivFloat` trait
+
 ### Changed
 
 * `SaturatingFrom` is now implemented to/from all primitive integer types, even in cases where saturation isn't ever necessary, like `T->T`
 * `NiceU8::as_bytes2` is now `const`
 * `NiceU8::as_str2` is now `const`
+* Drop `num-traits` dependency
+
+### Deprecated
+
+* `div_mod`
+* `int_div_float` (use `IntDivFloat::div_float` instead)
 
 
 
