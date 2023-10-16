@@ -179,7 +179,7 @@ pub(crate) const fn triple(idx: usize) -> [u8; 3] {
 pub fn div_mod<T>(e: T, d: T) -> (T, T)
 where T: Copy + std::ops::Div<Output=T> + std::ops::Rem<Output=T> { (e / d, e % d) }
 
-#[deprecated(since = "0.5.3", note = "use traits::IntDivFloat instead")]
+#[deprecated(since = "0.6.0", note = "use traits::IntDivFloat instead")]
 #[must_use]
 #[inline]
 /// # Integer to Float Division.
