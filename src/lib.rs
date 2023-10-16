@@ -11,7 +11,7 @@
 
 This crate provides a fast interface to "stringify" unsigned integers, formatted with commas at each thousand. It prioritizes speed and simplicity over configurability.
 
-If your application just wants to turn `1010` into `"1,010"`, `Dactyl` is a great choice. If your application requires locale awareness or other options, something like [`num-format`](https://crates.io/crates/num-format) would probably make more sense.
+If your application just wants to quickly turn `1010` into `"1,010"`, Dactyl is a great choice. If your application requires locale awareness or other options, something like [`num-format`](https://crates.io/crates/num-format) would probably make more sense.
 
 Similar to [`itoa`](https://crates.io/crates/itoa), Dactyl writes ASCII conversions to a temporary buffer, but does so using fixed arrays sized for each type's maximum value, minimizing the allocation overhead for, say, tiny little `u8`s.
 
@@ -20,9 +20,10 @@ Each type has its own struct, each of which works exactly the same way:
 * [`NiceU8`]
 * [`NiceU16`]
 * [`NiceU32`]
-* [`NiceU64`]
-
-(Note: support for `usize` values is folded into [`NiceU64`].)
+* [`NiceU64`] (also covers `usize`)
+* [`NiceFloat`]
+* [`NiceElapsed`] (for durations)
+* [`NicePercent`] (for floats representing percentages)
 
 The intended use case is to simply call the appropriate `from()` for the type, then use either the `as_str()` or `as_bytes()` struct methods to retrieve the output in the desired format. Each struct also implements traits like `Deref`, `Display`, `AsRef<str>`, `AsRef<[u8]>`, etc., if you prefer those.
 
@@ -33,10 +34,13 @@ assert_eq!(NiceU16::from(11234_u16).as_str(), "11,234");
 assert_eq!(NiceU16::from(11234_u16).as_bytes(), b"11,234");
 ```
 
-This crate also contains a few more specialized "nice" structs:
-* [`NiceFloat`]
-* [`NiceElapsed`]
-* [`NicePercent`]
+But the niceness doesn't stop there. Dactyl provides several other structs, methods, and traits to performantly work with integers, such as:
+
+* [`NoHash`]: a passthrough hasher for integer `HashSet`/`HashMap` collections
+* [`traits::BytesToSigned`]: signed integer parsing from byte slices
+* [`traits::BytesToUnsigned`]: unsigned integer parsing from byte slices
+* [`traits::HexToSigned`]: signed integer parsing from hex
+* [`traits::HexToUnsigned`]: unsigned integer parsing from hex
 
 */
 
@@ -94,12 +98,12 @@ pub use nice_int::{
 #[doc(hidden)]
 pub use nice_int::NiceWrapper;
 
-use num_traits::cast::AsPrimitive;
+use traits::IntDivFloat;
 
 
 
 /// # Decimals, 00-99.
-static DOUBLE: [[u8; 2]; 100] = [
+const DOUBLE: [[u8; 2]; 100] = [
 	[48, 48], [48, 49], [48, 50], [48, 51], [48, 52], [48, 53], [48, 54], [48, 55], [48, 56], [48, 57],
 	[49, 48], [49, 49], [49, 50], [49, 51], [49, 52], [49, 53], [49, 54], [49, 55], [49, 56], [49, 57],
 	[50, 48], [50, 49], [50, 50], [50, 51], [50, 52], [50, 53], [50, 54], [50, 55], [50, 56], [50, 57],
@@ -120,10 +124,10 @@ static DOUBLE: [[u8; 2]; 100] = [
 /// ## Panics
 ///
 /// This will panic if the number is greater than 99.
-pub(crate) fn double(idx: usize) -> [u8; 2] { DOUBLE[idx] }
+pub(crate) const fn double(idx: usize) -> [u8; 2] { DOUBLE[idx] }
 
 #[inline]
-#[allow(clippy::cast_possible_truncation)]
+#[allow(clippy::cast_possible_truncation, clippy::integer_division)]
 /// # Triple Digits.
 ///
 /// Return both digits, ASCII-fied.
@@ -131,9 +135,9 @@ pub(crate) fn double(idx: usize) -> [u8; 2] { DOUBLE[idx] }
 /// ## Panics
 ///
 /// This will panic if the number is greater than 99.
-pub(crate) fn triple(idx: usize) -> [u8; 3] {
+pub(crate) const fn triple(idx: usize) -> [u8; 3] {
 	assert!(idx < 1000, "Bug: Triple must be less than 1000.");
-	let (div, rem) = div_mod(idx, 100);
+	let (div, rem) = (idx / 100, idx % 100);
 	let a = div as u8 + b'0';
 	let [b, c] = DOUBLE[rem];
 	[a, b, c]
@@ -141,7 +145,9 @@ pub(crate) fn triple(idx: usize) -> [u8; 3] {
 
 
 
+#[deprecated(since = "0.5.3", note = "use (a / b, a % b) instead")]
 #[must_use]
+#[inline]
 /// # Combined Division/Remainder.
 ///
 /// Perform division and remainder operations in one go, returning both results
@@ -173,24 +179,30 @@ pub(crate) fn triple(idx: usize) -> [u8; 3] {
 pub fn div_mod<T>(e: T, d: T) -> (T, T)
 where T: Copy + std::ops::Div<Output=T> + std::ops::Rem<Output=T> { (e / d, e % d) }
 
+#[deprecated(since = "0.6.0", note = "use traits::IntDivFloat instead")]
 #[must_use]
+#[inline]
 /// # Integer to Float Division.
 ///
-/// This uses [`num_traits::cast`](https://docs.rs/num-traits/latest/num_traits/cast/index.html) to convert primitives to `f64` as accurately
-/// as possible, then performs the division. For very large numbers, some
-/// rounding may occur.
+/// Recast two integers to floats, then divide them and return the result, or
+/// `None` if the operation is invalid or yields `NaN` or infinity.
 ///
-/// If the result is invalid, NaN, or infinite, `None` is returned.
-pub fn int_div_float<T>(e: T, d: T) -> Option<f64>
-where T: AsPrimitive<f64> {
-	let d: f64 = d.as_();
-
-	// The denominator can't be zero.
-	if d == 0.0 { None }
-	else {
-		Some(e.as_() / d).filter(|x| x.is_finite())
-	}
-}
+/// This method accepts `u8`, `u16`, `u32`, `u64`, `u128`, `usize`, `i8`, `i16`,
+/// `i32`, `i64`, `i128`, and `isize`.
+///
+/// ## Examples
+///
+/// ```
+/// // Equivalent to 20_f64 / 16_f64.
+/// assert_eq!(
+///     dactyl::int_div_float(20_u8, 16_u8),
+///     Some(1.25_f64)
+/// );
+///
+/// // Division by zero is still a no-no.
+/// assert!(dactyl::int_div_float(100_i32, 0_i32).is_none());
+/// ```
+pub fn int_div_float<T: IntDivFloat>(e: T, d: T) -> Option<f64> { e.div_float(d) }
 
 
 
@@ -199,11 +211,38 @@ mod tests {
 	use super::*;
 	use brunch as _;
 
+	#[allow(deprecated)]
 	#[test]
 	fn t_int_div_float() {
-		assert_eq!(int_div_float(4_000_000_000_u64, 8_000_000_000_u64), Some(0.5));
-		assert_eq!(int_div_float(400_000_000_000_u64, 800_000_000_000_u64), Some(0.5));
-		assert_eq!(int_div_float(400_000_000_000_u64, 0_u64), None);
-		assert_eq!(int_div_float(4_u8, 8_u8), Some(0.5));
+		let mut rng = fastrand::Rng::new();
+
+		// Just make sure this produces the same result as the trait.
+		macro_rules! t_div {
+			($($rnd:ident $ty:ty),+ $(,)?) => ($(
+				for _ in 0..10 {
+					let a = rng.$rnd(<$ty>::MAX..=<$ty>::MAX);
+					let b = rng.$rnd(<$ty>::MAX..=<$ty>::MAX);
+					if b != 0 {
+						assert_eq!(int_div_float(a, b), a.div_float(b));
+					}
+				}
+			)+);
+		}
+
+		// Make sure we actually implemented all of these. Haha.
+		t_div! {
+			u8    u8,
+			u16   u16,
+			u32   u32,
+			u64   u64,
+			u128  u128,
+			usize usize,
+			i8    i8,
+			i16   i16,
+			i32   i32,
+			i64   i64,
+			i128  i128,
+			isize isize,
+		}
 	}
 }

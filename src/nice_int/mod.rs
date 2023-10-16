@@ -180,10 +180,10 @@ macro_rules! nice_parse {
 			fn parse(&mut self, mut num: $uint) {
 				for chunk in self.inner.rchunks_exact_mut(4) {
 					if 999 < num {
-						let (div, rem) = crate::div_mod(num, 1000);
+						let rem = num % 1000;
+						num /= 1000;
 						chunk[1..].copy_from_slice(crate::triple(rem as usize).as_slice());
 						self.from -= 4;
-						num = div;
 					}
 					else { break; }
 				}

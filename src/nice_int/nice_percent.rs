@@ -2,7 +2,10 @@
 # Dactyl: Nice Percent.
 */
 
-use crate::NiceWrapper;
+use crate::{
+	NiceWrapper,
+	traits::IntDivFloat,
+};
 
 
 
@@ -62,6 +65,7 @@ impl Default for NicePercent {
 /// This code is identical for `f32` and `f64` types.
 macro_rules! nice_from {
 	($($float:ty),+ $(,)?) => ($(
+		#[allow(clippy::integer_division)]
 		impl From<$float> for NicePercent {
 			fn from(num: $float) -> Self {
 				// Shortcut for overflowing values.
@@ -78,7 +82,7 @@ macro_rules! nice_from {
 				else if 9999 < whole { return Self::max(); }
 
 				// Split the top and bottom.
-				let (top, bottom) = crate::div_mod(whole, 100);
+				let (top, bottom) = (whole / 100, whole % 100);
 
 				let [a, b] = crate::double(top as usize);
 				let from = if a == b'0' { SIZE - 5 } else { SIZE - 6 };
@@ -95,8 +99,7 @@ macro_rules! nice_from {
 
 nice_from!(f32, f64);
 
-impl<T> TryFrom<(T, T)> for NicePercent
-where T: num_traits::cast::AsPrimitive<f64> {
+impl<T: IntDivFloat> TryFrom<(T, T)> for NicePercent {
 	type Error = ();
 
 	/// # Percent From T/T.
@@ -119,7 +122,7 @@ where T: num_traits::cast::AsPrimitive<f64> {
 	/// Conversion will fail if the enumerator is larger than the denominator,
 	/// or if the denominator is zero.
 	fn try_from(src: (T, T)) -> Result<Self, Self::Error> {
-		crate::int_div_float(src.0, src.1)
+		src.0.div_float(src.1)
 			.map(Self::from)
 			.ok_or(())
 	}

@@ -98,7 +98,13 @@ impl NiceU8 {
 	/// assert_eq!(dactyl::NiceU8::from(50).as_bytes2(), b"50");
 	/// assert_eq!(dactyl::NiceU8::from(113).as_bytes2(), b"113");
 	/// ```
-	pub fn as_bytes2(&self) -> &[u8] { &self.inner[1.min(self.from)..] }
+	pub const fn as_bytes2(&self) -> &[u8] {
+		if self.from == 0 { &self.inner }
+		else {
+			let [ _, rest @ .. ] = &self.inner;
+			rest
+		}
+	}
 
 	#[must_use]
 	#[inline]
@@ -133,9 +139,14 @@ impl NiceU8 {
 	/// assert_eq!(dactyl::NiceU8::from(50).as_str2(), "50");
 	/// assert_eq!(dactyl::NiceU8::from(113).as_str2(), "113");
 	/// ```
-	pub fn as_str2(&self) -> &str {
+	pub const fn as_str2(&self) -> &str {
 		// Safety: numbers are valid ASCII.
-		debug_assert!(self.as_bytes2().is_ascii(), "Bug: NiceU8 is not ASCII.");
+		debug_assert!(
+			(self.from != 0 || self.inner[0].is_ascii_digit()) &&
+			self.inner[1].is_ascii_digit() &&
+			self.inner[2].is_ascii_digit(),
+			"Bug: NiceU8 is not ASCII."
+		);
 		unsafe { std::str::from_utf8_unchecked(self.as_bytes2()) }
 	}
 

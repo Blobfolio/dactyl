@@ -66,9 +66,10 @@ super::nice_from_nz!(NiceU16, NonZeroU16);
 impl From<u16> for NiceU16 {
 	#[allow(clippy::cast_possible_truncation)] // One digit always fits u8.
 	#[allow(clippy::many_single_char_names)]   // ABCDE keeps the ordering straight.
+	#[allow(clippy::integer_division)]
 	fn from(num: u16) -> Self {
 		if 999 < num {
-			let (num, rem) = crate::div_mod(num, 1000);
+			let (num, rem) = (num / 1000, num % 1000);
 			let [c, d, e] = crate::triple(rem as usize);
 
 			if 9 < num {

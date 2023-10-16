@@ -76,9 +76,9 @@ bench BENCH="":
 	env RUSTUP_PERMIT_COPY_RENAME=true rustup install nightly
 
 	# Make the docs.
-	cargo +nightly doc \
+	cargo +nightly rustdoc \
 		--release \
-		--no-deps \
+		--all-features \
 		--target x86_64-unknown-linux-gnu \
 		--target-dir "{{ cargo_dir }}"
 
@@ -93,10 +93,13 @@ bench BENCH="":
 	# Pre-clean.
 	[ ! -d "{{ justfile_directory() }}/target" ] || rm -rf "{{ justfile_directory() }}/target"
 
-	fyi task "Testing native/default target."
-	MIRIFLAGS="-Zmiri-disable-isolation" cargo +nightly miri test
+	fyi task "Testing x86_64-unknown-linux-gnu target."
+	MIRIFLAGS="-Zmiri-disable-isolation" cargo +nightly miri test --target x86_64-unknown-linux-gnu
 
-	fyi task "Testing mps64 (big endian) target."
+	fyi task "Testing i686-unknown-linux-gnu (32-bit) target."
+	MIRIFLAGS="-Zmiri-disable-isolation" cargo +nightly miri test --target i686-unknown-linux-gnu
+
+	fyi task "Testing mips64-unknown-linux-gnuabi64 (big endian) target."
 	MIRIFLAGS="-Zmiri-disable-isolation" cargo +nightly miri test --target mips64-unknown-linux-gnuabi64
 
 	# Post-clean.

@@ -1,468 +1,601 @@
 /*!
 # Dactyl: Saturated Unsigned Integer Conversion
 
-The `SaturatingFrom` trait allows large primitives to be downcast into smaller
-types with values capped at the smaller type's `::MAX` value, avoiding any
-possible overflow or wrapping issues. It's a clamp, basically, except all uints
-share the same bottom.
+The `SaturatingFrom` trait allows integer primitives to be freely converted
+between one another in a saturating fashion.
 
-It is implemented for `u8`, `u16`, `u32`, and `u64` for all types larger than
-said type, up to `u128`.
-
-The `usize` type, being variable, works a little differently. It implements
-`SaturatingFrom` on `u32`, `u64`, and `u128` regardless of the machine's bit
-size, but its ceiling will vary based on the machine's bit size (it could be as
-low as `u16::MAX` or as high as `u64::MAX`).
+To make life easy, `int::saturating_from(float)` is implemented as well, but
+this is functionally identical to writing `float as int`, since such casts are
+already saturating in Rust.
 
 ## Examples
 
 ```
 use dactyl::traits::SaturatingFrom;
 
+// Too big.
 assert_eq!(u8::saturating_from(1026_u16), 255_u8);
-assert_eq!(u8::saturating_from(99_u16), 99_u8);
+
+// Too small.
+assert_eq!(u8::saturating_from(-1026_i32), 0_u8);
+
+// Just right.
+assert_eq!(u8::saturating_from(99_u64), 99_u8);
 ```
 */
 
-/// # Helper: Title/Description.
-///
-/// This generates a formatted title and description for the documentation.
-macro_rules! impl_meta {
-	// Title/Desc.
-	($to:ty, $from:ty) => (
-		concat!(
-			"# Saturating From `",
-			stringify!($from),
-			"`\n",
-			"This method will safely recast any `",
-			stringify!($from),
-			"` into a `",
-			stringify!($to),
-			"`, capping the values at `0` or `",
-			stringify!($to),
-			"::MAX` to prevent overflow or wrapping."
-		)
-	);
-}
-
-/// # Helper: Generate Trait Implementations.
-///
-/// This generates implementations for unsigned sources, with or without an
-/// upper cap.
-macro_rules! unsigned_to_unsigned {
-	// Cap to max.
-	($meta:expr, $from:ty, $to:ty, $MAX:literal) => (
-		impl SaturatingFrom<$from> for $to {
-			#[doc = $meta]
-			fn saturating_from(src: $from) -> Self {
-				if src >= $MAX { $MAX }
-				else { src as Self }
-			}
-		}
-	);
-
-	// Direct cast.
-	($meta:expr, $from:ty, $to:ty) => (
-		impl SaturatingFrom<$from> for $to {
-			#[doc = $meta]
-			fn saturating_from(src: $from) -> Self { src as Self }
-		}
-	);
-
-	// Cap to max.
-	($to:ty, $MAX:literal, ($($from:ty),+)) => (
-		$( unsigned_to_unsigned!(impl_meta!($to, $from), $from, $to, $MAX); )+
-	);
-
-	// Direct cast.
-	($to:ty, ($($from:ty),+)) => (
-		$( unsigned_to_unsigned!(impl_meta!($to, $from), $from, $to); )+
-	);
-}
-
-/// # Helper: Generate Trait Implementations (Signed).
-///
-/// This generates implementations for signed sources, with or without an
-/// upper cap. All signed types have a lower cap of zero.
-macro_rules! signed_to_unsigned {
-	// Cap to min/max.
-	($meta:expr, $from:ty, $to:ty, $MAX:literal) => (
-		impl SaturatingFrom<$from> for $to {
-			#[doc = $meta]
-			fn saturating_from(src: $from) -> Self {
-				if src >= $MAX { Self::MAX }
-				else if src > 0 { src as Self }
-				else { 0 }
-			}
-		}
-	);
-
-	// Cap to min.
-	($meta:expr, $from:ty, $to:ty) => (
-		impl SaturatingFrom<$from> for $to {
-			#[doc = $meta]
-			fn saturating_from(src: $from) -> Self {
-				if src > 0 { src as Self }
-				else { 0 }
-			}
-		}
-	);
-
-	// Cap to min/max.
-	($to:ty, $MAX:literal, ($($from:ty),+)) => (
-		$( signed_to_unsigned!(impl_meta!($to, $from), $from, $to, $MAX); )+
-	);
-
-	// Cap to min.
-	($to:ty, ($($from:ty),+)) => (
-		$( signed_to_unsigned!(impl_meta!($to, $from), $from, $to); )+
-	);
-}
-
-/// # Helper: Generate Trait Implementations (Signed).
-///
-/// This generates implementations for float sources, with or without an
-/// upper cap. Negative and NaN values are cast to zero; infinite is cast to
-/// MAX.
-macro_rules! float_to_unsigned {
-	// Cap to min/max.
-	($meta:expr, $from:ty, $to:ty, $MAX:literal) => (
-		impl SaturatingFrom<$from> for $to {
-			#[doc = $meta]
-			fn saturating_from(src: $from) -> Self {
-				if src <= 0.0 { 0 }
-				else if src >= $MAX { Self::MAX }
-				else { src as Self }
-			}
-		}
-	);
-
-	// Cap to min.
-	($meta:expr, $from:ty, $to:ty) => (
-		impl SaturatingFrom<$from> for $to {
-			#[doc = $meta]
-			fn saturating_from(src: $from) -> Self {
-				if src > 0.0 { src as Self }
-				else { 0 }
-			}
-		}
-	);
-
-	// Cap to min/max.
-	($to:ty, $MAX:literal, ($($from:ty),+)) => (
-		$( float_to_unsigned!(impl_meta!($to, $from), $from, $to, $MAX); )+
-	);
-
-	// Cap to min.
-	($to:ty, ($($from:ty),+)) => (
-		$( float_to_unsigned!(impl_meta!($to, $from), $from, $to); )+
-	);
-}
+#![allow(
+	clippy::cast_lossless,
+	clippy::cast_possible_truncation,
+	clippy::cast_possible_wrap,
+	clippy::cast_sign_loss,
+)]
 
 
 
 /// # Saturating From.
 ///
-/// Convert an unsigned integer of a larger type into `Self`, capping the
-/// maximum value to `Self::MAX` to prevent overflow or wrapping.
+/// Convert between numeric types, clamping to `Self::MIN..=Self::MAX` to
+/// prevent overflow or wrapping issues.
 pub trait SaturatingFrom<T> {
 	/// # Saturating From.
+	///
+	/// Convert `T` to `Self`, clamping to `Self::MIN..=Self::MAX` as required
+	/// to prevent overflow or wrapping.
 	fn saturating_from(src: T) -> Self;
 }
 
+// All the integer conversions are built at compile-time.
+include!(concat!(env!("OUT_DIR"), "/dactyl-saturation.rs"));
 
+// Floats are mercifully saturating on their own.
+macro_rules! float {
+	($from:ty, $($to:ty),+) => ($(
+		impl SaturatingFrom<$from> for $to {
+			#[doc = concat!("# Saturating From `", stringify!($from), "`")]
+			#[doc = ""]
+			#[doc = concat!("This method will safely recast any `", stringify!($from), "` into a `", stringify!($to), "`, clamping the values to `", stringify!($to), "::MIN..=", stringify!($to), "::MAX` to prevent overflow or wrapping.")]
+			fn saturating_from(src: $from) -> Self { src as Self }
+		}
+	)+);
+}
 
-// These three are always the same.
-unsigned_to_unsigned!(u8, 255, (u16, u32, u64, u128, usize));
-unsigned_to_unsigned!(u16, 65_535, (u32, u64, u128, usize));
-unsigned_to_unsigned!(u32, 4_294_967_295, (u64, u128)); // Usize conditional, below.
-unsigned_to_unsigned!(u64, 18_446_744_073_709_551_615, (u128)); // Usize conditional, below.
-unsigned_to_unsigned!(u128, (usize));
-
-// usize-to-u32 varies by pointer.
-#[cfg(any(target_pointer_width = "16", target_pointer_width="32"))] // 16/32 fit.
-unsigned_to_unsigned!(u32, (usize));
-#[cfg(any(target_pointer_width = "64", target_pointer_width="128"))] // 64/128 don't.
-unsigned_to_unsigned!(u32, 4_294_967_295, (usize));
-
-// usize-to-u64 varies by pointer.
-#[cfg(not(target_pointer_width = "128"))] // 16/32/64 fit.
-unsigned_to_unsigned!(u64, (usize));
-#[cfg(target_pointer_width = "128")] // 128 doesn't.
-unsigned_to_unsigned!(u64, 18_446_744_073_709_551_615, (usize));
-
-// Usize varies by pointer.
-#[cfg(target_pointer_width = "16")] // 32/64/128 don't fit.
-unsigned_to_unsigned!(usize, 65_535, (u32, u64, u128));
-
-#[cfg(target_pointer_width = "32")] // 32 fits.
-unsigned_to_unsigned!(usize, (u32));
-#[cfg(target_pointer_width = "32")] // 64, 128 don't.
-unsigned_to_unsigned!(usize, 4_294_967_295, (u64, u128));
-
-#[cfg(target_pointer_width = "64")] // 32/64 fits.
-unsigned_to_unsigned!(usize, (u32, u64));
-#[cfg(target_pointer_width = "64")] // 128 doesn't.
-unsigned_to_unsigned!(usize, 18_446_744_073_709_551_615, (u128));
-
-#[cfg(target_pointer_width = "128")]
-unsigned_to_unsigned!(usize, (u32, u64, u128));
-
-
-
-// Converting from signed types. These are straight conversions.
-signed_to_unsigned!(u8, (i8));
-signed_to_unsigned!(u16, (i8, i16));
-signed_to_unsigned!(u32, (i8, i16, i32));
-signed_to_unsigned!(u64, (i8, i16, i32, i64));
-signed_to_unsigned!(u128, (i8, i16, i32, i64, i128, isize));
-signed_to_unsigned!(usize, (i8, i16, isize));
-
-// These require max capping.
-signed_to_unsigned!(u8, 255, (i16, i32, i64, i128, isize));
-signed_to_unsigned!(u16, 65_535, (i32, i64, i128, isize));
-signed_to_unsigned!(u32, 4_294_967_295, (i64, i128));
-signed_to_unsigned!(u64, 18_446_744_073_709_551_615, (i128));
-
-// U32/isize varies by pointer.
-#[cfg(any(target_pointer_width = "16", target_pointer_width="32"))]
-signed_to_unsigned!(u32, (isize));
-#[cfg(any(target_pointer_width = "64", target_pointer_width="128"))]
-signed_to_unsigned!(u32, 4_294_967_295, (isize));
-
-// U64/isize varies by pointer.
-#[cfg(not(target_pointer_width = "128"))]
-signed_to_unsigned!(u64, (isize));
-#[cfg(target_pointer_width = "128")]
-signed_to_unsigned!(u64, 18_446_744_073_709_551_615, (isize));
-
-// All other usize conversions vary by pointer.
-#[cfg(target_pointer_width = "16")]
-signed_to_unsigned!(usize, 65_535, (i32, i64, i128));
-
-#[cfg(target_pointer_width = "32")]
-signed_to_unsigned!(usize, (i32));
-#[cfg(target_pointer_width = "32")]
-signed_to_unsigned!(usize, 4_294_967_295, (i64, i128));
-
-#[cfg(target_pointer_width = "64")]
-signed_to_unsigned!(usize, (i32, i64));
-#[cfg(target_pointer_width = "64")]
-signed_to_unsigned!(usize, 18_446_744_073_709_551_615, (i128));
-
-#[cfg(target_pointer_width = "128")]
-signed_to_unsigned!(usize, (i32, i64, i128));
-
-
-
-// Converting from floats.
-float_to_unsigned!(u8, 255.0, (f32, f64));
-float_to_unsigned!(u16, 65_535.0, (f32, f64));
-float_to_unsigned!(u32, 4_294_967_295.0, (f32, f64));
-float_to_unsigned!(u64, (f32));
-float_to_unsigned!(u64, 18_446_744_073_709_551_615.0, (f64));
-float_to_unsigned!(u128, (f32, f64));
-
-// And again, usize is a pain.
-#[cfg(target_pointer_width = "16")]
-float_to_unsigned!(usize, 65_535.0, (f32, f64));
-
-#[cfg(target_pointer_width = "32")]
-float_to_unsigned!(usize, 4_294_967_295.0, (f32, f64));
-
-#[cfg(target_pointer_width = "64")]
-float_to_unsigned!(usize, (f32));
-#[cfg(target_pointer_width = "64")]
-float_to_unsigned!(usize, 18_446_744_073_709_551_615.0, (f64));
-
-#[cfg(target_pointer_width = "128")]
-float_to_unsigned!(usize, (f32, f64));
+float!(f32, u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
+float!(f64, u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
 
 
 
 #[cfg(test)]
+/// # Saturation Tests.
+///
+/// There isn't a particularly good way to do this other than to walk through
+/// fixed ranges and assert smaller types get clamped, and greater-equal ones
+/// don't.
+///
+/// Usize/isize tests vanish beyond the 16-bit ranges to avoid clutter, but
+/// have their own separate cfg-gated test that should verify they work/fail
+/// beyond that given the target's pointer width.
+///
+/// The 16-bit and 128-bit sized tests may be buggy as they haven't actually
+/// been run since Rust doesn't support any architectures at either width
+/// yet. TBD.
 mod tests {
+	// Testing everything the same way is easier (and safer) than testing
+	// certain conversions one way and others another.
+	#![allow(trivial_numeric_casts)]
+
 	use super::*;
-	use num_traits::cast::AsPrimitive;
 
 	#[cfg(not(miri))]
-	const SAMPLE_SIZE: usize = 1_000_000;
+	const SAMPLE_SIZE: usize = 500_000;
 
 	#[cfg(miri)]
-	const SAMPLE_SIZE: usize = 500; // Miri runs way too slow for a million tests.
+	const SAMPLE_SIZE: usize = 500; // Miri runs way too slow for half a million tests.
 
-	/// # Test Flooring.
-	macro_rules! test_impl {
-		($type:ty, ($($val:expr),+)) => (
-			$( assert_eq!(<$type>::saturating_from($val), <$type>::MIN); )+
-		);
-
-		($type:ty) => {
-			// SaturatingFrom is implemented for all signed types.
-			test_impl!($type, (-1_i8, -1_i16, -1_i32, -1_i64, -1_i128, -1_isize));
-			test_impl!($type, (0_i8, 0_i16, 0_i32, 0_i64, 0_i128, 0_isize));
-
-			// Negative infinity and NAN should zero out.
-			test_impl!($type, (0_f32, f32::NEG_INFINITY, f32::NAN));
-			test_impl!($type, (0_f64, f64::NEG_INFINITY, f64::NAN));
-		};
+	/// # Helper: Assert SaturatingFrom is Lossless.
+	macro_rules! cast_assert_same {
+		($to:ty, $raw:ident, $($from:ty),+) => ($(
+			assert_eq!(
+				<$to>::saturating_from($raw as $from),
+				$raw as $to,
+				concat!("Expected {}_", stringify!($to), " from {}_", stringify!($from), "."),
+				$raw,
+				$raw,
+			);
+		)+);
 	}
 
-	/// # Test Ceiling.
-	macro_rules! test_impl_max {
-		($type:ty, ($($from:ty),+)) => (
-			$( assert_eq!(<$type>::saturating_from(<$from>::MAX), <$type>::MAX); )+
-		);
-
-		($type:ty) => (
-			// Float infinity should max out.
-			assert_eq!(<$type>::saturating_from(f32::INFINITY), <$type>::MAX);
-			assert_eq!(<$type>::saturating_from(f64::INFINITY), <$type>::MAX);
-		);
+	/// # Helper: Assert SaturatingFrom Clamps to Self::MAX.
+	macro_rules! cast_assert_max {
+		($to:ty, $raw:ident, $($from:ty),+) => ($(
+			assert_eq!(
+				<$to>::saturating_from($raw as $from),
+				<$to>::MAX,
+				concat!("Expected {}_", stringify!($to), " from {}_", stringify!($from), "."),
+				<$to>::MAX,
+				$raw,
+			);
+		)+);
 	}
 
-	/// # Range Testing.
-	macro_rules! test_impl_range {
-		($type:ty, ($($from:ty),+)) => {
-			for i in 0..=<$type>::MAX {
-				$( assert_eq!(<$type>::saturating_from(i as $from), i); )+
-			}
-		};
-	}
-
-	/// # Range Testing (subset).
-	///
-	/// This computes casting for a subset of the total type range; this allows
-	/// testing large types to finish in a reasonable amount of time.
-	macro_rules! test_impl_subrange {
-		($type:ty:$fn:ident, ($($from:ty),+)) => {
-			let mut rng = fastrand::Rng::new();
-			for i in std::iter::repeat_with(|| rng.$fn(..)).take(SAMPLE_SIZE) {
-				$(
-					let test: $from = i.as_();
-					let test2: $type = test.as_();
-					if test2 == i {
-						assert_eq!(<$type>::saturating_from(test), i);
-					}
-				)+
-			}
-		};
-	}
-
-
-
-	#[test]
-	/// # Test Implementations
-	///
-	/// This makes sure we've actually implemented all the expected type-to-
-	/// type conversions.
-	///
-	/// The macro without any specific values tests all signed ints at 0 and -1
-	/// and all floats at NAN, NEG_INFINITY, and zero.
-	fn t_impls() {
-		test_impl!(u8, (0_u16, 0_u32, 0_u64, 0_u128, 0_usize));
-		test_impl!(u8);
-
-		test_impl!(u16, (0_u32, 0_u64, 0_u128, 0_usize));
-		test_impl!(u16);
-
-		test_impl!(u32, (0_u64, 0_u128, 0_usize));
-		test_impl!(u32);
-
-		test_impl!(u64, (0_u128, 0_usize));
-		test_impl!(u64);
-
-		test_impl!(u128, (0_usize));
-		test_impl!(u128);
-
-		test_impl!(usize, (0_u32, 0_u64, 0_u128));
-		test_impl!(usize);
+	/// # Helper: Assert SaturatingFrom Clamps to Self::MIN.
+	macro_rules! cast_assert_min {
+		($to:ty, $raw:ident, $($from:ty),+) => ($(
+			assert_eq!(
+				<$to>::saturating_from($raw as $from),
+				<$to>::MIN,
+				concat!("Expected {}_", stringify!($to), " from {}_", stringify!($from), "."),
+				<$to>::MIN,
+				$raw,
+			);
+		)+);
 	}
 
 	#[test]
-	/// # Test u8
-	///
-	/// Make sure larger ints correctly saturate to u8.
-	fn t_u8_from() {
-		test_impl_range!(u8, (u16, u32, u64, u128, usize, f32, f64));
-		test_impl_max!(u8, (u16, u32, u64, u128, usize, f32, f64));
-		test_impl_max!(u8); // This tests all float::INFINITY.
+	fn t_saturating_rng_i28min_i64min() {
+		let mut rng = fastrand::Rng::new();
+		for i in std::iter::repeat_with(|| rng.i128(i128::MIN..i64::MIN as i128)).take(SAMPLE_SIZE) {
+			// Floor reached.
+			cast_assert_min!( u8,    i, i128);
+			cast_assert_min!( u16,   i, i128);
+			cast_assert_min!( u32,   i, i128);
+			cast_assert_min!( u64,   i, i128);
+			cast_assert_min!( u128,  i, i128);
+			cast_assert_min!( usize, i, i128);
+			cast_assert_min!( i8,    i, i128);
+			cast_assert_min!( i16,   i, i128);
+			cast_assert_min!( i32,   i, i128);
+			cast_assert_min!( i64,   i, i128);
+
+			// Still in range.
+			cast_assert_same!(i128,  i, i128);
+		}
 	}
 
 	#[test]
-	fn t_u16_from() {
-		test_impl_range!(u16, (u32, u64, u128, usize, f32, f64));
-		test_impl_max!(u16, (u32, u64, u128, usize, f32, f64));
-		test_impl_max!(u16); // This tests all float::INFINITY.
+	fn t_saturating_rng_i64min_i32min() {
+		let mut rng = fastrand::Rng::new();
+		for i in std::iter::repeat_with(|| rng.i64(i64::MIN..i32::MIN as i64)).take(SAMPLE_SIZE) {
+			// Floor reached.
+			cast_assert_min!( u8,    i, i64, i128);
+			cast_assert_min!( u16,   i, i64, i128);
+			cast_assert_min!( u32,   i, i64, i128);
+			cast_assert_min!( u64,   i, i64, i128);
+			cast_assert_min!( u128,  i, i64, i128);
+			cast_assert_min!( usize, i, i64, i128);
+			cast_assert_min!( i8,    i, i64, i128);
+			cast_assert_min!( i16,   i, i64, i128);
+			cast_assert_min!( i32,   i, i64, i128);
+
+			// Still in range.
+			cast_assert_same!(i64,   i, i64, i128);
+			cast_assert_same!(i128,  i, i64, i128);
+		}
 	}
 
 	#[test]
-	fn t_u32_from() {
-		test_impl_subrange!(u32:u32, (u64, u128, f32, f64));
-		test_impl_max!(u32, (u64, u128));
-		test_impl_max!(u32); // This tests all float::INFINITY.
+	fn t_saturating_rng_i32min_i16min() {
+		let mut rng = fastrand::Rng::new();
+		for i in std::iter::repeat_with(|| rng.i32(i32::MIN..i16::MIN as i32)).take(SAMPLE_SIZE) {
+			// Floor reached.
+			cast_assert_min!( u8,    i, i32, i64, i128);
+			cast_assert_min!( u16,   i, i32, i64, i128);
+			cast_assert_min!( u32,   i, i32, i64, i128);
+			cast_assert_min!( u64,   i, i32, i64, i128);
+			cast_assert_min!( u128,  i, i32, i64, i128);
+			cast_assert_min!( usize, i, i32, i64, i128);
+			cast_assert_min!( i8,    i, i32, i64, i128);
+			cast_assert_min!( i16,   i, i32, i64, i128);
+
+			// Still in range.
+			cast_assert_same!(i32,   i, i32, i64, i128);
+			cast_assert_same!(i64,   i, i32, i64, i128);
+			cast_assert_same!(i128,  i, i32, i64, i128);
+		}
+	}
+
+	#[cfg(not(miri))]
+	#[test]
+	fn t_saturating_rng_i16min_i8min() {
+		for i in i16::MIN..i8::MIN as i16 {
+			// Floor reached.
+			cast_assert_min!( u8,    i, i16, i32, i64, i128, isize);
+			cast_assert_min!( u16,   i, i16, i32, i64, i128, isize);
+			cast_assert_min!( u32,   i, i16, i32, i64, i128, isize);
+			cast_assert_min!( u64,   i, i16, i32, i64, i128, isize);
+			cast_assert_min!( u128,  i, i16, i32, i64, i128, isize);
+			cast_assert_min!( usize, i, i16, i32, i64, i128, isize);
+			cast_assert_min!( i8,    i, i16, i32, i64, i128, isize);
+
+			// Still in range.
+			cast_assert_same!(i16,   i, i16, i32, i64, i128, isize);
+			cast_assert_same!(i32,   i, i16, i32, i64, i128, isize);
+			cast_assert_same!(i64,   i, i16, i32, i64, i128, isize);
+			cast_assert_same!(i128,  i, i16, i32, i64, i128, isize);
+			cast_assert_same!(isize, i, i16, i32, i64, i128, isize);
+		}
+	}
+
+	#[cfg(miri)]
+	#[test]
+	fn t_saturating_rng_i16min_i8min() {
+		let mut rng = fastrand::Rng::new();
+		for i in std::iter::repeat_with(|| rng.i16(i16::MIN..i8::MIN as i16)).take(SAMPLE_SIZE) {
+			// Floor reached.
+			cast_assert_min!( u8,    i, i16, i32, i64, i128, isize);
+			cast_assert_min!( u16,   i, i16, i32, i64, i128, isize);
+			cast_assert_min!( u32,   i, i16, i32, i64, i128, isize);
+			cast_assert_min!( u64,   i, i16, i32, i64, i128, isize);
+			cast_assert_min!( u128,  i, i16, i32, i64, i128, isize);
+			cast_assert_min!( usize, i, i16, i32, i64, i128, isize);
+			cast_assert_min!( i8,    i, i16, i32, i64, i128, isize);
+
+			// Still in range.
+			cast_assert_same!(i16,   i, i16, i32, i64, i128, isize);
+			cast_assert_same!(i32,   i, i16, i32, i64, i128, isize);
+			cast_assert_same!(i64,   i, i16, i32, i64, i128, isize);
+			cast_assert_same!(i128,  i, i16, i32, i64, i128, isize);
+			cast_assert_same!(isize, i, i16, i32, i64, i128, isize);
+		}
 	}
 
 	#[test]
-	fn t_u64_from() {
-		test_impl_subrange!(u64:u64, (u128));
-		test_impl_max!(u64, (u128));
-		test_impl_max!(u64); // This tests all float::INFINITY.
+	fn t_saturating_rng_i8min_0() {
+		// All unsigned should be floored, but all signed should be fine.
+		for i in i8::MIN..0 {
+			// Floor reached.
+			cast_assert_min!( u8,    i, i8, i16, i32, i64, i128, isize);
+			cast_assert_min!( u16,   i, i8, i16, i32, i64, i128, isize);
+			cast_assert_min!( u32,   i, i8, i16, i32, i64, i128, isize);
+			cast_assert_min!( u64,   i, i8, i16, i32, i64, i128, isize);
+			cast_assert_min!( u128,  i, i8, i16, i32, i64, i128, isize);
+			cast_assert_min!( usize, i, i8, i16, i32, i64, i128, isize);
+
+			// Still in range.
+			cast_assert_same!(i8,    i, i8, i16, i32, i64, i128, isize);
+			cast_assert_same!(i16,   i, i8, i16, i32, i64, i128, isize);
+			cast_assert_same!(i32,   i, i8, i16, i32, i64, i128, isize);
+			cast_assert_same!(i64,   i, i8, i16, i32, i64, i128, isize);
+			cast_assert_same!(i128,  i, i8, i16, i32, i64, i128, isize);
+			cast_assert_same!(isize, i, i8, i16, i32, i64, i128, isize);
+		}
 	}
 
 	#[test]
-	#[ignore]
-	// Float testing is comparatively slow at 64 bits.
-	fn t_u64_from_float() {
-		test_impl_subrange!(u64:u64, (f32, f64));
+	fn t_saturating_rng_0_i8max() {
+		// All saturations should be lossless for upper i8 range.
+		for i in 0..=i8::MAX {
+			cast_assert_same!(i8,    i, i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
+			cast_assert_same!(i16,   i, i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
+			cast_assert_same!(i32,   i, i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
+			cast_assert_same!(i64,   i, i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
+			cast_assert_same!(i128,  i, i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
+			cast_assert_same!(isize, i, i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
+			cast_assert_same!(u8,    i, i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
+			cast_assert_same!(u16,   i, i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
+			cast_assert_same!(u32,   i, i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
+			cast_assert_same!(u64,   i, i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
+			cast_assert_same!(u128,  i, i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
+			cast_assert_same!(usize, i, i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
+		}
+	}
+
+	#[test]
+	fn t_saturating_rng_i8max_u8max() {
+		for i in (i8::MAX as u8 + 1)..=u8::MAX {
+			// Ceiling reached.
+			cast_assert_max!( i8,    i, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
+
+			// Still in range.
+			cast_assert_same!(i16,   i, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
+			cast_assert_same!(i32,   i, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
+			cast_assert_same!(i64,   i, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
+			cast_assert_same!(i128,  i, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
+			cast_assert_same!(isize, i, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
+			cast_assert_same!(u8,    i, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
+			cast_assert_same!(u16,   i, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
+			cast_assert_same!(u32,   i, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
+			cast_assert_same!(u64,   i, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
+			cast_assert_same!(u128,  i, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
+			cast_assert_same!(usize, i, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
+		}
+	}
+
+	#[cfg(not(miri))]
+	#[test]
+	fn t_saturating_rng_u8max_i16max() {
+		for i in (u8::MAX as i16 + 1)..=i16::MAX {
+			// Ceiling reached.
+			cast_assert_max!( i8,    i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
+			cast_assert_max!( u8,    i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
+
+			// Still in range.
+			cast_assert_same!(i16,   i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
+			cast_assert_same!(i32,   i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
+			cast_assert_same!(i64,   i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
+			cast_assert_same!(i128,  i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
+			cast_assert_same!(isize, i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
+			cast_assert_same!(u16,   i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
+			cast_assert_same!(u32,   i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
+			cast_assert_same!(u64,   i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
+			cast_assert_same!(u128,  i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
+			cast_assert_same!(usize, i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
+		}
+	}
+
+	#[cfg(miri)]
+	#[test]
+	fn t_saturating_rng_u8max_i16max() {
+		let mut rng = fastrand::Rng::new();
+		for i in std::iter::repeat_with(|| rng.i16((u8::MAX as i16 + 1)..=i16::MAX)).take(SAMPLE_SIZE) {
+			// Ceiling reached.
+			cast_assert_max!( i8,    i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
+			cast_assert_max!( u8,    i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
+
+			// Still in range.
+			cast_assert_same!(i16,   i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
+			cast_assert_same!(i32,   i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
+			cast_assert_same!(i64,   i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
+			cast_assert_same!(i128,  i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
+			cast_assert_same!(isize, i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
+			cast_assert_same!(u16,   i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
+			cast_assert_same!(u32,   i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
+			cast_assert_same!(u64,   i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
+			cast_assert_same!(u128,  i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
+			cast_assert_same!(usize, i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
+		}
+	}
+
+	#[cfg(not(miri))]
+	#[test]
+	fn t_saturating_rng_i16max_u16max() {
+		for i in (i16::MAX as u16 + 1)..=u16::MAX {
+			// Ceiling reached.
+			cast_assert_max!( i8,    i, i32, i64, i128, u16, u32, u64, u128, usize);
+			cast_assert_max!( u8,    i, i32, i64, i128, u16, u32, u64, u128, usize);
+			cast_assert_max!( i16,   i, i32, i64, i128, u16, u32, u64, u128, usize);
+
+			// Still in range.
+			cast_assert_same!(i32,   i, i32, i64, i128, u16, u32, u64, u128, usize);
+			cast_assert_same!(i64,   i, i32, i64, i128, u16, u32, u64, u128, usize);
+			cast_assert_same!(i128,  i, i32, i64, i128, u16, u32, u64, u128, usize);
+			cast_assert_same!(u16,   i, i32, i64, i128, u16, u32, u64, u128, usize);
+			cast_assert_same!(u32,   i, i32, i64, i128, u16, u32, u64, u128, usize);
+			cast_assert_same!(u64,   i, i32, i64, i128, u16, u32, u64, u128, usize);
+			cast_assert_same!(u128,  i, i32, i64, i128, u16, u32, u64, u128, usize);
+			cast_assert_same!(usize, i, i32, i64, i128, u16, u32, u64, u128, usize);
+		}
+	}
+
+	#[cfg(miri)]
+	#[test]
+	fn t_saturating_rng_i16max_u16max() {
+		let mut rng = fastrand::Rng::new();
+		for i in std::iter::repeat_with(|| rng.u16((i16::MAX as u16 + 1)..=u16::MAX)).take(SAMPLE_SIZE) {
+			// Ceiling reached.
+			cast_assert_max!( i8,    i, i32, i64, i128, u16, u32, u64, u128, usize);
+			cast_assert_max!( u8,    i, i32, i64, i128, u16, u32, u64, u128, usize);
+			cast_assert_max!( i16,   i, i32, i64, i128, u16, u32, u64, u128, usize);
+
+			// Still in range.
+			cast_assert_same!(i32,   i, i32, i64, i128, u16, u32, u64, u128, usize);
+			cast_assert_same!(i64,   i, i32, i64, i128, u16, u32, u64, u128, usize);
+			cast_assert_same!(i128,  i, i32, i64, i128, u16, u32, u64, u128, usize);
+			cast_assert_same!(u16,   i, i32, i64, i128, u16, u32, u64, u128, usize);
+			cast_assert_same!(u32,   i, i32, i64, i128, u16, u32, u64, u128, usize);
+			cast_assert_same!(u64,   i, i32, i64, i128, u16, u32, u64, u128, usize);
+			cast_assert_same!(u128,  i, i32, i64, i128, u16, u32, u64, u128, usize);
+			cast_assert_same!(usize, i, i32, i64, i128, u16, u32, u64, u128, usize);
+		}
+	}
+
+	#[test]
+	fn t_saturating_rng_u16max_i32max() {
+		let mut rng = fastrand::Rng::new();
+		for i in std::iter::repeat_with(|| rng.i32((u16::MAX as i32 + 1)..=i32::MAX)).take(SAMPLE_SIZE) {
+			// Ceiling reached.
+			cast_assert_max!( i8,    i, i32, i64, i128, u32, u64, u128);
+			cast_assert_max!( u8,    i, i32, i64, i128, u32, u64, u128);
+			cast_assert_max!( i16,   i, i32, i64, i128, u32, u64, u128);
+			cast_assert_max!( u16,   i, i32, i64, i128, u32, u64, u128);
+
+			// Still in range.
+			cast_assert_same!(i32,   i, i32, i64, i128, u32, u64, u128);
+			cast_assert_same!(i64,   i, i32, i64, i128, u32, u64, u128);
+			cast_assert_same!(i128,  i, i32, i64, i128, u32, u64, u128);
+			cast_assert_same!(u32,   i, i32, i64, i128, u32, u64, u128);
+			cast_assert_same!(u64,   i, i32, i64, i128, u32, u64, u128);
+			cast_assert_same!(u128,  i, i32, i64, i128, u32, u64, u128);
+		}
+	}
+
+	#[test]
+	fn t_saturating_rng_i32max_u32max() {
+		let mut rng = fastrand::Rng::new();
+		for i in std::iter::repeat_with(|| rng.u32((i32::MAX as u32 + 1)..=u32::MAX)).take(SAMPLE_SIZE) {
+			// Ceiling reached.
+			cast_assert_max!( i8,    i, i64, i128, u32, u64, u128);
+			cast_assert_max!( u8,    i, i64, i128, u32, u64, u128);
+			cast_assert_max!( i16,   i, i64, i128, u32, u64, u128);
+			cast_assert_max!( u16,   i, i64, i128, u32, u64, u128);
+			cast_assert_max!( i32,   i, i64, i128, u32, u64, u128);
+
+			// Still in range.
+			cast_assert_same!(i64,   i, i64, i128, u32, u64, u128);
+			cast_assert_same!(i128,  i, i64, i128, u32, u64, u128);
+			cast_assert_same!(u32,   i, i64, i128, u32, u64, u128);
+			cast_assert_same!(u64,   i, i64, i128, u32, u64, u128);
+			cast_assert_same!(u128,  i, i64, i128, u32, u64, u128);
+		}
+	}
+
+	#[test]
+	fn t_saturating_rng_u32max_i64max() {
+		let mut rng = fastrand::Rng::new();
+		for i in std::iter::repeat_with(|| rng.i64((u32::MAX as i64 + 1)..=i64::MAX)).take(SAMPLE_SIZE) {
+			// Ceiling reached.
+			cast_assert_max!( i8,    i, i64, i128, u64, u128);
+			cast_assert_max!( u8,    i, i64, i128, u64, u128);
+			cast_assert_max!( i16,   i, i64, i128, u64, u128);
+			cast_assert_max!( u16,   i, i64, i128, u64, u128);
+			cast_assert_max!( i32,   i, i64, i128, u64, u128);
+			cast_assert_max!( u32,   i, i64, i128, u64, u128);
+
+			// Still in range.
+			cast_assert_same!(i64,   i, i64, i128, u64, u128);
+			cast_assert_same!(i128,  i, i64, i128, u64, u128);
+			cast_assert_same!(u64,   i, i64, i128, u64, u128);
+			cast_assert_same!(u128,  i, i64, i128, u64, u128);
+		}
+	}
+
+	#[test]
+	fn t_saturating_rng_i64max_u64max() {
+		let mut rng = fastrand::Rng::new();
+		for i in std::iter::repeat_with(|| rng.u64((i64::MAX as u64 + 1)..=u64::MAX)).take(SAMPLE_SIZE) {
+			// Ceiling reached.
+			cast_assert_max!( i8,    i, i128, u64, u128);
+			cast_assert_max!( u8,    i, i128, u64, u128);
+			cast_assert_max!( i16,   i, i128, u64, u128);
+			cast_assert_max!( u16,   i, i128, u64, u128);
+			cast_assert_max!( i32,   i, i128, u64, u128);
+			cast_assert_max!( u32,   i, i128, u64, u128);
+			cast_assert_max!( i64,   i, i128, u64, u128);
+
+			// Still in range.
+			cast_assert_same!(i128,  i, i128, u64, u128);
+			cast_assert_same!(u64,   i, i128, u64, u128);
+			cast_assert_same!(u128,  i, i128, u64, u128);
+		}
+	}
+
+	#[test]
+	fn t_saturating_rng_u64max_i128max() {
+		let mut rng = fastrand::Rng::new();
+		for i in std::iter::repeat_with(|| rng.i128((u64::MAX as i128 + 1)..=i128::MAX)).take(SAMPLE_SIZE) {
+			// Ceiling reached.
+			cast_assert_max!( i8,    i, i128, u128);
+			cast_assert_max!( u8,    i, i128, u128);
+			cast_assert_max!( i16,   i, i128, u128);
+			cast_assert_max!( u16,   i, i128, u128);
+			cast_assert_max!( i32,   i, i128, u128);
+			cast_assert_max!( u32,   i, i128, u128);
+			cast_assert_max!( i64,   i, i128, u128);
+			cast_assert_max!( u64,   i, i128, u128);
+
+			// Still in range.
+			cast_assert_same!(i128,  i, i128, u128);
+			cast_assert_same!(u128,  i, i128, u128);
+		}
+	}
+
+	#[test]
+	fn t_saturating_rng_i128max_u128max() {
+		let mut rng = fastrand::Rng::new();
+		for i in std::iter::repeat_with(|| rng.u128((i128::MAX as u128 + 1)..=u128::MAX)).take(SAMPLE_SIZE) {
+			// Ceiling reached.
+			cast_assert_max!( i8,    i, u128);
+			cast_assert_max!( u8,    i, u128);
+			cast_assert_max!( i16,   i, u128);
+			cast_assert_max!( u16,   i, u128);
+			cast_assert_max!( i32,   i, u128);
+			cast_assert_max!( u32,   i, u128);
+			cast_assert_max!( i64,   i, u128);
+			cast_assert_max!( u64,   i, u128);
+			cast_assert_max!( i128,  i, u128);
+
+			// Still in range.
+			cast_assert_same!(u128,  i, u128);
+		}
 	}
 
 	#[cfg(target_pointer_width = "16")]
 	#[test]
-	fn t_usize_from() {
-		assert_eq!(std::mem::size_of::<u16>(), std::mem::size_of::<usize>());
-		test_impl_range!(usize, (u32, u64, u128, f32, f64));
-		test_impl_max!(usize, (u32, u64, u128));
-		test_impl_max!(usize); // This tests all float::INFINITY.
+	fn t_saturating_sized16() {
+		let mut rng = fastrand::Rng::new();
+
+		// Both should be floored below i16.
+		for i in std::iter::repeat_with(|| rng.i32(i32::MIN..i16::MIN as i32)).take(SAMPLE_SIZE) {
+			cast_assert_min!(isize, i, i32, i64, i128);
+			cast_assert_min!(usize, i, i32, i64, i128);
+		}
+
+		// isize should max out after i16::MAX.
+		for i in (i16::MAX as u16 + 1)..=u16::MAX {
+			cast_assert_max!(isize, i, i32, i64, i128, u16, u32, u64, u128, usize);
+		}
+
+		// usize should max out after u16::MAX.
+		for i in std::iter::repeat_with(|| rng.i32((u16::MAX as i32 + 1)..=i32::MAX)).take(SAMPLE_SIZE) {
+			cast_assert_max!(usize, i, i32, i64, i128, u32, u64, u128);
+		}
 	}
 
 	#[cfg(target_pointer_width = "32")]
 	#[test]
-	fn t_usize_from() {
-		assert_eq!(std::mem::size_of::<u32>(), std::mem::size_of::<usize>());
-		test_impl_subrange!(usize:usize, (u32, u64, u128, f32, f64));
-		test_impl_max!(usize, (u32, u64, u128));
-		test_impl_max!(u32, (usize));
-		test_impl_max!(usize); // This tests all float::INFINITY.
+	fn t_saturating_sized32() {
+		let mut rng = fastrand::Rng::new();
+
+		// isize should be fine down to i32::MIN, but usize will get floored.
+		for i in std::iter::repeat_with(|| rng.i32(i32::MIN..i16::MIN as i32)).take(SAMPLE_SIZE) {
+			cast_assert_same!(isize, i, i32, i64, i128, isize);
+			cast_assert_min!( usize, i, i32, i64, i128, isize);
+		}
+
+		// Below i32, isize should be floored too.
+		for i in std::iter::repeat_with(|| rng.i64(i64::MIN..i32::MIN as i64)).take(SAMPLE_SIZE) {
+			cast_assert_min!(isize, i, i64, i128);
+		}
+
+		// Both should be fine up to i32::MAX.
+		for i in std::iter::repeat_with(|| rng.i32((u16::MAX as i32 + 1)..=i32::MAX)).take(SAMPLE_SIZE) {
+			cast_assert_same!(isize, i, i32, i64, i128, isize, u32, u64, u128, usize);
+			cast_assert_same!(usize, i, i32, i64, i128, isize, u32, u64, u128, usize);
+		}
+
+		// isize should max out after i32::MAX, but usize should be fine.
+		for i in std::iter::repeat_with(|| rng.u32((i32::MAX as u32 + 1)..=u32::MAX)).take(SAMPLE_SIZE) {
+			cast_assert_max!( isize, i, i64, i128, u32, u64, u128, usize);
+			cast_assert_same!(usize, i, i64, i128, u32, u64, u128, usize);
+		}
+
+		// usize should max out after u32::MAX.
+		for i in std::iter::repeat_with(|| rng.i64((u32::MAX as i64 + 1)..=i64::MAX)).take(SAMPLE_SIZE) {
+			cast_assert_max!(usize, i, i64, i128, u64, u128);
+		}
 	}
 
 	#[cfg(target_pointer_width = "64")]
 	#[test]
-	fn t_usize_from() {
-		assert_eq!(std::mem::size_of::<u64>(), std::mem::size_of::<usize>());
-		test_impl_subrange!(usize:usize, (u64, u128));
-		assert_eq!(u32::saturating_from(usize::MAX), u32::MAX);
-		test_impl_max!(u64, (usize));
-		test_impl_max!(usize); // This tests all float::INFINITY.
-	}
+	fn t_saturating_sized64() {
+		let mut rng = fastrand::Rng::new();
 
-	#[cfg(target_pointer_width = "128")]
-	#[test]
-	fn t_usize_from() {
-		assert_eq!(std::mem::size_of::<u128>(), std::mem::size_of::<usize>());
-		test_impl_subrange!(usize:usize, (u128));
-		assert_eq!(u32::saturating_from(usize::MAX), u32::MAX);
-		assert_eq!(u64::saturating_from(usize::MAX), u64::MAX);
-		test_impl_max!(u128, (usize));
-		test_impl_max!(u128); // This tests all float::INFINITY.
-		test_impl_max!(usize); // This tests all float::INFINITY.
-	}
+		// isize should be fine down to i64::MIN, but usize will get floored.
+		for i in std::iter::repeat_with(|| rng.i64(i64::MIN..i32::MIN as i64)).take(SAMPLE_SIZE) {
+			cast_assert_same!(isize, i, i64, i128, isize);
+			cast_assert_min!( usize, i, i64, i128, isize);
+		}
 
-	#[cfg(any(target_pointer_width = "64", target_pointer_width = "128"))]
-	#[test]
-	#[ignore]
-	// Float testing is comparatively slow at 64+ bits.
-	fn t_usize_from_float() {
-		test_impl_subrange!(usize:usize, (f32, f64));
+		// Below i64, isize should be floored too.
+		for i in std::iter::repeat_with(|| rng.i128(i128::MIN..i64::MIN as i128)).take(SAMPLE_SIZE) {
+			cast_assert_min!(isize, i, i128);
+		}
+
+		// Both should be fine up to i64::MAX.
+		for i in std::iter::repeat_with(|| rng.i64((u32::MAX as i64 + 1)..=i64::MAX)).take(SAMPLE_SIZE) {
+			cast_assert_same!(isize, i, i64, i128, isize, u64, u128, usize);
+			cast_assert_same!(usize, i, i64, i128, isize, u64, u128, usize);
+		}
+
+		// isize should max out after i64::MAX, but usize should be fine.
+		for i in std::iter::repeat_with(|| rng.u64((i64::MAX as u64 + 1)..=u64::MAX)).take(SAMPLE_SIZE) {
+			cast_assert_max!( isize, i, i128, u64, u128, usize);
+			cast_assert_same!(usize, i, i128, u64, u128, usize);
+		}
+
+		// usize should max out after u64::MAX.
+		for i in std::iter::repeat_with(|| rng.i128((u64::MAX as i128 + 1)..=i128::MAX)).take(SAMPLE_SIZE) {
+			cast_assert_max!(usize, i, i128, u128);
+		}
 	}
 }

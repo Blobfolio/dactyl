@@ -454,10 +454,10 @@ impl NiceFloat {
 
 			for chunk in self.inner[..IDX_DOT].rchunks_exact_mut(4) {
 				if 999 < top {
-					let (div, rem) = crate::div_mod(top, 1000);
+					let rem = top % 1000;
+					top /= 1000;
 					chunk[1..].copy_from_slice(crate::triple(rem as usize).as_slice());
 					self.from -= 4;
-					top = div;
 				}
 				else { break; }
 			}
@@ -487,6 +487,7 @@ impl NiceFloat {
 		}
 	}
 
+	#[allow(clippy::integer_division)]
 	/// # Parse Bottom.
 	///
 	/// This writes the fractional part of the float, if any.
@@ -499,7 +500,7 @@ impl NiceFloat {
 			let mut divisor = 1_000_000_u32;
 
 			for chunk in self.inner[IDX_DOT + 1..].chunks_exact_mut(2) {
-				let (a, b) = crate::div_mod(bottom, divisor);
+				let (a, b) = (bottom / divisor, bottom % divisor);
 
 				// Write the leftmost two digits.
 				if 0 != a {
