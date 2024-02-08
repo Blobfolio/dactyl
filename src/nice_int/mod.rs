@@ -50,7 +50,11 @@ pub struct NiceWrapper<const S: usize> {
 	pub(crate) from: usize,
 }
 
-as_ref_borrow_cast!(as_bytes [u8], as_str str);
+impl<const S: usize> AsRef<[u8]> for NiceWrapper<S> {
+	fn as_ref(&self) -> &[u8] { self.as_bytes() }
+}
+
+as_ref_borrow_cast!(as_str str);
 
 impl<const S: usize> fmt::Debug for NiceWrapper<S> {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

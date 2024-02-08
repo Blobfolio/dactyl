@@ -80,7 +80,11 @@ pub struct NiceElapsed {
 	len: usize,
 }
 
-as_ref_borrow_cast!(as_bytes [u8], as_str str);
+impl AsRef<[u8]> for NiceElapsed {
+	fn as_ref(&self) -> &[u8] { self.as_bytes() }
+}
+
+as_ref_borrow_cast!(as_str str);
 
 impl Default for NiceElapsed {
 	#[inline]
