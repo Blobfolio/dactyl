@@ -98,7 +98,8 @@ pub use nice_int::{
 #[doc(hidden)]
 pub use nice_int::NiceWrapper;
 
-use traits::IntDivFloat;
+#[cfg(test)]
+use brunch as _;
 
 
 
@@ -141,108 +142,4 @@ pub(crate) const fn triple(idx: usize) -> [u8; 3] {
 	let a = div as u8 + b'0';
 	let [b, c] = DOUBLE[rem];
 	[a, b, c]
-}
-
-
-
-#[deprecated(since = "0.5.3", note = "use (a / b, a % b) instead")]
-#[must_use]
-#[inline]
-/// # Combined Division/Remainder.
-///
-/// Perform division and remainder operations in one go, returning both results
-/// as a tuple.
-///
-/// Nothing fancy happens here. This is just more convenient than performing
-/// each operation individually.
-///
-/// ## Examples
-///
-/// ```
-/// // Using the div_mod one-liner.
-/// assert_eq!(
-///     dactyl::div_mod(10_u32, 3_u32),
-///     (3_u32, 1_u32),
-/// );
-///
-/// // Or the same thing, done manually.
-/// assert_eq!(
-///     (10_u32 / 3_u32, 10_u32 % 3_u32),
-///     (3_u32, 1_u32),
-/// );
-/// ```
-///
-/// ## Panics
-///
-/// This will panic if the denominator is set to zero or if the result of
-/// either operation would overflow, like `i8::MIN / -1_i8`.
-pub fn div_mod<T>(e: T, d: T) -> (T, T)
-where T: Copy + std::ops::Div<Output=T> + std::ops::Rem<Output=T> { (e / d, e % d) }
-
-#[deprecated(since = "0.6.0", note = "use traits::IntDivFloat instead")]
-#[must_use]
-#[inline]
-/// # Integer to Float Division.
-///
-/// Recast two integers to floats, then divide them and return the result, or
-/// `None` if the operation is invalid or yields `NaN` or infinity.
-///
-/// This method accepts `u8`, `u16`, `u32`, `u64`, `u128`, `usize`, `i8`, `i16`,
-/// `i32`, `i64`, `i128`, and `isize`.
-///
-/// ## Examples
-///
-/// ```
-/// // Equivalent to 20_f64 / 16_f64.
-/// assert_eq!(
-///     dactyl::int_div_float(20_u8, 16_u8),
-///     Some(1.25_f64)
-/// );
-///
-/// // Division by zero is still a no-no.
-/// assert!(dactyl::int_div_float(100_i32, 0_i32).is_none());
-/// ```
-pub fn int_div_float<T: IntDivFloat>(e: T, d: T) -> Option<f64> { e.div_float(d) }
-
-
-
-#[cfg(test)]
-mod tests {
-	use super::*;
-	use brunch as _;
-
-	#[allow(deprecated)]
-	#[test]
-	fn t_int_div_float() {
-		let mut rng = fastrand::Rng::new();
-
-		// Just make sure this produces the same result as the trait.
-		macro_rules! t_div {
-			($($rnd:ident $ty:ty),+ $(,)?) => ($(
-				for _ in 0..10 {
-					let a = rng.$rnd(<$ty>::MAX..=<$ty>::MAX);
-					let b = rng.$rnd(<$ty>::MAX..=<$ty>::MAX);
-					if b != 0 {
-						assert_eq!(int_div_float(a, b), a.div_float(b));
-					}
-				}
-			)+);
-		}
-
-		// Make sure we actually implemented all of these. Haha.
-		t_div! {
-			u8    u8,
-			u16   u16,
-			u32   u32,
-			u64   u64,
-			u128  u128,
-			usize usize,
-			i8    i8,
-			i16   i16,
-			i32   i32,
-			i64   i64,
-			i128  i128,
-			isize isize,
-		}
-	}
 }

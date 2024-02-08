@@ -1,6 +1,16 @@
 # Changelog
 
 
+## [0.7.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.7.0) - 2024-02-08
+
+### Removed
+
+* `Borrow<[u8]>` for `Nice*` types
+* `dactyl::int_div_float`
+* `dactyl::div_mod`
+
+
+
 ## [0.6.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.6.0) - 2023-10-15
 
 ### New
