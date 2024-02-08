@@ -98,9 +98,6 @@ pub use nice_int::{
 #[doc(hidden)]
 pub use nice_int::NiceWrapper;
 
-#[cfg(test)]
-use brunch as _;
-
 
 
 /// # Decimals, 00-99.
@@ -135,11 +132,31 @@ pub(crate) const fn double(idx: usize) -> [u8; 2] { DOUBLE[idx] }
 ///
 /// ## Panics
 ///
-/// This will panic if the number is greater than 99.
+/// This will panic if the number is greater than 999.
 pub(crate) const fn triple(idx: usize) -> [u8; 3] {
 	assert!(idx < 1000, "Bug: Triple must be less than 1000.");
 	let (div, rem) = (idx / 100, idx % 100);
 	let a = div as u8 + b'0';
 	let [b, c] = DOUBLE[rem];
 	[a, b, c]
+}
+
+
+
+#[cfg(test)]
+mod test {
+	use super::*;
+	use brunch as _;
+
+	#[test]
+	fn t_triple() {
+		// Note this also tests double().
+		for i in 0..=999 {
+			assert_eq!(
+				format!("{i:03}").as_bytes(),
+				triple(i),
+				"Invalid triple conversion for {i}"
+			);
+		}
+	}
 }
