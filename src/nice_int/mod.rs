@@ -29,9 +29,11 @@ use std::{
 macro_rules! as_ref_borrow_cast {
 	($($cast:ident $ty:ty),+ $(,)?) => ($(
 		impl<const S: usize> AsRef<$ty> for NiceWrapper<S> {
+			#[inline]
 			fn as_ref(&self) -> &$ty { self.$cast() }
 		}
 		impl<const S: usize> ::std::borrow::Borrow<$ty> for NiceWrapper<S> {
+			#[inline]
 			fn borrow(&self) -> &$ty { self.$cast() }
 		}
 	)+);
@@ -51,6 +53,7 @@ pub struct NiceWrapper<const S: usize> {
 }
 
 impl<const S: usize> AsRef<[u8]> for NiceWrapper<S> {
+	#[inline]
 	fn as_ref(&self) -> &[u8] { self.as_bytes() }
 }
 
@@ -66,10 +69,12 @@ impl<const S: usize> fmt::Debug for NiceWrapper<S> {
 
 impl<const S: usize> Deref for NiceWrapper<S> {
 	type Target = [u8];
+	#[inline]
 	fn deref(&self) -> &Self::Target { self.as_bytes() }
 }
 
 impl<const S: usize> fmt::Display for NiceWrapper<S> {
+	#[inline]
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		f.write_str(self.as_str())
 	}
@@ -78,33 +83,40 @@ impl<const S: usize> fmt::Display for NiceWrapper<S> {
 impl<const S: usize> Eq for NiceWrapper<S> {}
 
 impl<const S: usize> From<NiceWrapper<S>> for String {
+	#[inline]
 	fn from(src: NiceWrapper<S>) -> Self { src.as_str().to_owned() }
 }
 
 impl<const S: usize> From<NiceWrapper<S>> for Vec<u8> {
+	#[inline]
 	fn from(src: NiceWrapper<S>) -> Self { src.as_bytes().to_vec() }
 }
 
 impl<const S: usize, T> From<Option<T>> for NiceWrapper<S>
 where Self: From<T> + Default {
+	#[inline]
 	/// `None` is treated like zero, otherwise this will simply unwrap the
 	/// inner value and run `From` against that.
 	fn from(num: Option<T>) -> Self { num.map_or_else(Self::default, Self::from) }
 }
 
 impl<const S: usize> Hash for NiceWrapper<S> {
+	#[inline]
 	fn hash<H: Hasher>(&self, state: &mut H) { state.write(self.as_bytes()) }
 }
 
 impl<const S: usize> Ord for NiceWrapper<S> {
+	#[inline]
 	fn cmp(&self, other: &Self) -> Ordering { self.as_bytes().cmp(other.as_bytes()) }
 }
 
 impl<const S: usize> PartialEq for NiceWrapper<S> {
+	#[inline]
 	fn eq(&self, other: &Self) -> bool { self.as_bytes() == other.as_bytes() }
 }
 
 impl<const S: usize> PartialOrd for NiceWrapper<S> {
+	#[inline]
 	fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) }
 }
 
@@ -142,6 +154,7 @@ impl<const S: usize> NiceWrapper<S> {
 macro_rules! nice_from_nz {
 	($nice:ty, $($nz:ty),+ $(,)?) => ($(
 		impl From<$nz> for $nice {
+			#[inline]
 			fn from(num: $nz) -> Self { Self::from(num.get()) }
 		}
 	)+);
@@ -152,10 +165,12 @@ macro_rules! nice_from_nz {
 macro_rules! nice_default {
 	($nice:ty, $zero:expr, $size:ident) => (
 		impl Default for $nice {
+			#[inline]
 			fn default() -> Self { Self { inner: $zero, from: $size - 1 } }
 		}
 
 		impl $nice {
+			#[inline]
 			#[doc(hidden)]
 			#[must_use]
 			/// # Empty.
@@ -171,6 +186,7 @@ macro_rules! nice_default {
 macro_rules! nice_parse {
 	($nice:ty, $uint:ty) => (
 		impl From<$uint> for $nice {
+			#[inline]
 			fn from(num: $uint) -> Self {
 				let mut out = Self::empty();
 				out.parse(num);

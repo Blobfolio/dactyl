@@ -95,6 +95,7 @@ signed!(isize, u128, 170_141_183_460_469_231_731_687_303_715_884_105_728, 170_14
 macro_rules! nonzero {
 	($($outer:ty, $inner:ty),+ $(,)?) => ($(
 		impl BytesToSigned for $outer {
+			#[inline]
 			/// # Bytes to Unsigned.
 			fn btoi(src: &[u8]) -> Option<Self> {
 				<$inner>::btoi(src).and_then(Self::new)

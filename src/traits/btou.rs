@@ -365,21 +365,25 @@ impl BytesToUnsigned for u128 {
 impl BytesToUnsigned for usize {
 	#[cfg(target_pointer_width = "16")]
 	#[must_use]
+	#[inline]
 	/// # Bytes to Unsigned.
 	fn btou(src: &[u8]) -> Option<Self> { u16::btou(src).map(Self::from) }
 
 	#[cfg(target_pointer_width = "32")]
 	#[must_use]
+	#[inline]
 	/// # Bytes to Unsigned.
 	fn btou(src: &[u8]) -> Option<Self> { Some(u32::btou(src)? as Self) }
 
 	#[cfg(target_pointer_width = "64")]
 	#[must_use]
+	#[inline]
 	/// # Bytes to Unsigned.
 	fn btou(src: &[u8]) -> Option<Self> { Some(u64::btou(src)? as Self) }
 
 	#[cfg(target_pointer_width = "128")]
 	#[must_use]
+	#[inline]
 	/// # Bytes to Unsigned.
 	fn btou(src: &[u8]) -> Option<Self> { Some(u128::btou(src)? as Self) }
 }
@@ -389,6 +393,7 @@ impl BytesToUnsigned for usize {
 macro_rules! nonzero {
 	($($outer:ty, $inner:ty),+ $(,)?) => ($(
 		impl BytesToUnsigned for $outer {
+			#[inline]
 			/// # Bytes to Unsigned.
 			fn btou(src: &[u8]) -> Option<Self> {
 				<$inner>::btou(src).and_then(Self::new)

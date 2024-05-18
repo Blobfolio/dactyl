@@ -57,6 +57,7 @@ const ZERO: [u8; SIZE] = [b'0', b'0', b'0', b'.', b'0', b'0', b'%'];
 pub type NicePercent = NiceWrapper<SIZE>;
 
 impl Default for NicePercent {
+	#[inline]
 	fn default() -> Self { Self::min() }
 }
 
@@ -102,6 +103,7 @@ nice_from!(f32, f64);
 impl<T: IntDivFloat> TryFrom<(T, T)> for NicePercent {
 	type Error = ();
 
+	#[inline]
 	/// # Percent From T/T.
 	///
 	/// This method is a shorthand that performs the (decimal) division of
@@ -129,6 +131,7 @@ impl<T: IntDivFloat> TryFrom<(T, T)> for NicePercent {
 }
 
 impl NicePercent {
+	#[inline]
 	#[must_use]
 	/// # Minimum value.
 	///
@@ -140,6 +143,7 @@ impl NicePercent {
 		}
 	}
 
+	#[inline]
 	#[must_use]
 	/// # Maximum value.
 	///

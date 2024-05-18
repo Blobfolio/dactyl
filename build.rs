@@ -138,6 +138,7 @@ macro_rules! wrt {
 			&mut $out,
 			concat!(
 				"impl SaturatingFrom<", stringify!($from), "> for ", stringify!($to), "{{\n",
+				"\t#[inline]\n",
 				"\t#[doc = \"", "# Saturating From `", stringify!($from), "`\"]\n",
 				"\t#[doc = \"\"]\n",
 				"\t#[doc = \"", "This method will safely recast any `", stringify!($from), "` into a `", stringify!($to), "`, clamping the values to `", stringify!($to), "::MIN..=", stringify!($to), "::MAX` to prevent overflow or wrapping.", "\"]\n",
@@ -164,10 +165,10 @@ macro_rules! wrt_self {
 			&mut $out,
 			concat!(
 				"impl SaturatingFrom<Self> for ", stringify!($to), "{{\n",
+				"\t#[inline]",
 				"\t#[doc = \"# Saturating From `Self`\"]\n",
 				"\t#[doc = \"\"]\n",
 				"\t#[doc = \"`Self`-to-`Self` (obviously) requires no saturation; this implementation is a noop.\"]\n",
-				"\t#[inline]",
 				"\tfn saturating_from(src: Self) -> Self {{ src }}\n",
 				"}}",
 			),
@@ -233,6 +234,7 @@ mod sized {{
 	use super::SaturatingFrom;
 
 	impl<T: SaturatingFrom<{unsigned}>> SaturatingFrom<usize> for T {{
+		#[inline]
 		/// # Saturating From `usize`
 		///
 		/// This blanket implementation uses `{unsigned}` as a go-between, since it is equivalent to `usize`.
@@ -241,6 +243,7 @@ mod sized {{
 		}}
 	}}
 	impl<T: SaturatingFrom<{signed}>> SaturatingFrom<isize> for T {{
+		#[inline]
 		/// # Saturating From `isize`
 		///
 		/// This blanket implementation uses `{signed}` as a go-between, since it is equivalent to `isize`.

@@ -55,6 +55,7 @@ pub trait HexToUnsigned: Sized {
 }
 
 impl HexToUnsigned for u8 {
+	#[inline]
 	/// # Hex (Bytes) to Unsigned.
 	fn htou(src: &[u8]) -> Option<Self> {
 		match src.len() {
@@ -110,6 +111,7 @@ impl HexToUnsigned for u32 {
 
 #[cfg(target_pointer_width = "16")]
 impl HexToUnsigned for usize {
+	#[inline]
 	/// # Hex (Bytes) to Unsigned.
 	fn htou(src: &[u8]) -> Option<Self> { u16::htou(src).map(Self::from) }
 }
@@ -117,6 +119,7 @@ impl HexToUnsigned for usize {
 #[cfg(target_pointer_width = "32")]
 #[allow(clippy::cast_possible_truncation)]
 impl HexToUnsigned for usize {
+	#[inline]
 	/// # Hex (Bytes) to Unsigned.
 	fn htou(src: &[u8]) -> Option<Self> { u32::htou(src).map(|n| n as Self) }
 }
@@ -124,6 +127,7 @@ impl HexToUnsigned for usize {
 #[cfg(target_pointer_width = "64")]
 #[allow(clippy::cast_possible_truncation)]
 impl HexToUnsigned for usize {
+	#[inline]
 	/// # Hex (Bytes) to Unsigned.
 	fn htou(src: &[u8]) -> Option<Self> { u64::htou(src).map(|n| n as Self) }
 }
@@ -233,6 +237,7 @@ pub trait HexToSigned: Sized {
 macro_rules! signed {
 	($signed:ty, $unsigned:ty) => (
 		impl HexToSigned for $signed {
+			#[inline]
 			/// # Hex (Bytes) to Signed.
 			fn htoi(src: &[u8]) -> Option<Self> {
 				<$unsigned>::htou(src).map(|n| n as Self)
