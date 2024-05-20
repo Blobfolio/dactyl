@@ -74,6 +74,7 @@ macro_rules! inflect {
 	// Unsigned.
 	($ty:ty, $one:literal) => (
 		impl Inflection for $ty {
+			#[inline]
 			fn inflect<'a>(self, singular: &'a str, plural: &'a str) -> &'a str {
 				if self == $one { singular } else { plural }
 			}
@@ -83,6 +84,7 @@ macro_rules! inflect {
 	// Nonzero.
 	($ty:ty, $one:expr) => (
 		impl Inflection for $ty {
+			#[inline]
 			fn inflect<'a>(self, singular: &'a str, plural: &'a str) -> &'a str {
 				if self == $one { singular } else { plural }
 			}
@@ -92,6 +94,7 @@ macro_rules! inflect {
 	// Signed.
 	($ty:ty, $one:literal, $cast:ident) => (
 		impl Inflection for $ty {
+			#[inline]
 			fn inflect<'a>(self, singular: &'a str, plural: &'a str) -> &'a str {
 				if self.$cast() == $one { singular } else { plural }
 			}
@@ -104,6 +107,7 @@ macro_rules! inflect_nice {
 	// Unsigned.
 	($ty:ty, $nice:ty) => (
 		impl NiceInflection for $ty {
+			#[inline]
 			/// # Inflect a String.
 			fn nice_inflect<S>(self, singular: S, plural: S) -> String
 			where S: AsRef<str> {
@@ -119,6 +123,7 @@ macro_rules! inflect_nice {
 	// Signed.
 	($ty:ty, $nice:ty, $cast:ident) => (
 		impl NiceInflection for $ty {
+			#[inline]
 			/// # Inflect a String.
 			fn nice_inflect<S>(self, singular: S, plural: S) -> String
 			where S: AsRef<str> {
@@ -173,6 +178,7 @@ inflect!(i128, 1, unsigned_abs);
 inflect!(NonZeroU128, Self::MIN);
 
 impl Inflection for f32 {
+	#[inline]
 	/// # Inflect a String.
 	fn inflect<'a>(self, singular: &'a str, plural: &'a str) -> &'a str {
 		if self.abs().eq(&1.0) { singular } else { plural }
@@ -180,6 +186,7 @@ impl Inflection for f32 {
 }
 
 impl Inflection for f64 {
+	#[inline]
 	/// # Inflect a String.
 	fn inflect<'a>(self, singular: &'a str, plural: &'a str) -> &'a str {
 		if self.abs().eq(&1.0) { singular } else { plural }

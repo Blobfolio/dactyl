@@ -32,6 +32,7 @@ pub trait IntDivFloat: Copy {
 macro_rules! intdiv {
 	($($ty:ty),+) => ($(
 		impl IntDivFloat for $ty {
+			#[inline]
 			/// # Integer to Float Division.
 			///
 			/// Recast two integers to floats, then divide them and return the

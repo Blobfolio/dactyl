@@ -2,6 +2,14 @@
 
 
 
+## [0.7.1](https://github.com/Blobfolio/dactyl/releases/tag/v0.7.1) - 2024-05-19
+
+### Changed
+
+* Add various `#[inline]` hints to improve downstream optimization passes.
+
+
+
 ## [0.7.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.7.0) - 2024-02-08
 
 ### Removed

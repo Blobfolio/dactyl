@@ -97,6 +97,7 @@ macro_rules! inner {
 pub type NiceFloat = NiceWrapper<SIZE>;
 
 impl Default for NiceFloat {
+	#[inline]
 	fn default() -> Self {
 		Self {
 			inner: inner!(b','),
@@ -106,10 +107,12 @@ impl Default for NiceFloat {
 }
 
 impl From<f32> for NiceFloat {
+	#[inline]
 	fn from(num: f32) -> Self { Self::from(FloatKind::from(num)) }
 }
 
 impl From<f64> for NiceFloat {
+	#[inline]
 	fn from(num: f64) -> Self { Self::from(FloatKind::from(num)) }
 }
 
@@ -132,6 +135,7 @@ impl From<FloatKind> for NiceFloat {
 
 impl NiceFloat {
 	#[must_use]
+	#[inline]
 	/// # Infinity.
 	///
 	/// This returns an infinite instance! No distinction is made between
@@ -159,6 +163,7 @@ impl NiceFloat {
 	}
 
 	#[must_use]
+	#[inline]
 	/// # NaN.
 	///
 	/// This returns a not-a-number instance.
@@ -179,6 +184,7 @@ impl NiceFloat {
 	}
 
 	#[must_use]
+	#[inline]
 	/// # Overflow.
 	///
 	/// This is used for values with integer components that do not fit within
@@ -321,6 +327,7 @@ impl NiceFloat {
 	}
 
 	#[allow(unsafe_code)]
+	#[inline]
 	#[must_use]
 	/// # Compact String.
 	///
@@ -353,6 +360,7 @@ impl NiceFloat {
 		unsafe { std::str::from_utf8_unchecked(self.compact_bytes()) }
 	}
 
+	#[inline]
 	#[must_use]
 	/// # Precise Bytes.
 	///
@@ -388,6 +396,7 @@ impl NiceFloat {
 	}
 
 	#[allow(unsafe_code)]
+	#[inline]
 	#[must_use]
 	/// # Precise String.
 	///
@@ -593,6 +602,7 @@ pub enum FloatKind {
 }
 
 impl From<f32> for FloatKind {
+	#[inline]
 	fn from(num: f32) -> Self {
 		if num.is_nan() { Self::NaN }
 		else if num.is_infinite() { Self::Infinity }
@@ -601,6 +611,7 @@ impl From<f32> for FloatKind {
 }
 
 impl From<f64> for FloatKind {
+	#[inline]
 	fn from(num: f64) -> Self {
 		if num.is_nan() { Self::NaN }
 		else if num.is_infinite() { Self::Infinity }

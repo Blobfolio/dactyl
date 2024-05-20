@@ -28,9 +28,11 @@ const SIZE: usize = 52;
 macro_rules! as_ref_borrow_cast {
 	($($cast:ident $ty:ty),+ $(,)?) => ($(
 		impl AsRef<$ty> for NiceElapsed {
+			#[inline]
 			fn as_ref(&self) -> &$ty { self.$cast() }
 		}
 		impl ::std::borrow::Borrow<$ty> for NiceElapsed {
+			#[inline]
 			fn borrow(&self) -> &$ty { self.$cast() }
 		}
 	)+);
@@ -40,6 +42,7 @@ macro_rules! as_ref_borrow_cast {
 macro_rules! elapsed_from {
 	($($type:ty),+) => ($(
 		impl From<$type> for NiceElapsed {
+			#[inline]
 			/// This will never fail, however large values will be capped to
 			/// [`u32::MAX`] before parsing, so may not reflect all the seconds
 			/// you hoped they would.
@@ -81,6 +84,7 @@ pub struct NiceElapsed {
 }
 
 impl AsRef<[u8]> for NiceElapsed {
+	#[inline]
 	fn as_ref(&self) -> &[u8] { self.as_bytes() }
 }
 
@@ -142,10 +146,12 @@ impl From<Duration> for NiceElapsed {
 }
 
 impl From<Instant> for NiceElapsed {
+	#[inline]
 	fn from(src: Instant) -> Self { Self::from(src.elapsed()) }
 }
 
 impl From<u32> for NiceElapsed {
+	#[inline]
 	fn from(num: u32) -> Self {
 		// Nothing!
 		if 0 == num { Self::min() }
@@ -172,6 +178,7 @@ impl PartialEq for NiceElapsed {
 
 impl NiceElapsed {
 	#[must_use]
+	#[inline]
 	/// # Minimum Value
 	///
 	/// We can save some processing time by hard-coding the value for `0`,

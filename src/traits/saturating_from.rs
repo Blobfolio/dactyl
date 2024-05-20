@@ -52,6 +52,7 @@ include!(concat!(env!("OUT_DIR"), "/dactyl-saturation.rs"));
 macro_rules! float {
 	($from:ty, $($to:ty),+) => ($(
 		impl SaturatingFrom<$from> for $to {
+			#[inline]
 			#[doc = concat!("# Saturating From `", stringify!($from), "`")]
 			#[doc = ""]
 			#[doc = concat!("This method will safely recast any `", stringify!($from), "` into a `", stringify!($to), "`, clamping the values to `", stringify!($to), "::MIN..=", stringify!($to), "::MAX` to prevent overflow or wrapping.")]
