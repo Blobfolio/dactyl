@@ -238,6 +238,7 @@ macro_rules! signed {
 	($signed:ty, $unsigned:ty) => (
 		impl HexToSigned for $signed {
 			#[inline]
+			#[allow(clippy::cast_possible_wrap)]
 			/// # Hex (Bytes) to Signed.
 			fn htoi(src: &[u8]) -> Option<Self> {
 				<$unsigned>::htou(src).map(|n| n as Self)

@@ -66,7 +66,11 @@ impl Default for NicePercent {
 /// This code is identical for `f32` and `f64` types.
 macro_rules! nice_from {
 	($($float:ty),+ $(,)?) => ($(
-		#[allow(clippy::integer_division)]
+		#[allow(
+			clippy::cast_possible_truncation,
+			clippy::cast_sign_loss,
+			clippy::integer_division,
+		)]
 		impl From<$float> for NicePercent {
 			fn from(num: $float) -> Self {
 				// Shortcut for overflowing values.

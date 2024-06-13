@@ -122,6 +122,7 @@ pub struct NoHasher(u64);
 
 macro_rules! write_unsigned {
 	($($fn:ident, $ty:ty),+ $(,)?) => ($(
+		#[allow(clippy::cast_lossless)]
 		#[inline]
 		#[doc = concat!("# Write `", stringify!($ty), "`")]
 		fn $fn(&mut self, val: $ty) {
@@ -133,6 +134,7 @@ macro_rules! write_unsigned {
 
 macro_rules! write_signed {
 	($($fn:ident, $ty1:ty, $ty2:ty),+ $(,)?) => ($(
+		#[allow(clippy::cast_lossless, clippy::cast_sign_loss)]
 		#[inline]
 		#[doc = concat!("# Write `", stringify!($ty1), "`")]
 		fn $fn(&mut self, val: $ty1) {
