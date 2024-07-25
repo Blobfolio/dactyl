@@ -75,12 +75,7 @@ pub type NiceU64 = NiceWrapper<SIZE>;
 impl From<usize> for NiceU64 {
 	#[allow(clippy::cast_possible_truncation)] // It fits.
 	#[allow(clippy::only_used_in_recursion)] // Clippy is confused.
-	fn from(num: usize) -> Self {
-		#[cfg(target_pointer_width = "128")]
-		assert!(num <= 18_446_744_073_709_551_615);
-
-		Self::from(num as u64)
-	}
+	fn from(num: usize) -> Self { Self::from(num as u64) }
 }
 
 super::nice_default!(NiceU64, inner!(b','), SIZE);

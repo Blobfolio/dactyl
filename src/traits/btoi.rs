@@ -43,6 +43,7 @@ pub trait BytesToSigned: Sized {
 macro_rules! signed {
 	($ty:ty, $unsigned:ty, $min:literal, $max:literal) => (
 		impl BytesToSigned for $ty {
+			#[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
 			/// # Bytes to Signed.
 			fn btoi(src: &[u8]) -> Option<Self> {
 				match src.len() {
@@ -87,9 +88,6 @@ signed!(isize, u32, 2_147_483_648, 2_147_483_647);
 
 #[cfg(target_pointer_width = "64")]
 signed!(isize, u64, 9_223_372_036_854_775_808, 9_223_372_036_854_775_807);
-
-#[cfg(target_pointer_width = "128")]
-signed!(isize, u128, 170_141_183_460_469_231_731_687_303_715_884_105_728, 170_141_183_460_469_231_731_687_303_715_884_105_727);
 
 /// # Helper: Non-Zero.
 macro_rules! nonzero {

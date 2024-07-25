@@ -122,6 +122,7 @@ pub struct NoHasher(u64);
 
 macro_rules! write_unsigned {
 	($($fn:ident, $ty:ty),+ $(,)?) => ($(
+		#[allow(clippy::cast_lossless)]
 		#[inline]
 		#[doc = concat!("# Write `", stringify!($ty), "`")]
 		fn $fn(&mut self, val: $ty) {
@@ -133,6 +134,7 @@ macro_rules! write_unsigned {
 
 macro_rules! write_signed {
 	($($fn:ident, $ty1:ty, $ty2:ty),+ $(,)?) => ($(
+		#[allow(clippy::cast_lossless, clippy::cast_sign_loss)]
 		#[inline]
 		#[doc = concat!("# Write `", stringify!($ty1), "`")]
 		fn $fn(&mut self, val: $ty1) {
@@ -153,18 +155,14 @@ impl Hasher for NoHasher {
 		write_u8, u8,
 		write_u16, u16,
 		write_u32, u32,
+		write_usize, usize,
 	);
 	write_signed!(
 		write_i8, i8, u8,
 		write_i16, i16, u16,
 		write_i32, i32, u32,
+		write_isize, isize, usize,
 	);
-
-	#[cfg(any(target_pointer_width = "16", target_pointer_width = "32", target_pointer_width = "64"))]
-	write_unsigned!(write_usize, usize);
-
-	#[cfg(any(target_pointer_width = "16", target_pointer_width = "32", target_pointer_width = "64"))]
-	write_signed!(write_isize, isize, usize);
 
 	#[inline]
 	/// # Real Write.
@@ -272,7 +270,6 @@ mod tests {
 		sanity_check_signed!(i64);
 	}
 
-	#[cfg(any(target_pointer_width = "16", target_pointer_width = "32", target_pointer_width = "64"))]
 	#[test]
 	fn t_usize() {
 		sanity_check_unsigned!(usize);
