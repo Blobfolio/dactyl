@@ -380,12 +380,6 @@ impl BytesToUnsigned for usize {
 	#[inline]
 	/// # Bytes to Unsigned.
 	fn btou(src: &[u8]) -> Option<Self> { Some(u64::btou(src)? as Self) }
-
-	#[cfg(target_pointer_width = "128")]
-	#[must_use]
-	#[inline]
-	/// # Bytes to Unsigned.
-	fn btou(src: &[u8]) -> Option<Self> { Some(u128::btou(src)? as Self) }
 }
 
 

@@ -277,7 +277,6 @@ mod sized {{
 	sized!(u16, i16);
 	sized!(u32, i32);
 	sized!(u64, i64);
-	sized!(u128, i128);
 
 	// Done!
 	out
