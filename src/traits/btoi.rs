@@ -40,10 +40,12 @@ pub trait BytesToSigned: Sized {
 
 
 
+/// # Helper: Generate Impls.
 macro_rules! signed {
 	($ty:ty, $unsigned:ty, $min:literal, $max:literal) => (
 		impl BytesToSigned for $ty {
-			#[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
+			#[allow(clippy::cast_possible_truncation)] // False positive.
+			#[allow(clippy::cast_possible_wrap)]       // False positive.
 			/// # Bytes to Signed.
 			fn btoi(src: &[u8]) -> Option<Self> {
 				match src.len() {

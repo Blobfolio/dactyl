@@ -21,8 +21,8 @@ fn t_nohash() -> HashSet<u16, NoHash> { (u16::MIN..=u16::MAX).collect() }
 
 benches!(
 	Bench::new("(u16::MIN..=u16::MAX).collect::<HashSet<u16>>()")
-		.run(|| t_hash()),
+		.run(t_hash),
 
 	Bench::new("(u16::MIN..=u16::MAX).collect::<HashSet<u16, NoHash>>()")
-		.run(|| t_nohash()),
+		.run(t_nohash),
 );

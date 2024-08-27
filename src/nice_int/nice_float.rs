@@ -326,7 +326,7 @@ impl NiceFloat {
 		out
 	}
 
-	#[allow(unsafe_code)]
+	#[allow(unsafe_code)] // Content is ASCII.
 	#[inline]
 	#[must_use]
 	/// # Compact String.
@@ -357,6 +357,7 @@ impl NiceFloat {
 			std::str::from_utf8(self.compact_bytes()).is_ok(),
 			"Bug: NiceFloat is not UTF."
 		);
+		// Safety: numbers are valid ASCII.
 		unsafe { std::str::from_utf8_unchecked(self.compact_bytes()) }
 	}
 
@@ -395,7 +396,7 @@ impl NiceFloat {
 		else { self.as_bytes() }
 	}
 
-	#[allow(unsafe_code)]
+	#[allow(unsafe_code)] // Content is ASCII.
 	#[inline]
 	#[must_use]
 	/// # Precise String.
@@ -428,6 +429,7 @@ impl NiceFloat {
 			std::str::from_utf8(self.precise_bytes(precision)).is_ok(),
 			"Bug: NiceFloat is not UTF."
 		);
+		// Safety: numbers are valid ASCII.
 		unsafe { std::str::from_utf8_unchecked(self.precise_bytes(precision)) }
 	}
 }
@@ -449,7 +451,7 @@ impl NiceFloat {
 		)
 	}
 
-	#[allow(clippy::cast_possible_truncation)] // They fit.
+	#[allow(clippy::cast_possible_truncation)] // False positive.
 	/// # Parse Top.
 	///
 	/// Write the integer portion of the value. This works the same way as
@@ -496,7 +498,7 @@ impl NiceFloat {
 		}
 	}
 
-	#[allow(clippy::integer_division)]
+	#[allow(clippy::integer_division)] // We want this.
 	/// # Parse Bottom.
 	///
 	/// This writes the fractional part of the float, if any.
@@ -621,9 +623,7 @@ impl From<f64> for FloatKind {
 
 
 
-#[allow(clippy::cast_lossless)]
-#[allow(clippy::cast_possible_truncation)]
-#[allow(clippy::integer_division)]
+#[allow(clippy::integer_division)] // We want this.
 /// # Parse Finite `f32`
 ///
 /// This parses a float (that is not NaN or infinite) into the appropriate
@@ -632,8 +632,13 @@ impl From<f64> for FloatKind {
 /// This is essentially the same thing [`std::time::Duration`] does when
 /// instantiating from fractional seconds.
 fn parse_finite_f32(num: f32) -> FloatKind {
+	/// # Minimum Exponent.
 	const MIN_EXP: i16 = 1 - (1 << 8) / 2;
+
+	/// # Mantissa Mask.
 	const MANT_MASK: u32 = (1 << 23) - 1;
+
+	/// # Exponent Mask.
 	const EXP_MASK: u32 = (1 << 8) - 1;
 
 	let bits = num.abs().to_bits();
@@ -667,9 +672,7 @@ fn parse_finite_f32(num: f32) -> FloatKind {
 	else { FloatKind::Normal(top, bottom, num.is_sign_negative()) }
 }
 
-#[allow(clippy::cast_lossless)]
-#[allow(clippy::cast_possible_truncation)]
-#[allow(clippy::integer_division)]
+#[allow(clippy::integer_division)] // We want this.
 /// # Parse Finite `f64`
 ///
 /// This parses a float (that is not NaN or infinite) into the appropriate
@@ -678,8 +681,13 @@ fn parse_finite_f32(num: f32) -> FloatKind {
 /// This is essentially the same thing [`std::time::Duration`] does when
 /// instantiating from fractional seconds.
 fn parse_finite_f64(num: f64) -> FloatKind {
+	/// # Minimum Exponent.
 	const MIN_EXP: i16 = 1 - (1 << 11) / 2;
+
+	/// # Mantissa Mask.
 	const MANT_MASK: u64 = (1 << 52) - 1;
+
+	/// # Exponent Mask.
 	const EXP_MASK: u64 = (1 << 11) - 1;
 
 	let bits = num.abs().to_bits();
@@ -719,7 +727,7 @@ fn parse_finite_f64(num: f64) -> FloatKind {
 
 
 
-#[allow(clippy::cast_possible_truncation)]
+#[allow(clippy::cast_possible_truncation)] // False positive.
 /// # Round, Tie to Even.
 ///
 /// Fractions are rounded on the ninth decimal place (to eight places).
@@ -761,18 +769,18 @@ mod tests {
 		assert_eq!(NiceFloat::from(-0_f64).as_str(), "0.00000000");
 		assert_eq!(NiceFloat::from(-10_f64).as_str(), "-10.00000000");
 		assert_eq!(NiceFloat::from(1.03_f64).as_str(), "1.03000000");
-		assert_eq!(NiceFloat::from(1.0202020202_f64).as_str(), "1.02020202");
+		assert_eq!(NiceFloat::from(1.020_202_020_2_f64).as_str(), "1.02020202");
 		assert_eq!(NiceFloat::from(-11_323.03_f64).as_str(), "-11,323.03000000");
 
 		// Rounding.
-		assert_eq!(NiceFloat::from(0.123456789_f64).as_str(), "0.12345679");
-		assert_eq!(NiceFloat::from(1.000000046_f64).as_str(), "1.00000005");
+		assert_eq!(NiceFloat::from(0.123_456_789_f64).as_str(), "0.12345679");
+		assert_eq!(NiceFloat::from(1.000_000_046_f64).as_str(), "1.00000005");
 
 		// Tie/Even Rounding.
-		assert_eq!(NiceFloat::from(1.000000035_f64).as_str(), "1.00000004");
-		assert_eq!(NiceFloat::from(1.000000044_f64).as_str(), "1.00000004");
-		assert_eq!(NiceFloat::from(1.000000045_f64).as_str(), "1.00000004");
-		assert_eq!(NiceFloat::from(1.000000055_f64).as_str(), "1.00000006");
+		assert_eq!(NiceFloat::from(1.000_000_035_f64).as_str(), "1.00000004");
+		assert_eq!(NiceFloat::from(1.000_000_044_f64).as_str(), "1.00000004");
+		assert_eq!(NiceFloat::from(1.000_000_045_f64).as_str(), "1.00000004");
+		assert_eq!(NiceFloat::from(1.000_000_055_f64).as_str(), "1.00000006");
 
 		// Weird things.
 		assert_eq!(NiceFloat::from(f64::NAN).as_str(), "NaN");
@@ -785,9 +793,9 @@ mod tests {
 	fn t_compact() {
 		assert_eq!(NiceFloat::from(0_f64).compact_str(), "0");
 		assert_eq!(NiceFloat::with_separator(0_f64, b'0', b'0').compact_str(), "0");
-		assert_eq!(NiceFloat::from(0.0102003_f64).compact_str(), "0.0102003");
-		assert_eq!(NiceFloat::from(0.00000001_f64).compact_str(), "0.00000001");
-		assert_eq!(NiceFloat::from(0.000000001_f64).compact_str(), "0");
+		assert_eq!(NiceFloat::from(0.010_200_3_f64).compact_str(), "0.0102003");
+		assert_eq!(NiceFloat::from(0.000_000_01_f64).compact_str(), "0.00000001");
+		assert_eq!(NiceFloat::from(0.000_000_001_f64).compact_str(), "0");
 
 		// A few weird ones.
 		assert_eq!(NiceFloat::from(f64::NAN).compact_str(), "NaN");

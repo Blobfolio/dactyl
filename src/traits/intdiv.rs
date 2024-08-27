@@ -32,7 +32,8 @@ pub trait IntDivFloat: Copy {
 macro_rules! intdiv {
 	($($ty:ty),+) => ($(
 		impl IntDivFloat for $ty {
-			#[allow(clippy::cast_lossless, clippy::cast_precision_loss)]
+			#[allow(clippy::cast_lossless)]       // It is what it is.
+			#[allow(clippy::cast_precision_loss)] // It is what it is.
 			#[inline]
 			/// # Integer to Float Division.
 			///
@@ -72,6 +73,7 @@ mod test {
 	use super::*;
 
 	#[test]
+	#[allow(clippy::cognitive_complexity)] // It is what it is.
 	fn t_div_float() {
 		macro_rules! t_div {
 			($($ty:ty),+) => ($(
