@@ -28,7 +28,7 @@ man-dir = "./"
 credits-dir = "./"
 
 [dev-dependencies]
-brunch = "0.5.*"
+brunch = "0.6.*"
 fastrand = "2"
 num-format = "0.4.*"
 
