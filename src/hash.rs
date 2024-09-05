@@ -120,9 +120,10 @@ pub type NoHash = BuildHasherDefault<NoHasher>;
 /// See [`NoHash`] for usage details.
 pub struct NoHasher(u64);
 
+/// # Helper: Write Method(s) for Unsigned Ints.
 macro_rules! write_unsigned {
 	($($fn:ident, $ty:ty),+ $(,)?) => ($(
-		#[allow(clippy::cast_lossless)]
+		#[allow(clippy::cast_lossless)]    // "False positive."
 		#[inline]
 		#[doc = concat!("# Write `", stringify!($ty), "`")]
 		fn $fn(&mut self, val: $ty) {
@@ -132,9 +133,11 @@ macro_rules! write_unsigned {
 	)+);
 }
 
+/// # Helper: Write Method(s) for Signed Ints.
 macro_rules! write_signed {
 	($($fn:ident, $ty1:ty, $ty2:ty),+ $(,)?) => ($(
-		#[allow(clippy::cast_lossless, clippy::cast_sign_loss)]
+		#[allow(clippy::cast_lossless)]  // False positive.
+		#[allow(clippy::cast_sign_loss)] // False positive.
 		#[inline]
 		#[doc = concat!("# Write `", stringify!($ty1), "`")]
 		fn $fn(&mut self, val: $ty1) {
@@ -192,7 +195,7 @@ mod tests {
 		// to, i.e. as the underlying type.
 		let mut set: HashSet<NonZeroU8, NoHash> = (1..=u8::MAX).filter_map(NonZeroU8::new).collect();
 		assert_eq!(set.len(), 255);
-		assert_eq!(set.insert(NonZeroU8::new(1).unwrap()), false); // Should already be there.
+		assert!(!set.insert(NonZeroU8::new(1).unwrap())); // Should already be there.
 	}
 
 	#[test]
@@ -200,18 +203,18 @@ mod tests {
 		// This just verifies that Wrapping hashes its inner value directly.
 		let mut set: HashSet<Wrapping<u8>, NoHash> = (0..=u8::MAX).map(Wrapping).collect();
 		assert_eq!(set.len(), 256);
-		assert_eq!(set.insert(Wrapping(0)), false); // Should already be there.
+		assert!(!set.insert(Wrapping(0))); // Should already be there.
 	}
 
 	#[test]
 	fn t_u8() {
 		let mut set: HashSet<u8, NoHash> = (0..=u8::MAX).collect();
 		assert_eq!(set.len(), 256);
-		assert_eq!(set.insert(0), false); // Should already be there.
+		assert!(!set.insert(0)); // Should already be there.
 
 		let mut set: HashSet<i8, NoHash> = (i8::MIN..=i8::MAX).collect();
 		assert_eq!(set.len(), 256);
-		assert_eq!(set.insert(0), false); // Should already be there.
+		assert!(!set.insert(0)); // Should already be there.
 	}
 
 	#[cfg(not(miri))]
@@ -219,11 +222,11 @@ mod tests {
 	fn t_u16() {
 		let mut set: HashSet<u16, NoHash> = (0..=u16::MAX).collect();
 		assert_eq!(set.len(), 65_536);
-		assert_eq!(set.insert(0), false); // Should already be there.
+		assert!(!set.insert(0)); // Should already be there.
 
 		let mut set: HashSet<i16, NoHash> = (i16::MIN..=i16::MAX).collect();
 		assert_eq!(set.len(), 65_536);
-		assert_eq!(set.insert(0), false); // Should already be there.
+		assert!(!set.insert(0)); // Should already be there.
 	}
 
 	macro_rules! sanity_check_signed {

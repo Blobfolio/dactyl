@@ -59,7 +59,7 @@ enum AnyNum {
 macro_rules! into_any {
 	($($from:ty),+) => ($(
 		impl From<$from> for AnyNum {
-			#[allow(unused_comparisons)]
+			#[allow(unused_comparisons)] // Needed for signed types.
 			fn from(src: $from) -> Self {
 				if src < 0 { Self::Signed(src as i128) }
 				else { Self::Unsigned(src as u128) }

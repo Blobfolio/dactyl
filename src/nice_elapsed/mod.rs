@@ -79,7 +79,10 @@ macro_rules! elapsed_from {
 /// );
 /// ```
 pub struct NiceElapsed {
+	/// # Buffer.
 	inner: [u8; SIZE],
+
+	/// # Actual Length.
 	len: usize,
 }
 
@@ -124,9 +127,7 @@ impl fmt::Display for NiceElapsed {
 impl Eq for NiceElapsed {}
 
 impl From<Duration> for NiceElapsed {
-	#[allow(clippy::cast_possible_truncation)] // It fits.
-	#[allow(clippy::cast_precision_loss)] // It fits.
-	#[allow(clippy::cast_sign_loss)] // It is positive.
+	#[allow(clippy::cast_possible_truncation)] // False positive.
 	fn from(src: Duration) -> Self {
 		let s = src.as_secs();
 		let ms =
@@ -197,7 +198,7 @@ impl NiceElapsed {
 		}
 	}
 
-	#[allow(clippy::cast_possible_truncation)] // u32::MAX/86400 fits u16.
+	#[allow(clippy::cast_possible_truncation)] // False positive.
 	#[must_use]
 	/// # Time Chunks (with Days).
 	///
@@ -225,7 +226,7 @@ impl NiceElapsed {
 		(d, h, m, s)
 	}
 
-	#[allow(clippy::cast_possible_truncation)] // Size is previously asserted.
+	#[allow(clippy::cast_possible_truncation)] // False positive.
 	#[must_use]
 	/// # Time Chunks.
 	///
@@ -283,7 +284,7 @@ impl NiceElapsed {
 	/// ```
 	pub fn as_bytes(&self) -> &[u8] { &self.inner[0..self.len] }
 
-	#[allow(unsafe_code)]
+	#[allow(unsafe_code)] // Content is ASCII.
 	#[must_use]
 	#[inline]
 	/// # As Str.
@@ -300,18 +301,16 @@ impl NiceElapsed {
 	/// );
 	/// ```
 	pub fn as_str(&self) -> &str {
-		// Safety: numbers and labels are valid ASCII.
 		debug_assert!(self.as_bytes().is_ascii(), "Bug: NiceElapsed is not ASCII.");
+		// Safety: numbers and labels are valid ASCII.
 		unsafe { std::str::from_utf8_unchecked(self.as_bytes()) }
 	}
 }
 
 impl NiceElapsed {
-	#[allow(
-		clippy::similar_names,
-		clippy::many_single_char_names,
-		clippy::cast_possible_truncation,
-	)]
+	#[allow(clippy::cast_possible_truncation)] // False positive.
+	#[allow(clippy::many_single_char_names)]   // Consistency is preferred.
+	#[allow(clippy::similar_names)]            // Consistency is preferred.
 	/// # From DHMS.ms.
 	///
 	/// Build with days, hours, minutes, seconds, and milliseconds (hundredths).
@@ -404,9 +403,16 @@ impl NiceElapsed {
 /// The labels are written with their joins in one go. These are the different
 /// options.
 enum JoinKind {
+	/// # No Join.
 	None,
+
+	/// # And Join.
 	And,
+
+	/// # Comma Join.
 	Comma,
+
+	/// # Comma/And Join.
 	CommaAnd,
 }
 
@@ -417,9 +423,16 @@ enum JoinKind {
 ///
 /// This holds the different labels/units for each time part.
 enum LabelKind {
+	/// # Days.
 	Day,
+
+	/// # Hours.
 	Hour,
+
+	/// # Minutes.
 	Minute,
+
+	/// # Seconds.
 	Second,
 }
 
@@ -548,8 +561,8 @@ mod tests {
 		_from(86400, "1 day");
 		_from(86401, "1 day and 1 second");
 		_from(86461, "1 day, 1 minute, and 1 second");
-		_from(428390, "4 days, 22 hours, 59 minutes, and 50 seconds");
-		_from(878428390, "10,166 days, 23 hours, 53 minutes, and 10 seconds");
+		_from(428_390, "4 days, 22 hours, 59 minutes, and 50 seconds");
+		_from(878_428_390, "10,166 days, 23 hours, 53 minutes, and 10 seconds");
 		_from(u32::MAX, "49,710 days, 6 hours, 28 minutes, and 15 seconds");
 	}
 
@@ -568,25 +581,25 @@ mod tests {
 		_from_d(Duration::from_millis(60340), "1 minute and 0.34 seconds");
 		_from_d(Duration::from_millis(61000), "1 minute and 1 second");
 		_from_d(Duration::from_millis(61999), "1 minute and 1.99 seconds");
-		_from_d(Duration::from_millis(2101000), "35 minutes and 1 second");
-		_from_d(Duration::from_millis(2101050), "35 minutes and 1.05 seconds");
-		_from_d(Duration::from_millis(2121000), "35 minutes and 21 seconds");
-		_from_d(Duration::from_millis(2121820), "35 minutes and 21.82 seconds");
-		_from_d(Duration::from_nanos(2121999999999), "35 minutes and 21.99 seconds");
+		_from_d(Duration::from_millis(2_101_000), "35 minutes and 1 second");
+		_from_d(Duration::from_millis(2_101_050), "35 minutes and 1.05 seconds");
+		_from_d(Duration::from_millis(2_121_000), "35 minutes and 21 seconds");
+		_from_d(Duration::from_millis(2_121_820), "35 minutes and 21.82 seconds");
+		_from_d(Duration::from_nanos(2_121_999_999_999), "35 minutes and 21.99 seconds");
 
-		_from_d(Duration::from_millis(3600000), "1 hour");
-		_from_d(Duration::from_millis(3600300), "1 hour and 0.30 seconds");
-		_from_d(Duration::from_millis(3660000), "1 hour and 1 minute");
-		_from_d(Duration::from_millis(3661000), "1 hour, 1 minute, and 1 second");
-		_from_d(Duration::from_millis(3661100), "1 hour, 1 minute, and 1.10 seconds");
-		_from_d(Duration::from_millis(37732000), "10 hours, 28 minutes, and 52 seconds");
-		_from_d(Duration::from_millis(37732030), "10 hours, 28 minutes, and 52.03 seconds");
-		_from_d(Duration::from_millis(37740000), "10 hours and 29 minutes");
-		_from_d(Duration::from_millis(37740030), "10 hours, 29 minutes, and 0.03 seconds");
+		_from_d(Duration::from_millis(3_600_000), "1 hour");
+		_from_d(Duration::from_millis(3_600_300), "1 hour and 0.30 seconds");
+		_from_d(Duration::from_millis(3_660_000), "1 hour and 1 minute");
+		_from_d(Duration::from_millis(3_661_000), "1 hour, 1 minute, and 1 second");
+		_from_d(Duration::from_millis(3_661_100), "1 hour, 1 minute, and 1.10 seconds");
+		_from_d(Duration::from_millis(37_732_000), "10 hours, 28 minutes, and 52 seconds");
+		_from_d(Duration::from_millis(37_732_030), "10 hours, 28 minutes, and 52.03 seconds");
+		_from_d(Duration::from_millis(37_740_000), "10 hours and 29 minutes");
+		_from_d(Duration::from_millis(37_740_030), "10 hours, 29 minutes, and 0.03 seconds");
 
-		_from_d(Duration::from_millis(428390000), "4 days, 22 hours, 59 minutes, and 50 seconds");
-		_from_d(Duration::from_millis(428390999), "4 days, 22 hours, 59 minutes, and 50.99 seconds");
-		_from_d(Duration::from_millis(878428390999), "10,166 days, 23 hours, 53 minutes, and 10.99 seconds");
+		_from_d(Duration::from_millis(428_390_000), "4 days, 22 hours, 59 minutes, and 50 seconds");
+		_from_d(Duration::from_millis(428_390_999), "4 days, 22 hours, 59 minutes, and 50.99 seconds");
+		_from_d(Duration::from_millis(878_428_390_999), "10,166 days, 23 hours, 53 minutes, and 10.99 seconds");
 	}
 
 	fn _from(num: u32, expected: &str) {

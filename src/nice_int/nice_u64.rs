@@ -73,8 +73,6 @@ macro_rules! inner {
 pub type NiceU64 = NiceWrapper<SIZE>;
 
 impl From<usize> for NiceU64 {
-	#[allow(clippy::cast_possible_truncation)] // It fits.
-	#[allow(clippy::only_used_in_recursion)] // Clippy is confused.
 	fn from(num: usize) -> Self { Self::from(num as u64) }
 }
 

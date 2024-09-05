@@ -163,7 +163,6 @@ impl BytesToUnsigned for u32 {
 
 impl BytesToUnsigned for u64 {
 	#[cfg(target_endian = "little")]
-	#[allow(clippy::cognitive_complexity)] // Manual indexing wins.
 	#[must_use]
 	/// # Bytes to Unsigned.
 	fn btou(src: &[u8]) -> Option<Self> {
@@ -231,8 +230,8 @@ impl BytesToUnsigned for u64 {
 
 impl BytesToUnsigned for u128 {
 	#[cfg(target_endian = "little")]
-	#[allow(clippy::cognitive_complexity)] // Manual indexing wins.
-	#[allow(clippy::too_many_lines)] // Agreed! These numbers are fucking huge!
+	#[allow(clippy::cognitive_complexity)] // Readability.
+	#[allow(clippy::too_many_lines)]       // These numbers are huge.
 	#[must_use]
 	/// # Bytes to Unsigned.
 	fn btou(src: &[u8]) -> Option<Self> {
@@ -361,7 +360,7 @@ impl BytesToUnsigned for u128 {
 }
 
 
-#[allow(clippy::cast_possible_truncation)] // We're matching with pointer widths.
+#[allow(clippy::cast_possible_truncation)] // False positive.
 impl BytesToUnsigned for usize {
 	#[cfg(target_pointer_width = "16")]
 	#[must_use]
@@ -438,7 +437,7 @@ const fn parse2(src: &[u8]) -> Option<u16> {
 }
 
 #[cfg(target_endian = "little")]
-#[allow(clippy::cast_possible_truncation)] // Four digits always fit `u16`.
+#[allow(clippy::cast_possible_truncation)] // False positive.
 /// # Parse Four.
 ///
 /// This parses four digits as a single `u32`, reducing the number of
@@ -471,7 +470,7 @@ const fn parse4(src: &[u8]) -> Option<u16> {
 }
 
 #[cfg(target_endian = "little")]
-#[allow(clippy::cast_possible_truncation)] // Eight digits always fit `u32`.
+#[allow(clippy::cast_possible_truncation)] // False positive.
 /// # Parse Eight.
 ///
 /// This parses eight digits as a single `u64`, reducing the number of
@@ -506,7 +505,7 @@ const fn parse8(src: &[u8]) -> Option<u32> {
 }
 
 #[cfg(target_endian = "little")]
-#[allow(clippy::cast_possible_truncation)] // Sixteen digits always fit `u16`.
+#[allow(clippy::cast_possible_truncation)] // False positive.
 /// # Parse Sixteen.
 ///
 /// This parses sixteen digits as a single `u128`, reducing the number of

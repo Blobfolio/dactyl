@@ -61,7 +61,6 @@ const ZERO: [u8; SIZE] = [b'0', b'0', b'0'];
 pub type NiceU8 = NiceWrapper<SIZE>;
 
 impl From<u8> for NiceU8 {
-	#[allow(clippy::cast_lossless)] // Seems less performant.
 	fn from(num: u8) -> Self {
 		if 99 < num {
 			Self {
@@ -123,7 +122,7 @@ impl NiceU8 {
 	/// ```
 	pub const fn as_bytes3(&self) -> &[u8] { &self.inner }
 
-	#[allow(unsafe_code)]
+	#[allow(unsafe_code)] // Content is ASCII.
 	#[must_use]
 	#[inline]
 	/// # Double Digit Str.
@@ -140,17 +139,17 @@ impl NiceU8 {
 	/// assert_eq!(dactyl::NiceU8::from(113).as_str2(), "113");
 	/// ```
 	pub const fn as_str2(&self) -> &str {
-		// Safety: numbers are valid ASCII.
 		debug_assert!(
 			(self.from != 0 || self.inner[0].is_ascii_digit()) &&
 			self.inner[1].is_ascii_digit() &&
 			self.inner[2].is_ascii_digit(),
 			"Bug: NiceU8 is not ASCII."
 		);
+		// Safety: numbers are valid ASCII.
 		unsafe { std::str::from_utf8_unchecked(self.as_bytes2()) }
 	}
 
-	#[allow(unsafe_code)]
+	#[allow(unsafe_code)] // Content is ASCII.
 	#[must_use]
 	#[inline]
 	/// # Triple Digit Str.
@@ -167,13 +166,13 @@ impl NiceU8 {
 	/// assert_eq!(dactyl::NiceU8::from(113).as_str3(), "113");
 	/// ```
 	pub const fn as_str3(&self) -> &str {
-		// Safety: numbers are valid ASCII.
 		debug_assert!(
 			self.inner[0].is_ascii_digit() &&
 			self.inner[1].is_ascii_digit() &&
 			self.inner[2].is_ascii_digit(),
 			"Bug: NiceU8 is not ASCII."
 		);
+		// Safety: numbers are valid ASCII.
 		unsafe { std::str::from_utf8_unchecked(self.as_bytes3()) }
 	}
 }
@@ -192,7 +191,7 @@ mod tests {
 		for i in 0..=u8::MAX {
 			assert_eq!(
 				NiceU8::from(i).as_str(),
-				format!("{}", i),
+				format!("{i}"),
 			);
 		}
 
@@ -233,7 +232,7 @@ mod tests {
 		for i in 0..=u8::MAX {
 			assert_eq!(
 				NiceU8::from(i).as_str2(),
-				format!("{:02}", i),
+				format!("{i:02}"),
 			);
 		}
 
@@ -247,7 +246,7 @@ mod tests {
 		for i in 0..=u8::MAX {
 			assert_eq!(
 				NiceU8::from(i).as_str3(),
-				format!("{:03}", i),
+				format!("{i:03}"),
 			);
 		}
 

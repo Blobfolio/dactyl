@@ -24,12 +24,10 @@ assert_eq!(u8::saturating_from(99_u64), 99_u8);
 ```
 */
 
-#![allow(
-	clippy::cast_lossless,
-	clippy::cast_possible_truncation,
-	clippy::cast_possible_wrap,
-	clippy::cast_sign_loss,
-)]
+#![allow(clippy::cast_lossless)]            // We're doing a lot of this here.
+#![allow(clippy::cast_possible_truncation)] // We're doing a lot of this here.
+#![allow(clippy::cast_possible_wrap)]       // We're doing a lot of this here.
+#![allow(clippy::cast_sign_loss)]           // We're doing a lot of this here.
 
 
 
@@ -48,7 +46,9 @@ pub trait SaturatingFrom<T> {
 // All the integer conversions are built at compile-time.
 include!(concat!(env!("OUT_DIR"), "/dactyl-saturation.rs"));
 
-// Floats are mercifully saturating on their own.
+/// # Helper: Generate Float Impls.
+///
+/// Floats are mercifully saturating on their own.
 macro_rules! float {
 	($from:ty, $($to:ty),+) => ($(
 		impl SaturatingFrom<$from> for $to {
@@ -67,6 +67,8 @@ float!(f64, u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
 
 
 #[cfg(test)]
+#[allow(clippy::cognitive_complexity)] // It is what it is.
+#[allow(trivial_numeric_casts)]        // It is what it is.
 /// # Saturation Tests.
 ///
 /// There isn't a particularly good way to do this other than to walk through
@@ -81,10 +83,6 @@ float!(f64, u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
 /// been run since Rust doesn't support any architectures at either width
 /// yet. TBD.
 mod tests {
-	// Testing everything the same way is easier (and safer) than testing
-	// certain conversions one way and others another.
-	#![allow(trivial_numeric_casts)]
-
 	use super::*;
 
 	#[cfg(not(miri))]
@@ -93,7 +91,7 @@ mod tests {
 	#[cfg(miri)]
 	const SAMPLE_SIZE: usize = 500; // Miri runs way too slow for half a million tests.
 
-	/// # Helper: Assert SaturatingFrom is Lossless.
+	/// # Helper: Assert `SaturatingFrom` is Lossless.
 	macro_rules! cast_assert_same {
 		($to:ty, $raw:ident, $($from:ty),+) => ($(
 			assert_eq!(
@@ -106,7 +104,7 @@ mod tests {
 		)+);
 	}
 
-	/// # Helper: Assert SaturatingFrom Clamps to Self::MAX.
+	/// # Helper: Assert `SaturatingFrom` Clamps to `Self::MAX`.
 	macro_rules! cast_assert_max {
 		($to:ty, $raw:ident, $($from:ty),+) => ($(
 			assert_eq!(
@@ -119,7 +117,7 @@ mod tests {
 		)+);
 	}
 
-	/// # Helper: Assert SaturatingFrom Clamps to Self::MIN.
+	/// # Helper: Assert `SaturatingFrom` Clamps to `Self::MIN`.
 	macro_rules! cast_assert_min {
 		($to:ty, $raw:ident, $($from:ty),+) => ($(
 			assert_eq!(

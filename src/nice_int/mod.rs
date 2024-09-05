@@ -134,15 +134,15 @@ impl<const S: usize> NiceWrapper<S> {
 	/// Return the value as a byte string.
 	pub fn as_bytes(&self) -> &[u8] { &self.inner[self.from..] }
 
-	#[allow(unsafe_code)]
+	#[allow(unsafe_code)] // Content is ASCII.
 	#[must_use]
 	#[inline]
 	/// # As Str.
 	///
 	/// Return the value as a string slice.
 	pub fn as_str(&self) -> &str {
-		// Safety: numbers are valid ASCII.
 		debug_assert!(std::str::from_utf8(self.as_bytes()).is_ok(), "NiceWrapper is not UTF.");
+		// Safety: numbers are valid ASCII.
 		unsafe { std::str::from_utf8_unchecked(self.as_bytes()) }
 	}
 }
@@ -195,7 +195,7 @@ macro_rules! nice_parse {
 		}
 
 		impl $nice {
-			#[allow(clippy::cast_possible_truncation)]
+			#[allow(clippy::cast_possible_truncation)] // False positive.
 			/// # Parse.
 			fn parse(&mut self, mut num: $uint) {
 				for chunk in self.inner.rchunks_exact_mut(4) {
