@@ -133,6 +133,7 @@ mod tests {
 		// Test the defaults too.
 		assert_eq!(NiceU32::empty().as_bytes(), <&[u8]>::default());
 		assert_eq!(NiceU32::empty().as_str(), "");
+		assert!(NiceU32::empty().is_empty());
 
 		// Check ordering too.
 		let one = NiceU32::from(10_u32);
@@ -144,10 +145,14 @@ mod tests {
 		// Check a subset of everything else.
 		let mut rng = fastrand::Rng::new();
 		for i in std::iter::repeat_with(|| rng.u32(..)).take(SAMPLE_SIZE) {
+			let nice = NiceU32::from(i);
 			assert_eq!(
-				NiceU32::from(i).as_str(),
+				nice.as_str(),
 				i.to_formatted_string(&Locale::en),
 			);
+			assert_eq!(nice.len(), nice.as_str().len());
+			assert_eq!(nice.len(), nice.as_bytes().len());
+			assert!(! nice.is_empty());
 		}
 	}
 

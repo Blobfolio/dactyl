@@ -763,6 +763,16 @@ mod tests {
 	use super::*;
 
 	#[test]
+	fn t_len() {
+		for i in [0_f64, 1.1, 1.55, 123.456, -11_323.03] {
+			let nice = NiceFloat::from(i);
+			assert_eq!(nice.len(), nice.as_str().len());
+			assert_eq!(nice.len(), nice.as_bytes().len());
+			assert!(! nice.is_empty());
+		}
+	}
+
+	#[test]
 	fn t_nice_float() {
 		// Some basic numbers.
 		assert_eq!(NiceFloat::from(0_f64).as_str(), "0.00000000");

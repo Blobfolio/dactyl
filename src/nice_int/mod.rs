@@ -145,6 +145,14 @@ impl<const S: usize> NiceWrapper<S> {
 		// Safety: numbers are valid ASCII.
 		unsafe { std::str::from_utf8_unchecked(self.as_bytes()) }
 	}
+
+	#[must_use]
+	/// # Is Empty?
+	pub const fn is_empty(&self) -> bool { S <= self.from }
+
+	#[must_use]
+	/// # Length.
+	pub const fn len(&self) -> usize { S.wrapping_sub(self.from) }
 }
 
 

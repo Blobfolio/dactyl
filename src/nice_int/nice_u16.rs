@@ -149,26 +149,35 @@ mod tests {
 
 		#[cfg(not(miri))]
 		for i in 0..=u16::MAX {
+			let nice = NiceU16::from(i);
 			assert_eq!(
-				NiceU16::from(i).as_str(),
+				nice.as_str(),
 				i.to_formatted_string(&Locale::en),
 			);
+			assert_eq!(nice.len(), nice.as_str().len());
+			assert_eq!(nice.len(), nice.as_bytes().len());
+			assert!(! nice.is_empty());
 		}
 
 		#[cfg(miri)]
 		{
 			let mut rng = fastrand::Rng::new();
 			for i in std::iter::repeat_with(|| rng.u16(..)).take(1000) {
+				let nice = NiceU16::from(i);
 				assert_eq!(
-					NiceU16::from(i).as_str(),
+					nice.as_str(),
 					i.to_formatted_string(&Locale::en),
 				);
+				assert_eq!(nice.len(), nice.as_str().len());
+				assert_eq!(nice.len(), nice.as_bytes().len());
+				assert!(! nice.is_empty());
 			}
 		}
 
 		// Test the defaults too.
 		assert_eq!(NiceU16::empty().as_bytes(), <&[u8]>::default());
 		assert_eq!(NiceU16::empty().as_str(), "");
+		assert!(NiceU16::empty().is_empty());
 
 		// Test some Option variants.
 		let foo: Option<u16> = None;

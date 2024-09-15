@@ -173,18 +173,26 @@ mod tests {
 		macro_rules! t_str {
 			($var:ident) => (
 				let fraction = $var as f32 / TOTAL as f32;
+				let nice = NicePercent::from(fraction);
 				assert_eq!(
-					NicePercent::from(fraction).as_str(),
+					nice.as_str(),
 					format!("{:0.02}%", fraction * 100_f32),
 					"{}/{} (f32)", $var, TOTAL
 				);
+				assert_eq!(nice.len(), nice.as_str().len());
+				assert_eq!(nice.len(), nice.as_bytes().len());
+				assert!(! nice.is_empty());
 
 				let fraction = $var as f64 / TOTAL as f64;
+				let nice = NicePercent::from(fraction);
 				assert_eq!(
-					NicePercent::from(fraction).as_str(),
+					nice.as_str(),
 					format!("{:0.02}%", fraction * 100_f64),
 					"{}/{} (f64)", $var, TOTAL
 				);
+				assert_eq!(nice.len(), nice.as_str().len());
+				assert_eq!(nice.len(), nice.as_bytes().len());
+				assert!(! nice.is_empty());
 			);
 		}
 
