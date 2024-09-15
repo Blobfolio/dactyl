@@ -189,15 +189,20 @@ mod tests {
 
 		// Strings come from bytes, so this implicitly tests both.
 		for i in 0..=u8::MAX {
+			let nice = NiceU8::from(i);
 			assert_eq!(
-				NiceU8::from(i).as_str(),
+				nice.as_str(),
 				format!("{i}"),
 			);
+			assert_eq!(nice.len(), nice.as_str().len());
+			assert_eq!(nice.len(), nice.as_bytes().len());
+			assert!(! nice.is_empty());
 		}
 
 		// Test the defaults too.
 		assert_eq!(NiceU8::empty().as_bytes(), <&[u8]>::default());
 		assert_eq!(NiceU8::empty().as_str(), "");
+		assert!(NiceU8::empty().is_empty());
 
 		// Test some Option variants.
 		let foo: Option<u8> = None;
