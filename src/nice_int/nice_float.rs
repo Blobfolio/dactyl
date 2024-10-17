@@ -32,7 +32,9 @@ macro_rules! inner {
 
 /// `NiceFloat` provides a quick way to convert an `f32` or `f64` (up to
 /// the absolute equivalent of `u64::MAX`) into a formatted byte string for
-/// e.g. printing. Commas are added for every (integer) thousand; decimals are
+/// e.g. printing.
+///
+/// Commas are added for every (integer) thousand; decimals are
 /// rounded up to the nearest eight digits using a tie-to-even strategy.
 ///
 /// Absolute values larger than `u64::MAX` will print as either
