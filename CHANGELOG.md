@@ -2,6 +2,15 @@
 
 
 
+## [0.8.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.8.0) - TBD
+
+### Changed
+
+* `NiceInflection::nice_inflect` now requires `&str` singular/plural arguments instead of `AsRef<str>`;
+* `NiceInflection::nice_inflect` now returns a `Display`-implementing wrapper instead of a `String` to avoid intermediary allocations;
+
+
+
 ## [0.7.4](https://github.com/Blobfolio/dactyl/releases/tag/v0.7.4) - 2024-09-15
 
 ### New
