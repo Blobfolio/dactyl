@@ -127,7 +127,7 @@ impl fmt::Display for NiceElapsed {
 impl Eq for NiceElapsed {}
 
 impl From<Duration> for NiceElapsed {
-	#[allow(clippy::cast_possible_truncation)] // False positive.
+	#[expect(clippy::cast_possible_truncation, reason = "False positive.")]
 	fn from(src: Duration) -> Self {
 		let s = src.as_secs();
 		let ms =
@@ -198,7 +198,7 @@ impl NiceElapsed {
 		}
 	}
 
-	#[allow(clippy::cast_possible_truncation)] // False positive.
+	#[expect(clippy::cast_possible_truncation, reason = "False positive.")]
 	#[must_use]
 	/// # Time Chunks (with Days).
 	///
@@ -226,7 +226,7 @@ impl NiceElapsed {
 		(d, h, m, s)
 	}
 
-	#[allow(clippy::cast_possible_truncation)] // False positive.
+	#[expect(clippy::cast_possible_truncation, reason = "False positive.")]
 	#[must_use]
 	/// # Time Chunks.
 	///
@@ -284,7 +284,7 @@ impl NiceElapsed {
 	/// ```
 	pub fn as_bytes(&self) -> &[u8] { &self.inner[0..self.len] }
 
-	#[allow(unsafe_code)] // Content is ASCII.
+	#[expect(unsafe_code, reason = "Content is ASCII.")]
 	#[must_use]
 	#[inline]
 	/// # As Str.
@@ -308,9 +308,12 @@ impl NiceElapsed {
 }
 
 impl NiceElapsed {
-	#[allow(clippy::cast_possible_truncation)] // False positive.
-	#[allow(clippy::many_single_char_names)]   // Consistency is preferred.
-	#[allow(clippy::similar_names)]            // Consistency is preferred.
+	#[expect(clippy::cast_possible_truncation, reason = "False positive.")]
+	#[expect(
+		clippy::many_single_char_names,
+		clippy::similar_names,
+		reason = "Consistency is preferred.",
+	)]
 	/// # From DHMS.ms.
 	///
 	/// Build with days, hours, minutes, seconds, and milliseconds (hundredths).

@@ -24,10 +24,13 @@ assert_eq!(u8::saturating_from(99_u64), 99_u8);
 ```
 */
 
-#![allow(clippy::cast_lossless)]            // We're doing a lot of this here.
-#![allow(clippy::cast_possible_truncation)] // We're doing a lot of this here.
-#![allow(clippy::cast_possible_wrap)]       // We're doing a lot of this here.
-#![allow(clippy::cast_sign_loss)]           // We're doing a lot of this here.
+#![expect(
+	clippy::cast_lossless,
+	clippy::cast_possible_truncation,
+	clippy::cast_possible_wrap,
+	clippy::cast_sign_loss,
+	reason = "We're doing a lot of this here.",
+)]
 
 
 
@@ -67,8 +70,11 @@ float!(f64, u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
 
 
 #[cfg(test)]
-#[allow(clippy::cognitive_complexity)] // It is what it is.
-#[allow(trivial_numeric_casts)]        // It is what it is.
+#[expect(
+	clippy::cognitive_complexity,
+	trivial_numeric_casts,
+	reason = "It is what it is.",
+)]
 /// # Saturation Tests.
 ///
 /// There isn't a particularly good way to do this other than to walk through

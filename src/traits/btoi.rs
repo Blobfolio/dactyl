@@ -2,6 +2,8 @@
 # Dactyl — Bytes to Signed.
 */
 
+#![expect(clippy::cast_possible_truncation, reason = "False positive.")]
+
 use crate::traits::BytesToUnsigned;
 use std::{
 	cmp::Ordering,
@@ -44,8 +46,7 @@ pub trait BytesToSigned: Sized {
 macro_rules! signed {
 	($ty:ty, $unsigned:ty, $min:literal, $max:literal) => (
 		impl BytesToSigned for $ty {
-			#[allow(clippy::cast_possible_truncation)] // False positive.
-			#[allow(clippy::cast_possible_wrap)]       // False positive.
+			#[expect(clippy::cast_possible_wrap, reason = "False positive.")]
 			/// # Bytes to Signed.
 			fn btoi(src: &[u8]) -> Option<Self> {
 				match src.len() {

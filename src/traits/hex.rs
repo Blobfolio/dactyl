@@ -117,7 +117,7 @@ impl HexToUnsigned for usize {
 }
 
 #[cfg(target_pointer_width = "32")]
-#[allow(clippy::cast_possible_truncation)] // False positive.
+#[expect(clippy::cast_possible_truncation, reason = "False positive.")]
 impl HexToUnsigned for usize {
 	#[inline]
 	/// # Hex (Bytes) to Unsigned.
@@ -125,7 +125,7 @@ impl HexToUnsigned for usize {
 }
 
 #[cfg(target_pointer_width = "64")]
-#[allow(clippy::cast_possible_truncation)] // False positive.
+#[expect(clippy::cast_possible_truncation, reason = "False positive.")]
 impl HexToUnsigned for usize {
 	#[inline]
 	/// # Hex (Bytes) to Unsigned.
@@ -238,7 +238,7 @@ macro_rules! signed {
 	($signed:ty, $unsigned:ty) => (
 		impl HexToSigned for $signed {
 			#[inline]
-			#[allow(clippy::cast_possible_wrap)] // False positive.
+			#[expect(clippy::cast_possible_wrap, reason = "False positive.")]
 			/// # Hex (Bytes) to Signed.
 			fn htoi(src: &[u8]) -> Option<Self> {
 				<$unsigned>::htou(src).map(|n| n as Self)

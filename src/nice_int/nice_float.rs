@@ -328,7 +328,7 @@ impl NiceFloat {
 		out
 	}
 
-	#[allow(unsafe_code)] // Content is ASCII.
+	#[expect(unsafe_code, reason = "Content is ASCII.")]
 	#[inline]
 	#[must_use]
 	/// # Compact String.
@@ -398,7 +398,7 @@ impl NiceFloat {
 		else { self.as_bytes() }
 	}
 
-	#[allow(unsafe_code)] // Content is ASCII.
+	#[expect(unsafe_code, reason = "Content is ASCII.")]
 	#[inline]
 	#[must_use]
 	/// # Precise String.
@@ -453,7 +453,7 @@ impl NiceFloat {
 		)
 	}
 
-	#[allow(clippy::cast_possible_truncation)] // False positive.
+	#[expect(clippy::cast_possible_truncation, reason = "False positive.")]
 	/// # Parse Top.
 	///
 	/// Write the integer portion of the value. This works the same way as
@@ -500,7 +500,7 @@ impl NiceFloat {
 		}
 	}
 
-	#[allow(clippy::integer_division)] // We want this.
+	#[expect(clippy::integer_division, reason = "We want this.")]
 	/// # Parse Bottom.
 	///
 	/// This writes the fractional part of the float, if any.
@@ -625,7 +625,7 @@ impl From<f64> for FloatKind {
 
 
 
-#[allow(clippy::integer_division)] // We want this.
+#[expect(clippy::integer_division, reason = "We want this.")]
 /// # Parse Finite `f32`
 ///
 /// This parses a float (that is not NaN or infinite) into the appropriate
@@ -674,7 +674,7 @@ fn parse_finite_f32(num: f32) -> FloatKind {
 	else { FloatKind::Normal(top, bottom, num.is_sign_negative()) }
 }
 
-#[allow(clippy::integer_division)] // We want this.
+#[expect(clippy::integer_division, reason = "We want this.")]
 /// # Parse Finite `f64`
 ///
 /// This parses a float (that is not NaN or infinite) into the appropriate
@@ -729,7 +729,7 @@ fn parse_finite_f64(num: f64) -> FloatKind {
 
 
 
-#[allow(clippy::cast_possible_truncation)] // False positive.
+#[expect(clippy::cast_possible_truncation, reason = "False positive.")]
 /// # Round, Tie to Even.
 ///
 /// Fractions are rounded on the ninth decimal place (to eight places).
