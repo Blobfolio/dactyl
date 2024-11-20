@@ -63,17 +63,22 @@ pub trait NiceInflection<const S: usize>: Inflection {
 	/// ```
 	/// use dactyl::traits::NiceInflection;
 	///
-	/// assert_eq!(
-	///     3283.nice_inflect("book", "books").to_string(),
-	///     "3,283 books",
-	/// );
-	///
-	/// // The return type implements fmt::Display, so you can do things
-	/// // like this too:
+	/// // The return type implements fmt::Display, so you can chuck it
+	/// // straight into a formatter pattern like this:
 	/// assert_eq!(
 	///     format!("I have {}!", 3283.nice_inflect("book", "books")),
 	///     "I have 3,283 books!",
 	/// );
+	///
+	/// // Alternatively, you can save it to a variable to access the
+	/// // inner parts.
+	/// let nice = 3283.nice_inflect("book", "books");
+	/// assert!(! nice.is_negative()); // Would be true for e.g. -5.
+	/// assert_eq!(
+	///     nice.nice().as_str(), // Note: always positive.
+	///     "3,283",
+	/// );
+	/// assert_eq!(nice.unit(), "books");
 	/// ```
 	fn nice_inflect<'a>(self, singular: &'a str, plural: &'a str) -> NiceInflected<'a, S>;
 }
@@ -112,7 +117,7 @@ pub struct NiceInflected<'a, const S: usize> {
 	unit: &'a str,
 }
 
-impl<'a, const S: usize> fmt::Display for NiceInflected<'a, S> {
+impl<const S: usize> fmt::Display for NiceInflected<'_, S> {
 	#[inline]
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		// Add a minus sign to the start if negative.
@@ -127,6 +132,58 @@ impl<'a, const S: usize> fmt::Display for NiceInflected<'a, S> {
 		// And print the text value.
 		f.write_str(self.unit)
 	}
+}
+
+impl<const S: usize> NiceInflected<'_, S> {
+	/// Is Negative?
+	///
+	/// Returns `true` if the original number was negative.
+	///
+	/// ## Examples
+	///
+	/// ```
+	/// use dactyl::traits::NiceInflection;
+	///
+	/// let dogs = 8_i32;
+	/// let nice_dogs = dogs.nice_inflect("dog", "dogs");
+	/// assert!(! nice_dogs.is_negative());
+	///
+	/// let cats = -13_i32;
+	/// let nice_cats = cats.nice_inflect("cat", "cats");
+	/// assert!(nice_cats.is_negative());
+	/// ```
+	pub const fn is_negative(&self) -> bool { self.neg }
+
+	/// Nice Number.
+	///
+	/// Returns the nicely-formatted number.
+	///
+	/// Note: the nice value does not include the signing bit; if the raw value
+	/// was negative, you'll need to prepend an "-" before printing, etc.
+	///
+	/// ## Examples
+	///
+	/// ```
+	/// use dactyl::traits::NiceInflection;
+	///
+	/// let nice = 3000_u16.nice_inflect("dog", "dogs");
+	/// assert_eq!(nice.nice().as_str(), "3,000");
+	/// ```
+	pub const fn nice(&self) -> NiceWrapper<S> { self.nice }
+
+	/// Inflected Unit.
+	///
+	/// Returns the inflected unit.
+	///
+	/// ## Examples
+	///
+	/// ```
+	/// use dactyl::traits::NiceInflection;
+	///
+	/// let nice = 13_i32.nice_inflect("apple", "apples");
+	/// assert_eq!(nice.unit(), "apples");
+	/// ```
+	pub const fn unit(&self) -> &str { self.unit }
 }
 
 
