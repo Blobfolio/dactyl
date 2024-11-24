@@ -135,6 +135,29 @@ impl<const S: usize> fmt::Display for NiceInflected<'_, S> {
 }
 
 impl<const S: usize> NiceInflected<'_, S> {
+	/// # Length.
+	///
+	/// Return the length of the string.
+	///
+	/// ## Examples
+	///
+	/// ```
+	/// use dactyl::traits::NiceInflection;
+	///
+	/// let dogs = 8_i32;
+	/// let nice_dogs = dogs.nice_inflect("dog", "dogs");
+	/// assert_eq!(nice_dogs.len(), 6); // "8 dogs"
+	///
+	/// let cats = -13_i32;
+	/// let nice_cats = cats.nice_inflect("cat", "cats");
+	/// assert_eq!(nice_cats.len(), 8); // "-13 cats"
+	/// ```
+	pub const fn len(&self) -> usize {
+		self.neg as usize + self.nice.len() + 1 + self.unit.len()
+	}
+}
+
+impl<const S: usize> NiceInflected<'_, S> {
 	/// Is Negative?
 	///
 	/// Returns `true` if the original number was negative.
