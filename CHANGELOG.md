@@ -2,13 +2,13 @@
 
 
 
-## [0.8.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.8.0) - TBD
+## [0.8.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.8.0) - 2024-11-28
 
 ### Changed
 
 * Bump MSRV to `1.81`
-* `NiceInflection::nice_inflect` now requires `&str` singular/plural arguments instead of `AsRef<str>`;
-* `NiceInflection::nice_inflect` now returns a `Display`-implementing wrapper instead of a `String` to avoid intermediary allocations;
+* `NiceInflection::nice_inflect` now requires `&str` arguments instead of `AsRef<str>`;
+* `NiceInflection::nice_inflect` now returns a `Display`-friendly wrapper instead of a `String` to avoid intermediary allocations;
 
 
 
