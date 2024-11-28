@@ -122,7 +122,7 @@ impl NiceU8 {
 	/// ```
 	pub const fn as_bytes3(&self) -> &[u8] { &self.inner }
 
-	#[allow(unsafe_code)] // Content is ASCII.
+	#[expect(unsafe_code, reason = "Content is ASCII.")]
 	#[must_use]
 	#[inline]
 	/// # Double Digit Str.
@@ -149,7 +149,7 @@ impl NiceU8 {
 		unsafe { std::str::from_utf8_unchecked(self.as_bytes2()) }
 	}
 
-	#[allow(unsafe_code)] // Content is ASCII.
+	#[expect(unsafe_code, reason = "Content is ASCII.")]
 	#[must_use]
 	#[inline]
 	/// # Triple Digit Str.

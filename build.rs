@@ -179,6 +179,8 @@ macro_rules! wrt_self {
 
 
 fn main() {
+	println!("cargo:rerun-if-env-changed=CARGO_PKG_VERSION");
+
 	// Make sure our formatting looks right.
 	assert_eq!(AnyNum::from(12345_u32).to_string(),   "12_345", "Bug: Number formatting is wrong!");
 	assert_eq!(AnyNum::from(-12345_i32).to_string(), "-12_345", "Bug: Number formatting is wrong!");

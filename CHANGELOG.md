@@ -2,6 +2,16 @@
 
 
 
+## [0.8.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.8.0) - 2024-11-28
+
+### Changed
+
+* Bump MSRV to `1.81`
+* `NiceInflection::nice_inflect` now requires `&str` arguments instead of `AsRef<str>`;
+* `NiceInflection::nice_inflect` now returns a `Display`-friendly wrapper instead of a `String` to avoid intermediary allocations;
+
+
+
 ## [0.7.4](https://github.com/Blobfolio/dactyl/releases/tag/v0.7.4) - 2024-09-15
 
 ### New

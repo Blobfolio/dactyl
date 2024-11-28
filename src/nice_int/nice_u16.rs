@@ -64,9 +64,9 @@ super::nice_default!(NiceU16, ZERO, SIZE);
 super::nice_from_nz!(NiceU16, NonZeroU16);
 
 impl From<u16> for NiceU16 {
-	#[allow(clippy::cast_possible_truncation)] // False positive.
-	#[allow(clippy::integer_division)] // We want this.
-	#[allow(clippy::many_single_char_names)] // Consistency is preferred.
+	#[expect(clippy::cast_possible_truncation, reason = "False positive.")]
+	#[expect(clippy::integer_division, reason = "We want this.")]
+	#[expect(clippy::many_single_char_names, reason = "Consistency is preferred.")]
 	fn from(num: u16) -> Self {
 		if 999 < num {
 			let (num, rem) = (num / 1000, num % 1000);

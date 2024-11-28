@@ -45,7 +45,7 @@ But the niceness doesn't stop there. Dactyl provides several other structs, meth
 */
 
 #![deny(
-	// TODO: clippy::allow_attributes_without_reason,
+	clippy::allow_attributes_without_reason,
 	clippy::correctness,
 	unreachable_pub,
 	unsafe_code,
@@ -58,7 +58,7 @@ But the niceness doesn't stop there. Dactyl provides several other structs, meth
 	clippy::perf,
 	clippy::style,
 
-	// TODO: clippy::allow_attributes,
+	clippy::allow_attributes,
 	clippy::clone_on_ref_ptr,
 	clippy::create_dir,
 	clippy::filetype_is_file,
@@ -92,8 +92,8 @@ But the niceness doesn't stop there. Dactyl provides several other structs, meth
 	unused_import_braces,
 )]
 
-#![allow(clippy::module_name_repetitions)] // Repetition is preferred.
-#![allow(clippy::redundant_pub_crate)]     // Unresolvable.
+#![expect(clippy::module_name_repetitions, reason = "Repetition is preferred.")]
+#![expect(clippy::redundant_pub_crate, reason = "Unresolvable.")]
 
 
 
@@ -147,8 +147,8 @@ const DOUBLE: [[u8; 2]; 100] = [
 pub(crate) const fn double(idx: usize) -> [u8; 2] { DOUBLE[idx] }
 
 #[inline]
-#[allow(clippy::cast_possible_truncation)] // False positive.
-#[allow(clippy::integer_division)]         // We want this.
+#[expect(clippy::cast_possible_truncation, reason = "False positive.")]
+#[expect(clippy::integer_division, reason = "We want this.")]
 /// # Triple Digits.
 ///
 /// Return both digits, ASCII-fied.

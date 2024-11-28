@@ -1,9 +1,9 @@
 [package]
 name = "dactyl"
-version = "0.7.4"
-authors = ["Blobfolio, LLC. <hello@blobfolio.com>"]
+version = "0.8.0"
+authors = ["Josh Stoik <josh@blobfolio.com>"]
 edition = "2021"
-rust-version = "1.70"
+rust-version = "1.81"
 description = "A small library to quickly stringify integers with basic formatting."
 license = "WTFPL"
 repository = "https://github.com/Blobfolio/dactyl"
@@ -23,9 +23,6 @@ default-target = "x86_64-unknown-linux-gnu"
 
 [package.metadata.bashman]
 name = "Dactyl"
-bash-dir = "./"
-man-dir = "./"
-credits-dir = "./"
 
 [dev-dependencies]
 brunch = "0.6.*"

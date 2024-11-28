@@ -134,7 +134,7 @@ impl<const S: usize> NiceWrapper<S> {
 	/// Return the value as a byte string.
 	pub fn as_bytes(&self) -> &[u8] { &self.inner[self.from..] }
 
-	#[allow(unsafe_code)] // Content is ASCII.
+	#[expect(unsafe_code, reason = "Content is ASCII.")]
 	#[must_use]
 	#[inline]
 	/// # As Str.
@@ -203,7 +203,7 @@ macro_rules! nice_parse {
 		}
 
 		impl $nice {
-			#[allow(clippy::cast_possible_truncation)] // False positive.
+			#[expect(clippy::cast_possible_truncation, reason = "False positive.")]
 			/// # Parse.
 			fn parse(&mut self, mut num: $uint) {
 				for chunk in self.inner.rchunks_exact_mut(4) {

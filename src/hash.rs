@@ -2,6 +2,8 @@
 # Dactyl: Hashing
 */
 
+#![expect(clippy::cast_lossless, reason = "False positive.")]
+
 use std::hash::{
 	BuildHasherDefault,
 	Hasher,
@@ -123,7 +125,6 @@ pub struct NoHasher(u64);
 /// # Helper: Write Method(s) for Unsigned Ints.
 macro_rules! write_unsigned {
 	($($fn:ident, $ty:ty),+ $(,)?) => ($(
-		#[allow(clippy::cast_lossless)]    // "False positive."
 		#[inline]
 		#[doc = concat!("# Write `", stringify!($ty), "`")]
 		fn $fn(&mut self, val: $ty) {
@@ -136,8 +137,7 @@ macro_rules! write_unsigned {
 /// # Helper: Write Method(s) for Signed Ints.
 macro_rules! write_signed {
 	($($fn:ident, $ty1:ty, $ty2:ty),+ $(,)?) => ($(
-		#[allow(clippy::cast_lossless)]  // False positive.
-		#[allow(clippy::cast_sign_loss)] // False positive.
+		#[expect(clippy::cast_sign_loss, reason = "False positive.")]
 		#[inline]
 		#[doc = concat!("# Write `", stringify!($ty1), "`")]
 		fn $fn(&mut self, val: $ty1) {
