@@ -128,6 +128,37 @@ impl NiceU8 {
 }
 
 impl NiceU8 {
+	/// # Replace.
+	///
+	/// Reuse the backing storage behind `self` to hold a new nice number.
+	///
+	/// ## Examples.
+	///
+	/// ```
+	/// use dactyl::NiceU8;
+	///
+	/// let mut num = NiceU8::from(123_u8);
+	/// assert_eq!(num.as_str(), "123");
+	///
+	/// num.replace(1);
+	/// assert_eq!(num.as_str(), "1");
+	/// ```
+	pub fn replace(&mut self, num: u8) {
+		if 99 < num {
+			self.inner = crate::triple(num as usize);
+			self.from = 0;
+		}
+		else {
+			let [b, c] = crate::double(num as usize);
+			self.inner[0] = b'0';
+			self.inner[1] = b;
+			self.inner[2] = c;
+			self.from = if b == b'0' { 2 } else { 1 };
+		}
+	}
+}
+
+impl NiceU8 {
 	#[must_use]
 	#[inline]
 	/// # Double Digit Bytes.
@@ -234,6 +265,7 @@ mod tests {
 		assert_eq!(NiceU8::default(), NiceU8::from(0_u8));
 
 		// Strings come from bytes, so this implicitly tests both.
+		let mut last = NiceU8::empty();
 		for i in 0..=u8::MAX {
 			let nice = NiceU8::from(i);
 			assert_eq!(
@@ -243,7 +275,16 @@ mod tests {
 			assert_eq!(nice.len(), nice.as_str().len());
 			assert_eq!(nice.len(), nice.as_bytes().len());
 			assert!(! nice.is_empty());
+
+			// Replacement should yield the same thing.
+			assert_ne!(nice, last);
+			last.replace(i);
+			assert_eq!(nice, last);
 		}
+
+		// Make sure back to zero works.
+		last.replace(0);
+		assert_eq!(last.as_str(), "0");
 
 		// Test the defaults too.
 		assert_eq!(NiceU8::empty().as_bytes(), <&[u8]>::default());

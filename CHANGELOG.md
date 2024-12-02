@@ -11,6 +11,10 @@
 * `NiceU32::MIN` / `NiceU32::MAX`
 * `NiceU64::MIN` / `NiceU64::MAX`
 * `NicePercent::MIN` / `NicePercent::MAX`
+* `NiceU8::replace`
+* `NiceU16::replace`
+* `NiceU32::replace`
+* `NiceU64::replace`
 
 ### Removed
 
