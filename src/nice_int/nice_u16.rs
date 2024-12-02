@@ -65,7 +65,6 @@ super::nice_from_nz!(NiceU16, NonZeroU16);
 
 impl From<u16> for NiceU16 {
 	#[expect(clippy::cast_possible_truncation, reason = "False positive.")]
-	#[expect(clippy::integer_division, reason = "We want this.")]
 	#[expect(clippy::many_single_char_names, reason = "Consistency is preferred.")]
 	fn from(num: u16) -> Self {
 		if 999 < num {
