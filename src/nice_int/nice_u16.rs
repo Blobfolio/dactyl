@@ -104,6 +104,52 @@ impl From<u16> for NiceU16 {
 }
 
 impl NiceU16 {
+	/// # Minimum Value.
+	///
+	/// The nice equivalent of `u16::MIN`.
+	///
+	/// ```
+	/// use dactyl::NiceU16;
+	///
+	/// assert_eq!(
+	///     NiceU16::MIN.as_str(),
+	///     "0"
+	/// );
+	///
+	/// assert_eq!(
+	///     NiceU16::MIN,
+	///     NiceU16::from(u16::MIN),
+	/// );
+	/// ```
+	pub const MIN: Self = Self {
+		inner: ZERO,
+		from: SIZE - 1,
+	};
+
+	/// # Maximum Value.
+	///
+	/// The nice equivalent of `u16::MAX`.
+	///
+	/// ```
+	/// use dactyl::NiceU16;
+	///
+	/// assert_eq!(
+	///     NiceU16::MAX.as_str(),
+	///     "65,535"
+	/// );
+	///
+	/// assert_eq!(
+	///     NiceU16::MAX,
+	///     NiceU16::from(u16::MAX),
+	/// );
+	/// ```
+	pub const MAX: Self = Self {
+		inner: *b"65,535",
+		from: 0,
+	};
+}
+
+impl NiceU16 {
 	#[must_use]
 	/// # New Instance w/ Custom Separator.
 	///

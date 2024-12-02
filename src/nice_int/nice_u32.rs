@@ -67,6 +67,52 @@ super::nice_from_nz!(NiceU32, NonZeroU32);
 super::nice_parse!(NiceU32, u32);
 
 impl NiceU32 {
+	/// # Minimum Value.
+	///
+	/// The nice equivalent of `u32::MIN`.
+	///
+	/// ```
+	/// use dactyl::NiceU32;
+	///
+	/// assert_eq!(
+	///     NiceU32::MIN.as_str(),
+	///     "0"
+	/// );
+	///
+	/// assert_eq!(
+	///     NiceU32::MIN,
+	///     NiceU32::from(u32::MIN),
+	/// );
+	/// ```
+	pub const MIN: Self = Self {
+		inner: inner!(b','),
+		from: SIZE - 1,
+	};
+
+	/// # Maximum Value.
+	///
+	/// The nice equivalent of `u32::MAX`.
+	///
+	/// ```
+	/// use dactyl::NiceU32;
+	///
+	/// assert_eq!(
+	///     NiceU32::MAX.as_str(),
+	///     "4,294,967,295"
+	/// );
+	///
+	/// assert_eq!(
+	///     NiceU32::MAX,
+	///     NiceU32::from(u32::MAX),
+	/// );
+	/// ```
+	pub const MAX: Self = Self {
+		inner: *b"4,294,967,295",
+		from: 0,
+	};
+}
+
+impl NiceU32 {
 	#[must_use]
 	/// # New Instance w/ Custom Separator.
 	///

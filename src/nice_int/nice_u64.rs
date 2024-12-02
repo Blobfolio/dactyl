@@ -81,6 +81,52 @@ super::nice_from_nz!(NiceU64, NonZeroU64, NonZeroUsize);
 super::nice_parse!(NiceU64, u64);
 
 impl NiceU64 {
+	/// # Minimum Value.
+	///
+	/// The nice equivalent of `u64::MIN`.
+	///
+	/// ```
+	/// use dactyl::NiceU64;
+	///
+	/// assert_eq!(
+	///     NiceU64::MIN.as_str(),
+	///     "0"
+	/// );
+	///
+	/// assert_eq!(
+	///     NiceU64::MIN,
+	///     NiceU64::from(u64::MIN),
+	/// );
+	/// ```
+	pub const MIN: Self = Self {
+		inner: inner!(b','),
+		from: SIZE - 1,
+	};
+
+	/// # Maximum Value.
+	///
+	/// The nice equivalent of `u64::MAX`.
+	///
+	/// ```
+	/// use dactyl::NiceU64;
+	///
+	/// assert_eq!(
+	///     NiceU64::MAX.as_str(),
+	///     "18,446,744,073,709,551,615"
+	/// );
+	///
+	/// assert_eq!(
+	///     NiceU64::MAX,
+	///     NiceU64::from(u64::MAX),
+	/// );
+	/// ```
+	pub const MAX: Self = Self {
+		inner: *b"18,446,744,073,709,551,615",
+		from: 0,
+	};
+}
+
+impl NiceU64 {
 	#[must_use]
 	/// # New Instance w/ Custom Separator.
 	///

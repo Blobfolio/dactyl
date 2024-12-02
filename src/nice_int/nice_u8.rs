@@ -82,6 +82,52 @@ super::nice_default!(NiceU8, ZERO, SIZE);
 super::nice_from_nz!(NiceU8, NonZeroU8);
 
 impl NiceU8 {
+	/// # Minimum Value.
+	///
+	/// The nice equivalent of `u8::MIN`.
+	///
+	/// ```
+	/// use dactyl::NiceU8;
+	///
+	/// assert_eq!(
+	///     NiceU8::MIN.as_str(),
+	///     "0"
+	/// );
+	///
+	/// assert_eq!(
+	///     NiceU8::MIN,
+	///     NiceU8::from(u8::MIN),
+	/// );
+	/// ```
+	pub const MIN: Self = Self {
+		inner: ZERO,
+		from: SIZE - 1,
+	};
+
+	/// # Maximum Value.
+	///
+	/// The nice equivalent of `u8::MAX`.
+	///
+	/// ```
+	/// use dactyl::NiceU8;
+	///
+	/// assert_eq!(
+	///     NiceU8::MAX.as_str(),
+	///     "255"
+	/// );
+	///
+	/// assert_eq!(
+	///     NiceU8::MAX,
+	///     NiceU8::from(u8::MAX),
+	/// );
+	/// ```
+	pub const MAX: Self = Self {
+		inner: *b"255",
+		from: 0,
+	};
+}
+
+impl NiceU8 {
 	#[must_use]
 	#[inline]
 	/// # Double Digit Bytes.

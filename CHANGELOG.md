@@ -2,6 +2,23 @@
 
 
 
+## [0.9.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.9.0) - TBD
+
+### New
+
+* `NiceU8::MIN` / `NiceU8::MAX`
+* `NiceU16::MIN` / `NiceU16::MAX`
+* `NiceU32::MIN` / `NiceU32::MAX`
+* `NiceU64::MIN` / `NiceU64::MAX`
+* `NicePercent::MIN` / `NicePercent::MAX`
+
+### Removed
+
+* `NicePercent::min` (use `NicePercent::MIN` instead)
+* `NicePercent::max` (use `NicePercent::MAX` instead)
+
+
+
 ## [0.8.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.8.0) - 2024-11-28
 
 ### Changed
