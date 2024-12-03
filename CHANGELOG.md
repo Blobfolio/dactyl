@@ -16,6 +16,7 @@
 * `NiceU16::replace`
 * `NiceU32::replace`
 * `NiceU64::replace`
+* `NicePercent::replace`
 
 ### Changed
 
