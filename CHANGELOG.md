@@ -17,6 +17,10 @@
 * `NiceU32::replace`
 * `NiceU64::replace`
 
+### Changed
+
+* Bump MSRV to `1.83`
+
 ### Removed
 
 * `NicePercent::min` (use `NicePercent::MIN` instead)
