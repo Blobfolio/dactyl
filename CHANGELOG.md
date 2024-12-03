@@ -21,6 +21,7 @@
 ### Changed
 
 * Bump MSRV to `1.83`
+* Support padding, alignment, etc., for `<NiceFloat/Percent/U* as fmt::Display>`
 
 ### Removed
 
