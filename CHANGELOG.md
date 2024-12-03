@@ -6,6 +6,7 @@
 
 ### New
 
+* `NiceClock`
 * `NiceU8::MIN` / `NiceU8::MAX`
 * `NiceU16::MIN` / `NiceU16::MAX`
 * `NiceU32::MIN` / `NiceU32::MAX`

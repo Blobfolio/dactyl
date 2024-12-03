@@ -2,16 +2,15 @@
 # Dactyl: "Nice" Elapsed
 */
 
+pub(super) mod clock;
+
 use crate::{
 	NiceU16,
 	traits::SaturatingFrom,
 };
 use std::{
 	fmt,
-	hash::{
-		Hash,
-		Hasher,
-	},
+	hash,
 	ops::Deref,
 	time::{
 		Duration,
@@ -69,6 +68,8 @@ macro_rules! elapsed_from {
 /// `From<Duration>` or `From<Instant>`, in which case milliseconds (to two
 /// decimal places) will be included, unless zero.
 ///
+/// For a more clock-like output, see [`NiceClock`](crate::NiceClock).
+///
 /// ## Examples
 ///
 /// ```
@@ -105,6 +106,7 @@ impl Default for NiceElapsed {
 
 impl Deref for NiceElapsed {
 	type Target = [u8];
+
 	#[inline]
 	fn deref(&self) -> &Self::Target { self.as_bytes() }
 }
@@ -167,9 +169,9 @@ impl From<u32> for NiceElapsed {
 // These all work the same way.
 elapsed_from!(usize, u64, u128);
 
-impl Hash for NiceElapsed {
+impl hash::Hash for NiceElapsed {
 	#[inline]
-	fn hash<H: Hasher>(&self, state: &mut H) { state.write(self.as_bytes()); }
+	fn hash<H: hash::Hasher>(&self, state: &mut H) { state.write(self.as_bytes()); }
 }
 
 impl PartialEq for NiceElapsed {
