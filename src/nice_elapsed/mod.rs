@@ -23,20 +23,6 @@ use std::{
 /// # Array Size.
 const SIZE: usize = 52;
 
-/// # Helper: `AsRef` and `Borrow`.
-macro_rules! as_ref_borrow_cast {
-	($($cast:ident $ty:ty),+ $(,)?) => ($(
-		impl AsRef<$ty> for NiceElapsed {
-			#[inline]
-			fn as_ref(&self) -> &$ty { self.$cast() }
-		}
-		impl ::std::borrow::Borrow<$ty> for NiceElapsed {
-			#[inline]
-			fn borrow(&self) -> &$ty { self.$cast() }
-		}
-	)+);
-}
-
 /// # Helper: Generate Impl
 macro_rules! elapsed_from {
 	($($type:ty),+) => ($(
@@ -92,7 +78,15 @@ impl AsRef<[u8]> for NiceElapsed {
 	fn as_ref(&self) -> &[u8] { self.as_bytes() }
 }
 
-as_ref_borrow_cast!(as_str str);
+impl AsRef<str> for NiceElapsed {
+	#[inline]
+	fn as_ref(&self) -> &str { self.as_str() }
+}
+
+impl ::std::borrow::Borrow<str> for NiceElapsed {
+	#[inline]
+	fn borrow(&self) -> &str { self.as_str() }
+}
 
 impl Default for NiceElapsed {
 	#[inline]
