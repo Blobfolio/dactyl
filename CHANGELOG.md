@@ -7,6 +7,9 @@
 ### New
 
 * `NiceClock`
+* `NiceFloat::INFINITY`
+* `NiceFloat::NAN`
+* `NiceFloat::ZERO`
 * `NiceU8::MIN` / `NiceU8::MAX`
 * `NiceU16::MIN` / `NiceU16::MAX`
 * `NiceU32::MIN` / `NiceU32::MAX`
@@ -25,6 +28,8 @@
 
 ### Removed
 
+* `NiceFloat::infinity` (use `NiceFloat::INFINITY` instead)
+* `NiceFloat::nan` (use `NiceFloat::NAN` instead)
 * `NicePercent::min` (use `NicePercent::MIN` instead)
 * `NicePercent::max` (use `NicePercent::MAX` instead)
 
