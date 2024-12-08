@@ -100,12 +100,7 @@ pub type NiceFloat = NiceWrapper<SIZE>;
 
 impl Default for NiceFloat {
 	#[inline]
-	fn default() -> Self {
-		Self {
-			inner: inner!(b','),
-			from: IDX_DOT - 1,
-		}
-	}
+	fn default() -> Self { Self::ZERO }
 }
 
 impl From<f32> for NiceFloat {
@@ -121,69 +116,78 @@ impl From<f64> for NiceFloat {
 impl From<FloatKind> for NiceFloat {
 	fn from(kind: FloatKind) -> Self {
 		match kind {
-			FloatKind::NaN => Self::nan(),
-			FloatKind::Zero => Self::default(),
+			FloatKind::NaN => Self::NAN,
+			FloatKind::Zero => Self::ZERO,
 			FloatKind::Normal(top, bottom, neg) => {
-				let mut out = Self::default();
+				let mut out = Self::ZERO;
 				out.parse_top(top, neg);
 				out.parse_bottom(bottom);
 				out
 			},
 			FloatKind::Overflow(neg) => Self::overflow(neg),
-			FloatKind::Infinity => Self::infinity(),
+			FloatKind::Infinity => Self::INFINITY,
 		}
 	}
 }
 
 impl NiceFloat {
-	#[must_use]
-	#[inline]
 	/// # Infinity.
 	///
-	/// This returns an infinite instance! No distinction is made between
-	/// positive and negative infinities.
+	/// A value representing infinity. Note that no distinction is made between
+	/// positive and negative varieties.
 	///
 	/// ## Examples
 	///
 	/// ```
 	/// use dactyl::NiceFloat;
 	///
-	/// assert_eq!(NiceFloat::infinity().as_str(), "∞");
+	/// assert_eq!(NiceFloat::INFINITY.as_str(), "∞");
 	/// assert_eq!(NiceFloat::from(f64::INFINITY).as_str(), "∞");
 	/// assert_eq!(NiceFloat::from(f64::NEG_INFINITY).as_str(), "∞");
 	/// ```
-	pub const fn infinity() -> Self {
-		Self {
-			inner: [
-				b'0', b'0', b'0', b'0', b'0', b'0', b'0', b'0', b'0', b'0',
-				b'0', b'0', b'0', b'0', b'0', b'0', b'0', b'0', b'0', b'0',
-				b'0', b'0', b'0', b'0', b'0', b'0', b'0', b'0', b'0', b'0',
-				b'0', b'0', b'0', 226, 136, 158,
-			],
-			from: SIZE - 3,
-		}
-	}
+	pub const INFINITY: Self = Self {
+		inner: [
+			b'0', b'0', b'0', b'0', b'0', b'0', b'0', b'0', b'0', b'0',
+			b'0', b'0', b'0', b'0', b'0', b'0', b'0', b'0', b'0', b'0',
+			b'0', b'0', b'0', b'0', b'0', b'0', b'0', b'0', b'0', b'0',
+			b'0', b'0', b'0', 226, 136, 158,
+		],
+		from: SIZE - 3,
+	};
 
-	#[must_use]
-	#[inline]
 	/// # NaN.
 	///
-	/// This returns a not-a-number instance.
+	/// A value representing a Not-a-Number.
 	///
 	/// ## Examples
 	///
 	/// ```
 	/// use dactyl::NiceFloat;
 	///
-	/// assert_eq!(NiceFloat::nan().as_str(), "NaN");
+	/// assert_eq!(NiceFloat::NAN.as_str(), "NaN");
 	/// assert_eq!(NiceFloat::from(f64::NAN).as_str(), "NaN");
 	/// ```
-	pub const fn nan() -> Self {
-		Self {
-			inner: *b"000000000000000000000000000000000NaN",
-			from: SIZE - 3,
-		}
-	}
+	pub const NAN: Self = Self {
+		inner: *b"000000000000000000000000000000000NaN",
+		from: SIZE - 3,
+	};
+
+	/// # Zero.
+	///
+	/// A value representing zero.
+	///
+	/// ## Examples
+	///
+	/// ```
+	/// use dactyl::NiceFloat;
+	///
+	/// assert_eq!(NiceFloat::ZERO.as_str(), "0.00000000");
+	/// assert_eq!(NiceFloat::from(0_f64).as_str(), "0.00000000");
+	/// ```
+	pub const ZERO: Self = Self {
+		inner: inner!(b','),
+		from: IDX_DOT - 1,
+	};
 
 	#[must_use]
 	#[inline]
@@ -254,9 +258,9 @@ impl NiceFloat {
 		assert!(point.is_ascii(), "Invalid decimal point.");
 
 		match FloatKind::from(num) {
-			FloatKind::NaN => Self::nan(),
+			FloatKind::NaN => Self::NAN,
 			FloatKind::Zero => {
-				let mut out = Self::default();
+				let mut out = Self::ZERO;
 				out.inner[IDX_DOT] = point;
 				out
 			},
@@ -279,7 +283,7 @@ impl NiceFloat {
 				}
 				out
 			},
-			FloatKind::Infinity => Self::infinity(),
+			FloatKind::Infinity => Self::INFINITY,
 		}
 	}
 }
@@ -828,8 +832,8 @@ mod tests {
 		assert_eq!(NiceFloat::from(0_f64).precise_str(0), "0");
 
 		// A few weird ones.
-		assert_eq!(NiceFloat::nan().precise_str(3), "NaN");
-		assert_eq!(NiceFloat::infinity().precise_str(3), "∞");
+		assert_eq!(NiceFloat::NAN.precise_str(3), "NaN");
+		assert_eq!(NiceFloat::INFINITY.precise_str(3), "∞");
 		assert_eq!(NiceFloat::overflow(true).precise_str(3), "< -18,446,744,073,709,551,615");
 		assert_eq!(NiceFloat::overflow(false).precise_str(3), "> 18,446,744,073,709,551,615");
 		assert_eq!(NiceFloat::with_separator(f64::MIN, b'!', b'?').precise_str(3), "< -18!446!744!073!709!551!615");
@@ -843,8 +847,8 @@ mod tests {
 		assert!(NiceFloat::from(1.234_f64).has_dot());
 		assert!(NiceFloat::with_separator(1.234_f64, b'!', b'?').has_dot());
 
-		assert!(! NiceFloat::nan().has_dot());
-		assert!(! NiceFloat::infinity().has_dot());
+		assert!(! NiceFloat::NAN.has_dot());
+		assert!(! NiceFloat::INFINITY.has_dot());
 		assert!(! NiceFloat::overflow(true).has_dot());
 		assert!(! NiceFloat::overflow(false).has_dot());
 		assert!(! NiceFloat::with_separator(f64::MIN, b'!', b'?').has_dot());

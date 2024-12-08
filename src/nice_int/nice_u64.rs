@@ -81,6 +81,52 @@ super::nice_from_nz!(NiceU64, NonZeroU64, NonZeroUsize);
 super::nice_parse!(NiceU64, u64);
 
 impl NiceU64 {
+	/// # Minimum Value.
+	///
+	/// The nice equivalent of `u64::MIN`.
+	///
+	/// ```
+	/// use dactyl::NiceU64;
+	///
+	/// assert_eq!(
+	///     NiceU64::MIN.as_str(),
+	///     "0"
+	/// );
+	///
+	/// assert_eq!(
+	///     NiceU64::MIN,
+	///     NiceU64::from(u64::MIN),
+	/// );
+	/// ```
+	pub const MIN: Self = Self {
+		inner: inner!(b','),
+		from: SIZE - 1,
+	};
+
+	/// # Maximum Value.
+	///
+	/// The nice equivalent of `u64::MAX`.
+	///
+	/// ```
+	/// use dactyl::NiceU64;
+	///
+	/// assert_eq!(
+	///     NiceU64::MAX.as_str(),
+	///     "18,446,744,073,709,551,615"
+	/// );
+	///
+	/// assert_eq!(
+	///     NiceU64::MAX,
+	///     NiceU64::from(u64::MAX),
+	/// );
+	/// ```
+	pub const MAX: Self = Self {
+		inner: *b"18,446,744,073,709,551,615",
+		from: 0,
+	};
+}
+
+impl NiceU64 {
 	#[must_use]
 	/// # New Instance w/ Custom Separator.
 	///
@@ -112,6 +158,38 @@ impl NiceU64 {
 		};
 		out.parse(num);
 		out
+	}
+
+	/// # Replace.
+	///
+	/// Reuse the backing storage behind `self` to hold a new nice number.
+	///
+	/// ## Examples.
+	///
+	/// ```
+	/// use dactyl::NiceU64;
+	///
+	/// let mut num = NiceU64::from(3141592653_u64);
+	/// assert_eq!(num.as_str(), "3,141,592,653");
+	///
+	/// num.replace(12345);
+	/// assert_eq!(num.as_str(), "12,345");
+	/// ```
+	///
+	/// Note that custom separators, if any, are preserved.
+	///
+	/// ```
+	/// use dactyl::NiceU64;
+	///
+	/// let mut num = NiceU64::with_separator(3141592653_u64, b'_');
+	/// assert_eq!(num.as_str(), "3_141_592_653");
+	///
+	/// num.replace(12345);
+	/// assert_eq!(num.as_str(), "12_345");
+	/// ```
+	pub fn replace(&mut self, num: u64) {
+		self.from = SIZE;
+		self.parse(num);
 	}
 }
 
@@ -163,6 +241,7 @@ mod tests {
 		assert_eq!(two.cmp(&one), std::cmp::Ordering::Greater);
 
 		// Check a subset of everything else.
+		let mut last = NiceU64::empty();
 		let mut rng = fastrand::Rng::new();
 		for i in std::iter::repeat_with(|| rng.u64(..)).take(SAMPLE_SIZE) {
 			let nice = NiceU64::from(i);
@@ -173,7 +252,16 @@ mod tests {
 			assert_eq!(nice.len(), nice.as_str().len());
 			assert_eq!(nice.len(), nice.as_bytes().len());
 			assert!(! nice.is_empty());
+
+			// Replacement should yield the same thing.
+			assert_ne!(nice, last);
+			last.replace(i);
+			assert_eq!(nice, last);
 		}
+
+		// Make sure back to zero works.
+		last.replace(0);
+		assert_eq!(last.as_str(), "0");
 	}
 
 	#[test]

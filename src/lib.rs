@@ -22,7 +22,8 @@ Each type has its own struct, each of which works exactly the same way:
 * [`NiceU32`]
 * [`NiceU64`] (also covers `usize`)
 * [`NiceFloat`]
-* [`NiceElapsed`] (for durations)
+* [`NiceClock`] (for durations)
+* [`NiceElapsed`] (also for durations)
 * [`NicePercent`] (for floats representing percentages)
 
 The intended use case is to simply call the appropriate `from()` for the type, then use either the `as_str()` or `as_bytes()` struct methods to retrieve the output in the desired format. Each struct also implements traits like `Deref`, `Display`, `AsRef<str>`, `AsRef<[u8]>`, etc., if you prefer those.
@@ -104,7 +105,10 @@ mod nice_int;
 pub mod traits;
 
 pub use hash::NoHash;
-pub use nice_elapsed::NiceElapsed;
+pub use nice_elapsed::{
+	clock::NiceClock,
+	NiceElapsed,
+};
 pub use nice_int::{
 	nice_u8::NiceU8,
 	nice_u16::NiceU16,
@@ -123,7 +127,7 @@ pub use nice_int::NiceWrapper;
 
 
 /// # Decimals, 00-99.
-const DOUBLE: [[u8; 2]; 100] = [
+static DOUBLE: [[u8; 2]; 100] = [
 	[48, 48], [48, 49], [48, 50], [48, 51], [48, 52], [48, 53], [48, 54], [48, 55], [48, 56], [48, 57],
 	[49, 48], [49, 49], [49, 50], [49, 51], [49, 52], [49, 53], [49, 54], [49, 55], [49, 56], [49, 57],
 	[50, 48], [50, 49], [50, 50], [50, 51], [50, 52], [50, 53], [50, 54], [50, 55], [50, 56], [50, 57],

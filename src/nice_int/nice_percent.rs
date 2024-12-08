@@ -58,7 +58,7 @@ pub type NicePercent = NiceWrapper<SIZE>;
 
 impl Default for NicePercent {
 	#[inline]
-	fn default() -> Self { Self::min() }
+	fn default() -> Self { Self::MIN }
 }
 
 /// # Helper: From
@@ -75,8 +75,8 @@ macro_rules! nice_from {
 		impl From<$float> for NicePercent {
 			fn from(num: $float) -> Self {
 				// Shortcut for overflowing values.
-				if num <= 0.0 || ! num.is_normal() { return Self::min(); }
-				else if 1.0 <= num { return Self::max(); }
+				if num <= 0.0 || ! num.is_normal() { return Self::MIN; }
+				else if 1.0 <= num { return Self::MAX; }
 
 				// We can maintain precision better by working from an integer.
 				// We know there is no existing integer part, so at most we'll
@@ -84,8 +84,8 @@ macro_rules! nice_from {
 				let whole = (num * 10_000.0).round() as u16;
 
 				// Recheck the boundaries because of the rounding.
-				if whole == 0 { return Self::min(); }
-				else if 9999 < whole { return Self::max(); }
+				if whole == 0 { return Self::MIN; }
+				else if 9999 < whole { return Self::MAX; }
 
 				// Split the top and bottom.
 				let (top, bottom) = (whole / 100, whole % 100);
@@ -136,28 +136,113 @@ impl<T: IntDivFloat> TryFrom<(T, T)> for NicePercent {
 }
 
 impl NicePercent {
-	#[inline]
-	#[must_use]
-	/// # Minimum value.
+	/// # Minimum Value.
 	///
-	/// This reads: `0.00%`.
-	pub const fn min() -> Self {
-		Self {
-			inner: ZERO,
-			from: SIZE - 5,
-		}
+	/// Zero percent.
+	///
+	/// ```
+	/// use dactyl::NicePercent;
+	///
+	/// assert_eq!(
+	///     NicePercent::MIN.as_str(),
+	///     "0.00%"
+	/// );
+	///
+	/// assert_eq!(
+	///     NicePercent::MIN,
+	///     NicePercent::from(0_f32),
+	/// );
+	/// ```
+	pub const MIN: Self = Self {
+		inner: ZERO,
+		from: SIZE - 5,
+	};
+
+	/// # Maximum Value.
+	///
+	/// One hundred percent.
+	///
+	/// ```
+	/// use dactyl::NicePercent;
+	///
+	/// assert_eq!(
+	///     NicePercent::MAX.as_str(),
+	///     "100.00%"
+	/// );
+	///
+	/// assert_eq!(
+	///     NicePercent::MAX,
+	///     NicePercent::from(1_f32),
+	/// );
+	/// ```
+	pub const MAX: Self = Self {
+		inner: [b'1', b'0', b'0', b'.', b'0', b'0', b'%'],
+		from: 0,
+	};
+}
+
+impl NicePercent {
+	#[expect(
+		clippy::cast_possible_truncation,
+		clippy::cast_sign_loss,
+		reason = "False positive.",
+	)]
+	/// # Replace.
+	///
+	/// Reuse the backing storage behind `self` to hold a new nice percent.
+	///
+	/// ## Examples.
+	///
+	/// ```
+	/// use dactyl::NicePercent;
+	///
+	/// let mut num = NicePercent::from(0.85);
+	/// assert_eq!(num.as_str(), "85.00%");
+	///
+	/// num.replace(0.334);
+	/// assert_eq!(num.as_str(), "33.40%");
+	/// ```
+	pub fn replace(&mut self, num: f32) {
+		if num <= 0.0 || ! num.is_normal() { return self.reset_min(); }
+		else if 1.0 <= num { return self.reset_max(); }
+
+		// We can maintain precision better by working from an integer.
+		// We know there is no existing integer part, so at most we'll
+		// wind up with four digits, which fits nicely in a u16.
+		let whole = (num * 10_000.0).round() as u16;
+
+		// Recheck the boundaries because of the rounding.
+		if whole == 0 { return self.reset_min(); }
+		else if 9999 < whole { return self.reset_max(); }
+
+		// Split the top and bottom.
+		let (top, bottom) = (whole / 100, whole % 100);
+
+		let [a, b] = crate::double(top as usize);
+		let [c, d] = crate::double(bottom as usize);
+		self.from = if a == b'0' { SIZE - 5 } else { SIZE - 6 };
+		self.inner[1] = a;
+		self.inner[2] = b;
+		self.inner[4] = c;
+		self.inner[5] = d;
 	}
 
-	#[inline]
-	#[must_use]
-	/// # Maximum value.
-	///
-	/// This reads: `100.00%`.
-	pub const fn max() -> Self {
-		Self {
-			inner: [b'1', b'0', b'0', b'.', b'0', b'0', b'%'],
-			from: SIZE - 7,
-		}
+	/// # Reset to Minimum.
+	fn reset_min(&mut self) {
+		self.inner[2] = b'0';
+		self.inner[4] = b'0';
+		self.inner[5] = b'0';
+		self.from = SIZE - 5;
+	}
+
+	/// # Reset to Maximum.
+	fn reset_max(&mut self) {
+		self.inner[0] = b'1';
+		self.inner[1] = b'0';
+		self.inner[2] = b'0';
+		self.inner[4] = b'0';
+		self.inner[5] = b'0';
+		self.from = 0;
 	}
 }
 
@@ -172,6 +257,8 @@ mod tests {
 		// There will be disagreements with a denominator of 100_000.
 		const TOTAL: u32 = 10_000_u32;
 
+		let mut last = NicePercent::MIN;
+
 		// Test as_str sanity for f32, f64.
 		macro_rules! t_str {
 			($var:ident) => (
@@ -185,6 +272,12 @@ mod tests {
 				assert_eq!(nice.len(), nice.as_str().len());
 				assert_eq!(nice.len(), nice.as_bytes().len());
 				assert!(! nice.is_empty());
+
+				// Test replacments.
+				if fraction == 0.0 { assert_eq!(last, nice); }
+				else { assert_ne!(last, nice); }
+				last.replace(fraction);
+				assert_eq!(last, nice);
 
 				let fraction = $var as f64 / TOTAL as f64;
 				let nice = NicePercent::from(fraction);
@@ -207,6 +300,12 @@ mod tests {
 			for i in std::iter::repeat_with(|| rng.u32(0..TOTAL)).take(500) {
 				t_str!(i);
 			}
+		}
+
+		// Replacement to zero should be happy.
+		if last.as_str() != "0.00%" {
+			last.replace(0.0);
+			assert_eq!(last.as_str(), "0.00%");
 		}
 
 		// And a few edge cases.

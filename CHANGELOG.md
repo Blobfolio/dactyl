@@ -2,6 +2,39 @@
 
 
 
+## [0.9.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.9.0) - 2024-12-07
+
+### New
+
+* `NiceClock`
+* `NiceFloat::INFINITY`
+* `NiceFloat::NAN`
+* `NiceFloat::ZERO`
+* `NiceU8::MIN` / `NiceU8::MAX`
+* `NiceU16::MIN` / `NiceU16::MAX`
+* `NiceU32::MIN` / `NiceU32::MAX`
+* `NiceU64::MIN` / `NiceU64::MAX`
+* `NicePercent::MIN` / `NicePercent::MAX`
+* `NiceU8::replace`
+* `NiceU16::replace`
+* `NiceU32::replace`
+* `NiceU64::replace`
+* `NicePercent::replace`
+
+### Changed
+
+* Bump MSRV to `1.83`
+* Support padding, alignment, etc., for `<NiceFloat/Percent/U* as fmt::Display>`
+
+### Removed
+
+* `NiceFloat::infinity` (use `NiceFloat::INFINITY` instead)
+* `NiceFloat::nan` (use `NiceFloat::NAN` instead)
+* `NicePercent::min` (use `NicePercent::MIN` instead)
+* `NicePercent::max` (use `NicePercent::MAX` instead)
+
+
+
 ## [0.8.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.8.0) - 2024-11-28
 
 ### Changed

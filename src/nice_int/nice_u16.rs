@@ -65,7 +65,6 @@ super::nice_from_nz!(NiceU16, NonZeroU16);
 
 impl From<u16> for NiceU16 {
 	#[expect(clippy::cast_possible_truncation, reason = "False positive.")]
-	#[expect(clippy::integer_division, reason = "We want this.")]
 	#[expect(clippy::many_single_char_names, reason = "Consistency is preferred.")]
 	fn from(num: u16) -> Self {
 		if 999 < num {
@@ -105,6 +104,52 @@ impl From<u16> for NiceU16 {
 }
 
 impl NiceU16 {
+	/// # Minimum Value.
+	///
+	/// The nice equivalent of `u16::MIN`.
+	///
+	/// ```
+	/// use dactyl::NiceU16;
+	///
+	/// assert_eq!(
+	///     NiceU16::MIN.as_str(),
+	///     "0"
+	/// );
+	///
+	/// assert_eq!(
+	///     NiceU16::MIN,
+	///     NiceU16::from(u16::MIN),
+	/// );
+	/// ```
+	pub const MIN: Self = Self {
+		inner: ZERO,
+		from: SIZE - 1,
+	};
+
+	/// # Maximum Value.
+	///
+	/// The nice equivalent of `u16::MAX`.
+	///
+	/// ```
+	/// use dactyl::NiceU16;
+	///
+	/// assert_eq!(
+	///     NiceU16::MAX.as_str(),
+	///     "65,535"
+	/// );
+	///
+	/// assert_eq!(
+	///     NiceU16::MAX,
+	///     NiceU16::from(u16::MAX),
+	/// );
+	/// ```
+	pub const MAX: Self = Self {
+		inner: *b"65,535",
+		from: 0,
+	};
+}
+
+impl NiceU16 {
 	#[must_use]
 	/// # New Instance w/ Custom Separator.
 	///
@@ -134,6 +179,58 @@ impl NiceU16 {
 		out.inner[2] = sep;
 		out
 	}
+
+	#[expect(clippy::cast_possible_truncation, reason = "False positive.")]
+	/// # Replace.
+	///
+	/// Reuse the backing storage behind `self` to hold a new nice number.
+	///
+	/// ## Examples.
+	///
+	/// ```
+	/// use dactyl::NiceU16;
+	///
+	/// let mut num = NiceU16::from(123_u16);
+	/// assert_eq!(num.as_str(), "123");
+	///
+	/// num.replace(12345);
+	/// assert_eq!(num.as_str(), "12,345");
+	/// ```
+	///
+	/// Note that custom separators, if any, are preserved.
+	///
+	/// ```
+	/// use dactyl::NiceU16;
+	///
+	/// let mut num = NiceU16::with_separator(123_u16, b'_');
+	/// assert_eq!(num.as_str(), "123");
+	///
+	/// num.replace(12345);
+	/// assert_eq!(num.as_str(), "12_345");
+	/// ```
+	pub fn replace(&mut self, num: u16) {
+		if 999 < num {
+			let (num, rem) = (num / 1000, num % 1000);
+			self.inner[3..].copy_from_slice(crate::triple(rem as usize).as_slice());
+
+			if 9 < num {
+				self.inner[..2].copy_from_slice(crate::double(num as usize).as_slice());
+				self.from = 0;
+			}
+			else {
+				self.inner[1] = num as u8 + b'0';
+				self.from = 1;
+			}
+		}
+		else if 99 < num {
+			self.inner[3..].copy_from_slice(crate::triple(num as usize).as_slice());
+			self.from = 3;
+		}
+		else {
+			self.inner[4..].copy_from_slice(crate::double(num as usize).as_slice());
+			self.from = if self.inner[4] == b'0' { 5 } else { 4 };
+		}
+	}
 }
 
 
@@ -147,6 +244,8 @@ mod tests {
 	fn t_nice_u16() {
 		assert_eq!(NiceU16::default(), NiceU16::from(0_u16));
 
+		let mut last = NiceU16::empty();
+
 		#[cfg(not(miri))]
 		for i in 0..=u16::MAX {
 			let nice = NiceU16::from(i);
@@ -157,6 +256,11 @@ mod tests {
 			assert_eq!(nice.len(), nice.as_str().len());
 			assert_eq!(nice.len(), nice.as_bytes().len());
 			assert!(! nice.is_empty());
+
+			// Replacement should yield the same thing.
+			assert_ne!(nice, last);
+			last.replace(i);
+			assert_eq!(nice, last);
 		}
 
 		#[cfg(miri)]
@@ -171,8 +275,17 @@ mod tests {
 				assert_eq!(nice.len(), nice.as_str().len());
 				assert_eq!(nice.len(), nice.as_bytes().len());
 				assert!(! nice.is_empty());
+
+				// Replacement should yield the same thing.
+				assert_ne!(nice, last);
+				last.replace(i);
+				assert_eq!(nice, last);
 			}
 		}
+
+		// Make sure back to zero works.
+		last.replace(0);
+		assert_eq!(last.as_str(), "0");
 
 		// Test the defaults too.
 		assert_eq!(NiceU16::empty().as_bytes(), <&[u8]>::default());

@@ -25,22 +25,6 @@ use std::{
 
 
 
-/// # Helper: `AsRef` and `Borrow`.
-macro_rules! as_ref_borrow_cast {
-	($($cast:ident $ty:ty),+ $(,)?) => ($(
-		impl<const S: usize> AsRef<$ty> for NiceWrapper<S> {
-			#[inline]
-			fn as_ref(&self) -> &$ty { self.$cast() }
-		}
-		impl<const S: usize> ::std::borrow::Borrow<$ty> for NiceWrapper<S> {
-			#[inline]
-			fn borrow(&self) -> &$ty { self.$cast() }
-		}
-	)+);
-}
-
-
-
 #[doc(hidden)]
 #[derive(Clone, Copy)]
 /// # Nice Unsigned.
@@ -57,7 +41,15 @@ impl<const S: usize> AsRef<[u8]> for NiceWrapper<S> {
 	fn as_ref(&self) -> &[u8] { self.as_bytes() }
 }
 
-as_ref_borrow_cast!(as_str str);
+impl<const S: usize> AsRef<str> for NiceWrapper<S> {
+	#[inline]
+	fn as_ref(&self) -> &str { self.as_str() }
+}
+
+impl<const S: usize> ::std::borrow::Borrow<str> for NiceWrapper<S> {
+	#[inline]
+	fn borrow(&self) -> &str { self.as_str() }
+}
 
 impl<const S: usize> fmt::Debug for NiceWrapper<S> {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -76,7 +68,7 @@ impl<const S: usize> Deref for NiceWrapper<S> {
 impl<const S: usize> fmt::Display for NiceWrapper<S> {
 	#[inline]
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		f.write_str(self.as_str())
+		f.pad(self.as_str())
 	}
 }
 
