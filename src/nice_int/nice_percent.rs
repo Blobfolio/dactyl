@@ -74,16 +74,14 @@ macro_rules! nice_from {
 		#[expect(clippy::integer_division, reason = "We want this.")]
 		impl From<$float> for NicePercent {
 			fn from(num: $float) -> Self {
-				// Shortcut for overflowing values.
-				if num <= 0.0 || ! num.is_normal() { return Self::MIN; }
-				else if 1.0 <= num { return Self::MAX; }
+				// Treat NaN as zero.
+				if num.is_nan() { return Self::MIN; }
 
 				// We can maintain precision better by working from an integer.
-				// We know there is no existing integer part, so at most we'll
-				// wind up with four digits, which fits nicely in a u16.
-				let whole = (num * 10_000.0).round() as u16;
+				// Clamp and multiply by the desired precision.
+				let whole = (num.clamp(0.0, 1.0) * 10_000.0).round() as u16;
 
-				// Recheck the boundaries because of the rounding.
+				// Manually handle the edges.
 				if whole == 0 { return Self::MIN; }
 				else if 9999 < whole { return Self::MAX; }
 
@@ -203,15 +201,14 @@ impl NicePercent {
 	/// assert_eq!(num.as_str(), "33.40%");
 	/// ```
 	pub fn replace(&mut self, num: f32) {
-		if num <= 0.0 || ! num.is_normal() { return self.reset_min(); }
-		else if 1.0 <= num { return self.reset_max(); }
+		// Treat NaN as zero.
+		if num.is_nan() { return self.reset_min(); }
 
 		// We can maintain precision better by working from an integer.
-		// We know there is no existing integer part, so at most we'll
-		// wind up with four digits, which fits nicely in a u16.
-		let whole = (num * 10_000.0).round() as u16;
+		// Clamp and multiply by the desired precision.
+		let whole = (num.clamp(0.0, 1.0) * 10_000.0).round() as u16;
 
-		// Recheck the boundaries because of the rounding.
+		// Manually handle the edges.
 		if whole == 0 { return self.reset_min(); }
 		else if 9999 < whole { return self.reset_max(); }
 
