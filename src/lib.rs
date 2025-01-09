@@ -93,7 +93,6 @@ But the niceness doesn't stop there. Dactyl provides several other structs, meth
 	unused_import_braces,
 )]
 
-#![expect(clippy::module_name_repetitions, reason = "Repetition is preferred.")]
 #![expect(clippy::redundant_pub_crate, reason = "Unresolvable.")]
 
 
