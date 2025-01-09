@@ -2,12 +2,13 @@
 
 
 
-## [0.9.1](https://github.com/Blobfolio/dactyl/releases/tag/v0.9.1) - TBD
+## [0.9.1](https://github.com/Blobfolio/dactyl/releases/tag/v0.9.1) - 2025-01-09
 
 ### Changed
 
 * Bump `brunch` to `0.8`
 * Round non-normal `NicePercent` arguments to nearest of `MIN` and `MAX`
+* Miscellaneous code changes and lints
 
 
 
