@@ -76,7 +76,7 @@ impl fmt::Display for AnyNum {
 		// too small for separators.
 		let mut out = match self {
 			Self::Unsigned(n) =>
-				if 1000.gt(n) { return write!(f, "{n}"); }
+				if *n < 1000 { return write!(f, "{n}"); }
 				else { n.to_string() },
 			Self::Signed(n) =>
 				if (-999..1000).contains(n) { return write!(f, "{n}"); }
@@ -221,7 +221,7 @@ fn build_impls() -> String {
 	wrt!(out, i128,  u8, u16, u32, u64, u128, i8, i16, i32, i64      );
 
 	// Noop casts.
-	wrt_self!(out, u8, u16, u32, u64, u128, i8, i16, i32, i64, i128);
+	wrt_self!(out,   u8, u16, u32, u64, u128, i8, i16, i32, i64, i128);
 
 	// Write cfg-gated modules containing all of the sized implementations for
 	// a given pointer width. Thankfully we only have to enumerate the into
