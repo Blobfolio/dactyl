@@ -2,6 +2,15 @@
 
 
 
+## [0.10.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.10.0) - 2025-02-25
+
+### Changed
+
+* Bump MSRV to `1.85`
+* Bump Rust edition to `2024`
+
+
+
 ## [0.9.1](https://github.com/Blobfolio/dactyl/releases/tag/v0.9.1) - 2025-01-09
 
 ### Changed

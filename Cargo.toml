@@ -1,9 +1,9 @@
 [package]
 name = "dactyl"
-version = "0.9.1"
+version = "0.10.0"
 authors = ["Josh Stoik <josh@blobfolio.com>"]
-edition = "2021"
-rust-version = "1.83"
+edition = "2024"
+rust-version = "1.85"
 description = "A small library to quickly stringify integers with basic formatting."
 license = "WTFPL"
 repository = "https://github.com/Blobfolio/dactyl"
