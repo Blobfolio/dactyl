@@ -225,7 +225,7 @@ impl NicePercent {
 	}
 
 	/// # Reset to Minimum.
-	fn reset_min(&mut self) {
+	const fn reset_min(&mut self) {
 		self.inner[2] = b'0';
 		self.inner[4] = b'0';
 		self.inner[5] = b'0';
@@ -233,7 +233,7 @@ impl NicePercent {
 	}
 
 	/// # Reset to Maximum.
-	fn reset_max(&mut self) {
+	const fn reset_max(&mut self) {
 		self.inner[0] = b'1';
 		self.inner[1] = b'0';
 		self.inner[2] = b'0';

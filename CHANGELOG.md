@@ -2,6 +2,15 @@
 
 
 
+## [0.10.1](https://github.com/Blobfolio/dactyl/releases/tag/v0.10.1) - 2025-04-03
+
+### Changed
+
+* Bump `brunch` to `0.9`
+* Miscellaneous code changes and lints
+
+
+
 ## [0.10.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.10.0) - 2025-02-25
 
 ### Changed
