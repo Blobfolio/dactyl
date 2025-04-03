@@ -143,7 +143,7 @@ impl NiceU8 {
 	/// num.replace(1);
 	/// assert_eq!(num.as_str(), "1");
 	/// ```
-	pub fn replace(&mut self, num: u8) {
+	pub const fn replace(&mut self, num: u8) {
 		if 99 < num {
 			self.inner = crate::triple(num as usize);
 			self.from = 0;
