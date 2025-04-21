@@ -72,34 +72,24 @@ into_any! { u8, u16, u32, u64, u128, i8, i16, i32, i64, i128 }
 
 impl fmt::Display for AnyNum {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		// Start with a straight string, writing immediately if the number is
-		// too small for separators.
+		// Stringify the number, unless it's too small for punctuation, in
+		// which case we can just return it directly.
 		let mut out = match self {
 			Self::Unsigned(n) =>
-				if *n < 1000 { return write!(f, "{n}"); }
+				if *n < 1000 { return <u128 as fmt::Display>::fmt(n, f); }
 				else { n.to_string() },
 			Self::Signed(n) =>
-				if (-999..1000).contains(n) { return write!(f, "{n}"); }
+				if (-999..1000).contains(n) { return <i128 as fmt::Display>::fmt(n, f); }
 				else { n.to_string() },
 		};
 
-		// Note negativity, and strip the sign if it's there.
-		let neg =
-			if out.starts_with('-') {
-				out.remove(0);
-				true
-			}
-			else { false };
-
 		// Add _ delimiters every three places starting from the end.
+		let last = if out.starts_with('-') { 4 } else { 3 };
 		let mut idx = out.len();
-		while idx > 3 {
+		while idx > last {
 			idx -= 3;
 			out.insert(idx, '_');
 		}
-
-		// Throw the negative sign back on, if any.
-		if neg { out.insert(0, '-'); }
 
 		// Done!
 		f.write_str(&out)
@@ -130,54 +120,91 @@ impl AnyNum {
 
 
 
+#[derive(Clone, Copy)]
+/// # Two Numeric Types.
+///
+/// This struct is used to write the `saturating_from` body for any two given
+/// types.
+struct AnyTwo<TO, FROM>(TO, FROM)
+where TO: NumberExt + Into<AnyNum>, FROM: NumberExt + Into<AnyNum>;
+
+impl<TO, FROM> fmt::Display for AnyTwo<TO, FROM>
+where TO: NumberExt + Into<AnyNum>, FROM: NumberExt + Into<AnyNum> {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		// Minimum clamp, if any.
+		let to: AnyNum = TO::MIN_NUMBER.into();
+		let from: AnyNum = FROM::MIN_NUMBER.into();
+		let min = (from.signed_inner() < to.signed_inner()).then_some(to);
+
+		// Maximum clamp, if any.
+		let to: AnyNum = TO::MAX_NUMBER.into();
+		let from: AnyNum = FROM::MAX_NUMBER.into();
+		let max = (to.unsigned_inner() < from.unsigned_inner()).then_some(to);
+
+		// Write the conditions!
+		match (min, max) {
+			(Some(min), Some(max)) => writeln!(
+				f,
+				"\t\tif src <= {min} {{ {min} }}
+		else if src >= {max} {{ {max} }}
+		else {{ src as Self }}"
+			),
+			(Some(min), None) => writeln!(
+				f,
+				"\t\tif src <= {min} {{ {min} }}
+		else {{ src as Self }}"
+			),
+			(None, Some(max)) => writeln!(
+				f,
+				"\t\tif src >= {max} {{ {max} }}
+		else {{ src as Self }}"
+			),
+			(None, None) => f.write_str("\t\tsrc as Self\n"),
+		}
+	}
+}
+
+
+
 /// # Helper: Write Basic From/To Implementations.
 macro_rules! wrt {
+	// Conversion.
 	($out:ident, $to:ty as $alias:ty, $($from:ty),+) => ($(
-		// The top.
 		writeln!(
 			&mut $out,
-			concat!(
-				"impl SaturatingFrom<", stringify!($from), "> for ", stringify!($to), "{{\n",
-				"\t#[inline]\n",
-				"\t#[doc = \"", "# Saturating From `", stringify!($from), "`\"]\n",
-				"\t#[doc = \"\"]\n",
-				"\t#[doc = \"", "This method will safely recast any `", stringify!($from), "` into a `", stringify!($to), "`, clamping the values to `", stringify!($to), "::MIN..=", stringify!($to), "::MAX` to prevent overflow or wrapping.", "\"]\n",
-				"\tfn saturating_from(src: ", stringify!($from), ") -> Self {{",
-			),
-		).unwrap();
-		// The body.
-		write_condition::<$alias, $from>(&mut $out);
-		// The bottom.
-		writeln!(
-			&mut $out,
-			"\t}}\n}}",
+			"impl SaturatingFrom<{from}> for {to} {{
+	#[inline]
+	/// # Saturating From `{from}`.
+	///
+	/// This method will saturate and recast a `{from}` into a `{to}`, clamping to `{to}::MIN` and `{to}::MAX` as necessary.
+	fn saturating_from(src: {from}) -> Self {{
+{body}\t}}
+}}",
+			from=stringify!($from),
+			to=stringify!($to),
+			body=AnyTwo::<$alias, $from>(0, 0),
 		).unwrap();
 	)+);
+	// Shorthand (including passthrough).
 	($out:ident, $to:ty, $($from:ty),+) => (
+		// Passthrough Implementation.
+		$out.push_str(concat!(
+			"impl SaturatingFrom<Self> for ", stringify!($to), " {
+	#[inline]
+	/// # Saturating From `Self`.
+	///
+	/// This implementation is provided for consistency; the value is simply passed through.
+	fn saturating_from(src: Self) -> Self { src }
+}\n"));
+
+		// Handle conversions.
 		wrt!($out, $to as $to, $($from),+);
 	);
 }
 
-/// # Helper: Write Noop Implementations.
-macro_rules! wrt_self {
-	($out:ident, $($to:ty),+) => ($(
-		writeln!(
-			&mut $out,
-			concat!(
-				"impl SaturatingFrom<Self> for ", stringify!($to), "{{\n",
-				"\t#[inline]",
-				"\t#[doc = \"# Saturating From `Self`\"]\n",
-				"\t#[doc = \"\"]\n",
-				"\t#[doc = \"`Self`-to-`Self` (obviously) requires no saturation; this implementation is a noop.\"]\n",
-				"\tfn saturating_from(src: Self) -> Self {{ src }}\n",
-				"}}",
-			),
-		).unwrap();
-	)+);
-}
 
 
-
+/// # Main.
 fn main() {
 	println!("cargo:rerun-if-env-changed=CARGO_PKG_VERSION");
 
@@ -204,7 +231,8 @@ fn main() {
 /// widths with the target (rather than always using the host), clean up the
 /// sized crap. Haha.
 fn build_impls() -> String {
-	let mut out = String::new();
+	let mut out = String::with_capacity(32_768);
+	let mut tmp = String::with_capacity(4096);
 
 	// Into Unsigned.
 	wrt!(out, u8,        u16, u32, u64, u128, i8, i16, i32, i64, i128);
@@ -219,9 +247,6 @@ fn build_impls() -> String {
 	wrt!(out, i32,   u8, u16, u32, u64, u128, i8, i16,      i64, i128);
 	wrt!(out, i64,   u8, u16, u32, u64, u128, i8, i16, i32,      i128);
 	wrt!(out, i128,  u8, u16, u32, u64, u128, i8, i16, i32, i64      );
-
-	// Noop casts.
-	wrt_self!(out,   u8, u16, u32, u64, u128, i8, i16, i32, i64, i128);
 
 	// Write cfg-gated modules containing all of the sized implementations for
 	// a given pointer width. Thankfully we only have to enumerate the into
@@ -244,6 +269,7 @@ mod sized {{
 			T::saturating_from(src as {unsigned})
 		}}
 	}}
+
 	impl<T: SaturatingFrom<{signed}>> SaturatingFrom<isize> for T {{
 		#[inline]
 		/// # Saturating From `isize`
@@ -261,7 +287,7 @@ mod sized {{
 			// Write all of the into implementations for our sized types into
 			// a separate buffer, then iterate over that so we can tweak the
 			// indentation.
-			let mut tmp = String::new();
+			tmp.truncate(0);
 			wrt!(tmp, usize as $unsigned, u8, u16, u32, u64, u128, i8, i16, i32, i64, i128);
 			wrt!(tmp, isize as $signed,   u8, u16, u32, u64, u128, i8, i16, i32, i64, i128);
 			for line in tmp.lines() {
@@ -292,47 +318,4 @@ fn out_path(name: &str) -> PathBuf {
 	let mut out = std::fs::canonicalize(dir).expect("Missing OUT_DIR.");
 	out.push(name);
 	out
-}
-
-/// # Write Cast Conditional.
-///
-/// This writes the body of a `saturating_from()` block, clamping as needed.
-/// It feels wrong using a method for this, but because of the conditional
-/// logic it's cleaner than shoving it into a macro.
-fn write_condition<TO, FROM>(out: &mut String)
-where TO: NumberExt + Into<AnyNum>, FROM: NumberExt + Into<AnyNum> {
-	// Minimum clamp.
-	let to: AnyNum = TO::MIN_NUMBER.into();
-	let from: AnyNum = FROM::MIN_NUMBER.into();
-	let min =
-		if from.signed_inner() < to.signed_inner() { Some(to) }
-		else { None };
-
-	// Maximum clamp.
-	let to: AnyNum = TO::MAX_NUMBER.into();
-	let from: AnyNum = FROM::MAX_NUMBER.into();
-	let max =
-		if to.unsigned_inner() < from.unsigned_inner() { Some(to) }
-		else { None };
-
-	// Write the conditions!
-	match (min, max) {
-		(Some(min), Some(max)) => writeln!(
-			out,
-			"\t\tif src <= {min} {{ {min} }}
-		else if src >= {max} {{ {max} }}
-		else {{ src as Self }}"
-		),
-		(Some(min), None) => writeln!(
-			out,
-			"\t\tif src <= {min} {{ {min} }}
-		else {{ src as Self }}"
-		),
-		(None, Some(max)) => writeln!(
-			out,
-			"\t\tif src >= {max} {{ {max} }}
-		else {{ src as Self }}"
-		),
-		(None, None) => writeln!(out, "\t\tsrc as Self"),
-	}.unwrap();
 }
