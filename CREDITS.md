@@ -1,6 +1,6 @@
 # Project Dependencies
     Package:   dactyl
-    Version:   0.10.1
-    Generated: 2025-04-03 18:33:45 UTC
+    Version:   0.10.2
+    Generated: 2025-05-15 19:23:07 UTC
 
 This project has no dependencies.

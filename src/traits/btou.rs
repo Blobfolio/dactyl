@@ -94,7 +94,6 @@ impl BytesToUnsigned for u8 {
 
 impl BytesToUnsigned for u16 {
 	#[cfg(target_endian = "little")]
-	#[must_use]
 	/// # Bytes to Unsigned.
 	fn btou(src: &[u8]) -> Option<Self> {
 		match src.len() {
@@ -121,7 +120,6 @@ impl BytesToUnsigned for u16 {
 
 impl BytesToUnsigned for u32 {
 	#[cfg(target_endian = "little")]
-	#[must_use]
 	/// # Bytes to Unsigned.
 	fn btou(src: &[u8]) -> Option<Self> {
 		match src.len() {
@@ -163,7 +161,6 @@ impl BytesToUnsigned for u32 {
 
 impl BytesToUnsigned for u64 {
 	#[cfg(target_endian = "little")]
-	#[must_use]
 	/// # Bytes to Unsigned.
 	fn btou(src: &[u8]) -> Option<Self> {
 		match src.len() {
@@ -232,7 +229,6 @@ impl BytesToUnsigned for u128 {
 	#[cfg(target_endian = "little")]
 	#[expect(clippy::cognitive_complexity, reason = "Readability.")]
 	#[expect(clippy::too_many_lines, reason = "These numbers are huge.")]
-	#[must_use]
 	/// # Bytes to Unsigned.
 	fn btou(src: &[u8]) -> Option<Self> {
 		match src.len() {
@@ -363,19 +359,16 @@ impl BytesToUnsigned for u128 {
 #[expect(clippy::cast_possible_truncation, reason = "False positive.")]
 impl BytesToUnsigned for usize {
 	#[cfg(target_pointer_width = "16")]
-	#[must_use]
 	#[inline]
 	/// # Bytes to Unsigned.
 	fn btou(src: &[u8]) -> Option<Self> { u16::btou(src).map(Self::from) }
 
 	#[cfg(target_pointer_width = "32")]
-	#[must_use]
 	#[inline]
 	/// # Bytes to Unsigned.
 	fn btou(src: &[u8]) -> Option<Self> { Some(u32::btou(src)? as Self) }
 
 	#[cfg(target_pointer_width = "64")]
-	#[must_use]
 	#[inline]
 	/// # Bytes to Unsigned.
 	fn btou(src: &[u8]) -> Option<Self> { Some(u64::btou(src)? as Self) }

@@ -112,7 +112,9 @@ impl fmt::Debug for NiceClock {
 
 impl fmt::Display for NiceClock {
 	#[inline]
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result { f.pad(self.as_str()) }
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		<str as fmt::Display>::fmt(self.as_str(), f)
+	}
 }
 
 /// # Helper: From Small.

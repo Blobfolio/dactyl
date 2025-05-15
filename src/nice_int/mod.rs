@@ -68,7 +68,7 @@ impl<const S: usize> Deref for NiceWrapper<S> {
 impl<const S: usize> fmt::Display for NiceWrapper<S> {
 	#[inline]
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		f.pad(self.as_str())
+		<str as fmt::Display>::fmt(self.as_str(), f)
 	}
 }
 

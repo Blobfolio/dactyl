@@ -116,7 +116,7 @@ impl fmt::Debug for NiceElapsed {
 impl fmt::Display for NiceElapsed {
 	#[inline]
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		f.write_str(self.as_str())
+		<str as fmt::Display>::fmt(self.as_str(), f)
 	}
 }
 
