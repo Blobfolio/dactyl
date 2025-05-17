@@ -278,7 +278,7 @@ impl NiceElapsed {
 	///     b"1 minute and 1 second"
 	/// );
 	/// ```
-	pub fn as_bytes(&self) -> &[u8] { &self.inner[0..self.len] }
+	pub fn as_bytes(&self) -> &[u8] { &self.inner[..self.len] }
 
 	#[expect(unsafe_code, reason = "Content is ASCII.")]
 	#[must_use]
