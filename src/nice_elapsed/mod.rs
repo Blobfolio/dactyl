@@ -5,6 +5,7 @@
 pub(super) mod clock;
 
 use crate::{
+	Digiter,
 	NiceU16,
 	traits::SaturatingFrom,
 };
@@ -304,223 +305,131 @@ impl NiceElapsed {
 }
 
 impl NiceElapsed {
-	#[expect(clippy::cast_possible_truncation, reason = "False positive.")]
-	#[expect(
-		clippy::many_single_char_names,
-		clippy::similar_names,
-		reason = "Consistency is preferred.",
-	)]
-	/// # From DHMS.ms.
+	/// # From Parts.
 	///
-	/// Build with days, hours, minutes, seconds, and milliseconds (hundredths).
+	/// Construct from days, hours, minutes, and/or seconds.
 	fn from_parts(d: u16, h: u8, m: u8, s: u8, ms: u8) -> Self {
-		// Figure out which parts apply.
-		let has_d = 0 != d;
-		let has_h = 0 != h;
-		let has_m = 0 != m;
-		let has_ms = 0 != ms;
-		let has_s = has_ms || 0 != s;
+		let mut parts = [Part::Day(d); 4];
+		let mut len = usize::from(d != 0);
+		if h != 0 {
+			parts[len] = Part::Hour(h);
+			len += 1;
+		}
+		if m != 0 {
+			parts[len] = Part::Minute(m);
+			len += 1;
+		}
+		if s != 0 || ms != 0 {
+			parts[len] = Part::Second(s, ms);
+			len += 1;
+		}
+		Self::from_parts_slice(&parts[..len])
+	}
 
-		// How many sections are there to write?
-		let total: u8 =
-			u8::from(has_d) +
-			u8::from(has_h) +
-			u8::from(has_m) +
-			u8::from(has_s);
-
-		// This shouldn't hit, but just in case.
-		if total == 0 { return Self::min(); }
+	/// # From Parts.
+	///
+	/// Construct from a sorted slice of non-zero time parts.
+	fn from_parts_slice(parts: &[Part]) -> Self {
+		/// # Write Glue.
+		fn write(glue: &[u8], slice: &mut [u8]) -> usize {
+			slice[..glue.len()].copy_from_slice(glue);
+			glue.len()
+		}
 
 		let mut inner = [b' '; SIZE];
-		let mut len = 0;
-		let mut idx: u8 = 0;
-
-		// Days.
-		if has_d {
-			idx += 1;
-
-			// If the days are small, we can handle the digits like normal.
-			if d < 10 {
-				inner[0] = d as u8 + b'0';
-				len = 1;
-			}
-			else if d < 100 {
-				inner[..2].copy_from_slice(crate::double(d as usize).as_slice());
-				len += 2;
-			}
-			else if d < 1000 {
-				inner[..3].copy_from_slice(crate::triple(d as usize).as_slice());
-				len += 3;
-			}
-			// Otherwise we'll need to leverage NiceU16.
-			else {
-				let tmp = NiceU16::from(d);
-				len += tmp.len();
-				inner[..len].copy_from_slice(tmp.as_bytes());
-			}
-			len += LabelKind::Day.write_to_slice(1 == d, idx, total, &mut inner[len..]);
-		}
-
-		// Hours.
-		if has_h {
-			idx += 1;
-			len += write_u8_to_slice(h, &mut inner[len..]);
-			len += LabelKind::Hour.write_to_slice(1 == h, idx, total, &mut inner[len..]);
-		}
-
-		// Minutes.
-		if has_m {
-			idx += 1;
-			len += write_u8_to_slice(m, &mut inner[len..]);
-			len += LabelKind::Minute.write_to_slice(1 == m, idx, total, &mut inner[len..]);
-		}
-
-		// Seconds.
-		if has_s {
-			idx += 1;
-			len += write_u8_to_slice(s, &mut inner[len..]);
-
-			// They might need milliseconds before the label.
-			if has_ms {
-				let [b, c] = crate::double(ms as usize);
-				inner[len..len + 3].copy_from_slice(&[b'.', b, c]);
-				len += 3;
-			}
-
-			len += LabelKind::Second.write_to_slice(1 == s && ! has_ms, idx, total, &mut inner[len..]);
-		}
-
-		Self { inner, len }
-	}
-}
-
-
-
-#[derive(Debug, Clone, Copy)]
-/// # Join Style.
-///
-/// The labels are written with their joins in one go. These are the different
-/// options.
-enum JoinKind {
-	/// # No Join.
-	None,
-
-	/// # And Join.
-	And,
-
-	/// # Comma Join.
-	Comma,
-
-	/// # Comma/And Join.
-	CommaAnd,
-}
-
-
-
-#[derive(Debug, Copy, Clone)]
-/// # Labels.
-///
-/// This holds the different labels/units for each time part.
-enum LabelKind {
-	/// # Days.
-	Day,
-
-	/// # Hours.
-	Hour,
-
-	/// # Minutes.
-	Minute,
-
-	/// # Seconds.
-	Second,
-}
-
-impl LabelKind {
-	/// # Write Label to Slice.
-	fn write_to_slice(self, singular: bool, idx: u8, total: u8, buf: &mut [u8]) -> usize {
-		let join =
-			// The last section needs no joiner.
-			if idx == total { JoinKind::None }
-			// If there are two sections, this must be the first, and simply
-			// needs an " and ".
-			else if total == 2 { JoinKind::And }
-			// If this is the penultimate section (of more than two), we need
-			// a comma and an and.
-			else if idx + 1 == total { JoinKind::CommaAnd }
-			// Otherwise just a comma.
-			else { JoinKind::Comma };
-
-		let new =
-			if singular { self.as_bytes_singular(join) }
-			else { self.as_bytes_plural(join) };
-
-		let len = new.len();
-		buf[..len].copy_from_slice(new);
-		len
-	}
-
-	/// # As Bytes (Singular).
-	const fn as_bytes_singular(self, join: JoinKind) -> &'static [u8] {
-		match (self, join) {
-			(Self::Day, JoinKind::And) => b" day and ",
-			(Self::Day, JoinKind::Comma) => b" day, ",
-			(Self::Day, _) => b" day",
-
-			(Self::Hour, JoinKind::None) => b" hour",
-			(Self::Hour, JoinKind::And) => b" hour and ",
-			(Self::Hour, JoinKind::Comma) => b" hour, ",
-			(Self::Hour, JoinKind::CommaAnd) => b" hour, and ",
-
-			(Self::Minute, JoinKind::None) => b" minute",
-			(Self::Minute, JoinKind::And) => b" minute and ",
-			(Self::Minute, JoinKind::Comma) => b" minute, ",
-			(Self::Minute, JoinKind::CommaAnd) => b" minute, and ",
-
-			(Self::Second, _) => b" second",
-		}
-	}
-
-	/// # As Bytes (Plural).
-	const fn as_bytes_plural(self, join: JoinKind) -> &'static [u8] {
-		match (self, join) {
-			(Self::Day, JoinKind::And) => b" days and ",
-			(Self::Day, JoinKind::Comma) => b" days, ",
-			(Self::Day, _) => b" days",
-
-			(Self::Hour, JoinKind::None) => b" hours",
-			(Self::Hour, JoinKind::And) => b" hours and ",
-			(Self::Hour, JoinKind::Comma) => b" hours, ",
-			(Self::Hour, JoinKind::CommaAnd) => b" hours, and ",
-
-			(Self::Minute, JoinKind::None) => b" minutes",
-			(Self::Minute, JoinKind::And) => b" minutes and ",
-			(Self::Minute, JoinKind::Comma) => b" minutes, ",
-			(Self::Minute, JoinKind::CommaAnd) => b" minutes, and ",
-
-			(Self::Second, _) => b" seconds",
+		match parts {
+			[] => Self::min(),
+			[a] => {
+				let len = a.write_to_inner(&mut inner);
+				Self { inner, len }
+			},
+			[a, b] => {
+				let mut len = a.write_to_inner(&mut inner);
+				len += write(b" and ", &mut inner[len..]);
+				len += b.write_to_inner(&mut inner[len..]);
+				Self { inner, len }
+			},
+			[rest @ .., b] => {
+				let mut len = 0;
+				for a in rest {
+					len += a.write_to_inner(&mut inner[len..]);
+					len += write(b", ", &mut inner[len..]);
+				}
+				len += write(b"and ", &mut inner[len..]);
+				len += b.write_to_inner(&mut inner[len..]);
+				Self { inner, len }
+			},
 		}
 	}
 }
 
 
 
-#[inline]
-/// # Write U8.
-///
-/// This converts a U8 to ASCII and writes it to the buffer without leading
-/// zeroes, returning the length written.
-fn write_u8_to_slice(num: u8, slice: &mut [u8]) -> usize {
-	if 99 < num {
-		slice[..3].copy_from_slice(crate::triple(num as usize).as_slice());
-		3
-	}
-	else if 9 < num {
-		slice[..2].copy_from_slice(crate::double(num as usize).as_slice());
-		2
-	}
-	else {
-		slice[0] = num + b'0';
-		1
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+/// # Time Part.
+enum Part {
+	/// # Day(s).
+	Day(u16),
+
+	/// # Hour(s).
+	Hour(u8),
+
+	/// # Minute(s).
+	Minute(u8),
+
+	/// # Second(s).
+	Second(u8, u8),
+}
+
+impl Part {
+	/// # Write to Slice.
+	///
+	/// Write the number and unit to the beginning of a slice, returning the
+	/// length written.
+	fn write_to_inner(self, slice: &mut [u8]) -> usize {
+		/// # Do the Write.
+		fn write(num: &[u8], label: &[u8], slice: &mut [u8]) -> usize {
+			slice[num.len()..num.len() + label.len()].copy_from_slice(label);
+			slice[..num.len()].copy_from_slice(num);
+			num.len() + label.len()
+		}
+
+		match self {
+			Self::Day(n) =>
+				if n == 1 { write(b"1", b" day", slice) }
+				else {
+					let tmp = NiceU16::from(n);
+					write(tmp.as_bytes(), b" days", slice)
+				},
+			Self::Hour(n) =>
+				if n == 1 { write(b"1", b" hour", slice) }
+				else {
+					let tmp = Digiter(n).double();
+					if tmp[0] == b'0' { write(&[tmp[1]], b" hours", slice) }
+					else { write(tmp.as_slice(), b" hours", slice) }
+				},
+			Self::Minute(n) =>
+				if n == 1 { write(b"1", b" minute", slice) }
+				else {
+					let tmp = Digiter(n).double();
+					if tmp[0] == b'0' { write(&[tmp[1]], b" minutes", slice) }
+					else { write(tmp.as_slice(), b" minutes", slice) }
+				},
+			Self::Second(n, 0) =>
+				if n == 1 { write(b"1", b" second", slice) }
+				else {
+					let tmp = Digiter(n).double();
+					if tmp[0] == b'0' { write(&[tmp[1]], b" seconds", slice) }
+					else { write(tmp.as_slice(), b" seconds", slice) }
+				},
+			Self::Second(s, ms) => {
+				let a = Digiter(s).double();
+				let b = Digiter(ms).double();
+				let tmp = [a[0], a[1], b'.', b[0], b[1]];
+				if a[0] == b'0' { write(&tmp[1..], b" seconds", slice) }
+				else { write(tmp.as_slice(), b" seconds", slice) }
+			},
+		}
 	}
 }
 

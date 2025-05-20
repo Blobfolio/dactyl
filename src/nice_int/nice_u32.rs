@@ -2,7 +2,10 @@
 # Dactyl: Nice u32.
 */
 
-use crate::NiceWrapper;
+use crate::{
+	Digiter,
+	NiceWrapper,
+};
 use std::num::NonZeroU32;
 
 
@@ -11,6 +14,9 @@ use std::num::NonZeroU32;
 ///
 /// 4294967295 + three commas = thirteen bytes.
 const SIZE: usize = 13;
+
+/// # Digit Indices.
+const INDICES: [usize; 10] = [12, 11, 10, 8, 7, 6, 4, 3, 2, 0];
 
 /// # Generate Inner Buffer.
 macro_rules! inner {
@@ -63,8 +69,38 @@ macro_rules! inner {
 pub type NiceU32 = NiceWrapper<SIZE>;
 
 super::nice_default!(NiceU32, inner!(b','), SIZE);
-super::nice_from_nz!(NiceU32, NonZeroU32);
-super::nice_parse!(NiceU32, u32);
+
+impl From<u32> for NiceU32 {
+	#[inline]
+	fn from(num: u32) -> Self {
+		let Some(digits) = Digiter::<u32>::new(num) else { return Self::MIN; };
+		let from = INDICES[digits.len() - 1];
+
+		let mut inner = inner!(b',');
+		let Ok(indices) = inner.get_disjoint_mut(INDICES) else { unreachable!(); };
+		for (d, v) in digits.zip(indices) {
+			*v = d;
+		}
+
+		Self { inner, from }
+	}
+}
+
+impl From<NonZeroU32> for NiceU32 {
+	#[inline]
+	fn from(num: NonZeroU32) -> Self {
+		let digits = Digiter(num.get());
+		let from = INDICES[digits.len() - 1];
+
+		let mut inner = inner!(b',');
+		let Ok(indices) = inner.get_disjoint_mut(INDICES) else { unreachable!(); };
+		for (d, v) in digits.zip(indices) {
+			*v = d;
+		}
+
+		Self { inner, from }
+	}
+}
 
 impl NiceU32 {
 	/// # Minimum Value.
@@ -138,12 +174,19 @@ impl NiceU32 {
 	/// This method will panic if the separator is invalid ASCII.
 	pub fn with_separator(num: u32, sep: u8) -> Self {
 		assert!(sep.is_ascii(), "Invalid separator.");
-		let mut out = Self {
-			inner: inner!(sep),
-			from: SIZE,
+
+		let mut inner = inner!(sep);
+		let Some(digits) = Digiter::<u32>::new(num) else {
+			return Self { inner, from: SIZE - 1 };
 		};
-		out.parse(num);
-		out
+		let from = INDICES[digits.len() - 1];
+
+		let Ok(indices) = inner.get_disjoint_mut(INDICES) else { unreachable!(); };
+		for (d, v) in digits.zip(indices) {
+			*v = d;
+		}
+
+		Self { inner, from }
 	}
 
 	/// # Replace.
@@ -174,8 +217,18 @@ impl NiceU32 {
 	/// assert_eq!(num.as_str(), "12_345");
 	/// ```
 	pub fn replace(&mut self, num: u32) {
-		self.from = SIZE;
-		self.parse(num);
+		let Some(digits) = Digiter::<u32>::new(num) else {
+			self.from = SIZE - 1;
+			self.inner[SIZE - 1] = b'0';
+			return;
+		};
+
+		self.from = INDICES[digits.len() - 1];
+
+		let Ok(indices) = self.inner.get_disjoint_mut(INDICES) else { unreachable!(); };
+		for (d, v) in digits.zip(indices) {
+			*v = d;
+		}
 	}
 }
 
@@ -185,6 +238,24 @@ impl NiceU32 {
 mod tests {
 	use super::*;
 	use num_format::{ToFormattedString, Locale};
+
+	#[test]
+	fn t_digit_indices() {
+		// Find the digit indices.
+		let mut idx: Vec<usize> = inner!(b',').into_iter()
+			.enumerate()
+			.filter_map(|(k, v)|
+				if v == b',' { None }
+				else { Some(k) }
+			)
+			.collect();
+
+		// Reverse it to match our constant.
+		idx.reverse();
+
+		// Now they should match!
+		assert_eq!(INDICES.as_slice(), idx);
+	}
 
 	#[test]
 	fn t_nice_u32() {

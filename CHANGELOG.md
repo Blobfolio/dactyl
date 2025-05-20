@@ -2,6 +2,17 @@
 
 
 
+## [0.11.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.11.0) - TBD
+
+### Changed
+
+* Bump `brunch` to `0.10` (dev)
+* Bump MSRV to `1.87`
+* `NiceClock::replace` is now `const`
+* Refactor `Nice*` struct internals
+
+
+
 ## [0.10.2](https://github.com/Blobfolio/dactyl/releases/tag/v0.10.2) - 2025-05-15
 
 ### Changed

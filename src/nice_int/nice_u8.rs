@@ -60,26 +60,20 @@ const ZERO: [u8; SIZE] = [b'0', b'0', b'0'];
 /// When converting from a `None`, the result will be equivalent to zero.
 pub type NiceU8 = NiceWrapper<SIZE>;
 
+super::nice_default!(NiceU8, ZERO, SIZE);
+
 impl From<u8> for NiceU8 {
+	#[inline]
 	fn from(num: u8) -> Self {
-		if 99 < num {
-			Self {
-				inner: crate::triple(num as usize),
-				from: 0,
-			}
-		}
-		else {
-			let [b, c] = crate::double(num as usize);
-			Self {
-				inner: [b'0', b, c],
-				from: if b == b'0' { 2 } else { 1 },
-			}
-		}
+		let (inner, from) = inner_from(num);
+		Self { inner, from: from as usize }
 	}
 }
 
-super::nice_default!(NiceU8, ZERO, SIZE);
-super::nice_from_nz!(NiceU8, NonZeroU8);
+impl From<NonZeroU8> for NiceU8 {
+	#[inline]
+	fn from(num: NonZeroU8) -> Self { Self::from(num.get()) }
+}
 
 impl NiceU8 {
 	/// # Minimum Value.
@@ -144,17 +138,9 @@ impl NiceU8 {
 	/// assert_eq!(num.as_str(), "1");
 	/// ```
 	pub const fn replace(&mut self, num: u8) {
-		if 99 < num {
-			self.inner = crate::triple(num as usize);
-			self.from = 0;
-		}
-		else {
-			let [b, c] = crate::double(num as usize);
-			self.inner[0] = b'0';
-			self.inner[1] = b;
-			self.inner[2] = c;
-			self.from = if b == b'0' { 2 } else { 1 };
-		}
+		let (inner, from) = inner_from(num);
+		self.inner = inner;
+		self.from = from as usize;
 	}
 }
 
@@ -256,9 +242,66 @@ impl NiceU8 {
 
 
 
+#[repr(u8)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+/// # The "From" Index.
+///
+/// This cheap enum is used to help the compiler understand `NiceU8`'s "from"
+/// value is appropriately sized for the array.
+enum FromIdx {
+	/// Starts at Zero (`100..=255`).
+	Zero = 0_u8,
+
+	/// # Starts at One (`10..=99`).
+	One = 1_u8,
+
+	/// # Starts at Two (`0..=9`).
+	Two = 2_u8,
+}
+
+
+
+/// # Inner and From.
+///
+/// The `u8` range is too small to benefit from our `Digiter` helper; this
+/// method handles the conversion all in one go, and is constant.
+const fn inner_from(mut num: u8) -> ([u8; 3], FromIdx) {
+	if 99 < num {
+		let c = (num % 10) + b'0';
+		num /= 10;
+		let b = (num % 10) + b'0';
+		let a = (num / 10) + b'0';
+		([a, b, c], FromIdx::Zero)
+	}
+	else if 9 < num {
+		let c = (num % 10) + b'0';
+		let b = (num / 10) + b'0';
+		([b'0', b, c], FromIdx::One)
+	}
+	else {
+		([b'0', b'0', num + b'0'], FromIdx::Two)
+	}
+}
+
+
+
 #[cfg(test)]
 mod tests {
 	use super::*;
+
+	#[test]
+	fn t_inner_from() {
+		// Everything else should be happy!
+		for i in u8::MIN..=u8::MAX {
+			// We should also test the `triple_len` method works as expected.
+			let (inner, from) = inner_from(i);
+			assert_eq!(
+				std::str::from_utf8(inner.as_slice()).ok(),
+				Some(format!("{i:03}")).as_deref(),
+			);
+			assert_eq!(i.to_string().len(), SIZE - from as usize);
+		}
+	}
 
 	#[test]
 	fn t_nice_u8() {
