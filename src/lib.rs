@@ -125,47 +125,106 @@ pub use nice_int::NiceWrapper;
 
 
 
-/// # Decimals, 00-99.
-static DOUBLE: [[u8; 2]; 100] = [
-	[48, 48], [48, 49], [48, 50], [48, 51], [48, 52], [48, 53], [48, 54], [48, 55], [48, 56], [48, 57],
-	[49, 48], [49, 49], [49, 50], [49, 51], [49, 52], [49, 53], [49, 54], [49, 55], [49, 56], [49, 57],
-	[50, 48], [50, 49], [50, 50], [50, 51], [50, 52], [50, 53], [50, 54], [50, 55], [50, 56], [50, 57],
-	[51, 48], [51, 49], [51, 50], [51, 51], [51, 52], [51, 53], [51, 54], [51, 55], [51, 56], [51, 57],
-	[52, 48], [52, 49], [52, 50], [52, 51], [52, 52], [52, 53], [52, 54], [52, 55], [52, 56], [52, 57],
-	[53, 48], [53, 49], [53, 50], [53, 51], [53, 52], [53, 53], [53, 54], [53, 55], [53, 56], [53, 57],
-	[54, 48], [54, 49], [54, 50], [54, 51], [54, 52], [54, 53], [54, 54], [54, 55], [54, 56], [54, 57],
-	[55, 48], [55, 49], [55, 50], [55, 51], [55, 52], [55, 53], [55, 54], [55, 55], [55, 56], [55, 57],
-	[56, 48], [56, 49], [56, 50], [56, 51], [56, 52], [56, 53], [56, 54], [56, 55], [56, 56], [56, 57],
-	[57, 48], [57, 49], [57, 50], [57, 51], [57, 52], [57, 53], [57, 54], [57, 55], [57, 56], [57, 57]
-];
+#[derive(Debug, Clone, Eq, PartialEq)]
+/// # Popping Digiterator.
+///
+/// This struct is used internally by the library's various `Nice*` structs to
+/// help stringify numbers.
+///
+/// It employs a naive divide-by-ten strategy to "pop" digits off the end one
+/// at a time, and an equally naive `n + b'0'` to convert them to ASCII for
+/// return.
+///
+/// (For our purposes, on-the-fly calculations are usually more performant
+/// than static lookup tables, and not too much worse the rest of the time.)
+///
+/// Depending on the situation, this either returns all digits last-to-first
+/// (via `Iterator`), or only the last 1-2 digits as a fixed, zero-padded
+/// `[u8;2]` (via `double`).
+pub(crate) struct Digiter<T>(pub(crate) T);
 
-#[inline]
-/// # Double Digits.
-///
-/// Return both digits, ASCII-fied.
-///
-/// ## Panics
-///
-/// This will panic if the number is greater than 99.
-pub(crate) const fn double(idx: usize) -> [u8; 2] { DOUBLE[idx] }
+/// # Helper: Primitive Implementations.
+macro_rules! digiter {
+	($($ty:ty),+) => ($(
+		#[allow(
+			dead_code,
+			clippy::allow_attributes,
+			trivial_numeric_casts,
+			reason = "Macro made me do it.",
+		)]
+		impl Digiter<$ty> {
+			/// # New Instance.
+			///
+			/// Return a new [`Digiter`] for a given value, unless zero.
+			///
+			/// This is only necessary for iteration purposes; for one-off
+			/// crunching it can instantiated directly to service any number,
+			/// including zero.
+			pub(crate) const fn new(num: $ty) -> Option<Self> {
+				if num == 0 { None }
+				else { Some(Self(num)) }
+			}
 
-#[inline]
-#[expect(clippy::cast_possible_truncation, reason = "False positive.")]
-#[expect(clippy::integer_division, reason = "We want this.")]
-/// # Triple Digits.
-///
-/// Return both digits, ASCII-fied.
-///
-/// ## Panics
-///
-/// This will panic if the number is greater than 999.
-pub(crate) const fn triple(idx: usize) -> [u8; 3] {
-	assert!(idx < 1000, "Bug: Triple must be less than 1000.");
-	let (div, rem) = (idx / 100, idx % 100);
-	let a = div as u8 + b'0';
-	let [b, c] = DOUBLE[rem];
-	[a, b, c]
+			#[must_use]
+			/// # Double.
+			///
+			/// Return the last two digits as ASCII bytes, zero-padded as
+			/// necessary.
+			///
+			/// Note this is independent of iteration and will always return
+			/// the same result for a given wrapped value.
+			pub(crate) const fn double(self) -> [u8; 2] {
+				let Self(mut num) = self;
+				let b = (num % 10) as u8 + b'0';
+				num /= 10;
+				let a = (num % 10) as u8 + b'0';
+				[a, b]
+			}
+		}
+
+		impl Iterator for Digiter<$ty> {
+			type Item = u8;
+
+			#[allow(
+				clippy::allow_attributes,
+				trivial_numeric_casts,
+				reason = "Macro made me do it.",
+			)]
+			#[inline]
+			/// # Digit Iteration.
+			///
+			/// Read and return each digit, right to left.
+			///
+			/// This will not work if the starting value is zero; `Digiter::new`
+			/// should be used for initialization to rule out that possibility.
+			fn next(&mut self) -> Option<Self::Item> {
+				if self.0 == 0 { None }
+				else {
+					let next = (self.0 % 10) as u8 + b'0';
+					self.0 = self.0.wrapping_div(10);
+					Some(next)
+				}
+			}
+
+			#[inline]
+			fn size_hint(&self) -> (usize, Option<usize>) {
+				let len = self.len();
+				(len, Some(len))
+			}
+		}
+
+		impl ExactSizeIterator for Digiter<$ty> {
+			#[inline]
+			fn len(&self) -> usize {
+				// Zero marks the end for the iterator.
+				if self.0 == 0 { 0 }
+				else { self.0.ilog10() as usize + 1 }
+			}
+		}
+	)+);
 }
+
+digiter!(u8, u16, u32, u64);
 
 
 
@@ -174,15 +233,103 @@ mod test {
 	use super::*;
 	use brunch as _;
 
-	#[test]
-	fn t_triple() {
-		// Note this also tests double().
-		for i in 0..=999 {
+	#[cfg(not(miri))]
+	const SAMPLE_SIZE: usize = 1_000_000;
+
+	#[cfg(miri)]
+	const SAMPLE_SIZE: usize = 1000; // Miri is way too slow for a million tests!
+
+	/// # Helper: Digiter test for one specific value.
+	macro_rules! t_digits {
+		($num:ident, $ty:ty) => (
+			// The expected number.
+			let expected = $num.to_string();
+
+			// Make sure we can digitize it.
+			let Some(iter) = Digiter::<$ty>::new($num) else {
+				panic!(
+					concat!("Digiter::new failed with {num}_", stringify!($ty)),
+					num=expected,
+				);
+			};
+
+			// Verify the iter's reported length matches.
 			assert_eq!(
-				format!("{i:03}").as_bytes(),
-				triple(i),
-				"Invalid triple conversion for {i}"
+				iter.len(),
+				expected.len(),
+				concat!("Digiter::len invalid for {num}_", stringify!($ty)),
+				num=expected,
 			);
+
+			// Collect the results and reverse, then verify we got it right!
+			let mut digits = iter.collect::<Vec<u8>>();
+			digits.reverse();
+			assert_eq!(
+				String::from_utf8(digits).ok().as_deref(),
+				Some(expected.as_str()),
+			);
+		);
+	}
+
+	#[test]
+	fn t_digiter_u8() {
+		// Zero is a no.
+		assert!(Digiter::<u8>::new(0).is_none());
+
+		// Everything else should be happy!
+		for i in 1..=u8::MAX { t_digits!(i, u8); }
+	}
+
+	#[test]
+	fn t_digiter_u16() {
+		// Zero is a no.
+		assert!(Digiter::<u16>::new(0).is_none());
+
+		#[cfg(not(miri))]
+		for i in 1..=u16::MAX { t_digits!(i, u16); }
+
+		#[cfg(miri)]
+		{
+			let mut rng = fastrand::Rng::new();
+			for i in std::iter::repeat_with(|| rng.u16(..)).take(SAMPLE_SIZE) {
+				t_digits!(i, u16);
+			}
+
+			// Explicitly check the max works.
+			let i = u16::MAX;
+			t_digits!(i, u16);
 		}
+	}
+
+	#[test]
+	fn t_digiter_u32() {
+		// Zero is a no.
+		assert!(Digiter::<u32>::new(0).is_none());
+
+		// Testing the full range takes too long.
+		let mut rng = fastrand::Rng::new();
+		for i in std::iter::repeat_with(|| rng.u32(..)).take(SAMPLE_SIZE) {
+			t_digits!(i, u32);
+		}
+
+		// Explicitly check the max works.
+		let i = u32::MAX;
+		t_digits!(i, u32);
+	}
+
+	#[test]
+	fn t_digiter_u64() {
+		// Zero is a no.
+		assert!(Digiter::<u64>::new(0).is_none());
+
+		// Testing the full range takes too long.
+		let mut rng = fastrand::Rng::new();
+		for i in std::iter::repeat_with(|| rng.u64(..)).take(SAMPLE_SIZE) {
+			t_digits!(i, u64);
+		}
+
+		// Explicitly check the max works.
+		let i = u64::MAX;
+		t_digits!(i, u64);
 	}
 }

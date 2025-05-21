@@ -150,18 +150,10 @@ impl<const S: usize> NiceWrapper<S> {
 
 
 #[doc(hidden)]
-/// # Helper: From<nonzero>
-macro_rules! nice_from_nz {
-	($nice:ty, $($nz:ty),+ $(,)?) => ($(
-		impl From<$nz> for $nice {
-			#[inline]
-			fn from(num: $nz) -> Self { Self::from(num.get()) }
-		}
-	)+);
-}
-
-#[doc(hidden)]
-/// # Helper: Default and Min.
+/// # Helper: Default/Empty.
+///
+/// This is shared by the various `NiceU*` types to generate appropriate
+/// `Self::default` and `Self::empty` helpers.
 macro_rules! nice_default {
 	($nice:ty, $zero:expr, $size:ident) => (
 		impl Default for $nice {
@@ -181,56 +173,4 @@ macro_rules! nice_default {
 	);
 }
 
-#[doc(hidden)]
-/// # Helper: Generic From/Parsing (u32 and larger).
-macro_rules! nice_parse {
-	($nice:ty, $uint:ty) => (
-		impl From<$uint> for $nice {
-			#[inline]
-			fn from(num: $uint) -> Self {
-				let mut out = Self::empty();
-				out.parse(num);
-				out
-			}
-		}
-
-		impl $nice {
-			#[expect(clippy::cast_possible_truncation, reason = "False positive.")]
-			/// # Parse.
-			fn parse(&mut self, mut num: $uint) {
-				for chunk in self.inner.rchunks_exact_mut(4) {
-					if 999 < num {
-						let rem = num % 1000;
-						num /= 1000;
-						chunk[1..].copy_from_slice(crate::triple(rem as usize).as_slice());
-						self.from -= 4;
-					}
-					else { break; }
-				}
-
-				if 99 < num {
-					self.from -= 3;
-					self.inner[self.from..self.from + 3].copy_from_slice(
-						crate::triple(num as usize).as_slice()
-					);
-				}
-				else if 9 < num {
-					self.from -= 2;
-					self.inner[self.from..self.from + 2].copy_from_slice(
-						crate::double(num as usize).as_slice()
-					);
-				}
-				else {
-					self.from -= 1;
-					self.inner[self.from] = num as u8 + b'0';
-				}
-			}
-		}
-	);
-}
-
-use {
-	nice_default,
-	nice_from_nz,
-	nice_parse,
-};
+use nice_default;

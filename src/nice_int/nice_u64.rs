@@ -2,7 +2,10 @@
 # Dactyl: Nice u64.
 */
 
-use crate::NiceWrapper;
+use crate::{
+	Digiter,
+	NiceWrapper,
+};
 use std::num::{
 	NonZeroU64,
 	NonZeroUsize,
@@ -14,6 +17,9 @@ use std::num::{
 ///
 /// 18446744073709551615 + six commas = 26 bytes.
 const SIZE: usize = 26;
+
+/// # Digit Indices.
+const INDICES: [usize; 20] = [25, 24, 23, 21, 20, 19, 17, 16, 15, 13, 12, 11, 9, 8, 7, 5, 4, 3, 1, 0];
 
 /// # Generate Inner Buffer.
 macro_rules! inner {
@@ -72,13 +78,50 @@ macro_rules! inner {
 /// or a panic will ensue.
 pub type NiceU64 = NiceWrapper<SIZE>;
 
+super::nice_default!(NiceU64, inner!(b','), SIZE);
+
+impl From<u64> for NiceU64 {
+	#[inline]
+	fn from(num: u64) -> Self {
+		let Some(digits) = Digiter::<u64>::new(num) else { return Self::MIN; };
+		let from = INDICES[digits.len() - 1];
+
+		let mut inner = inner!(b',');
+		let Ok(indices) = inner.get_disjoint_mut(INDICES) else { unreachable!(); };
+		for (d, v) in digits.zip(indices) {
+			*v = d;
+		}
+
+		Self { inner, from }
+	}
+}
+
+impl From<NonZeroU64> for NiceU64 {
+	#[inline]
+	fn from(num: NonZeroU64) -> Self {
+		let digits = Digiter(num.get());
+		let from = INDICES[digits.len() - 1];
+
+		let mut inner = inner!(b',');
+		let Ok(indices) = inner.get_disjoint_mut(INDICES) else { unreachable!(); };
+		for (d, v) in digits.zip(indices) {
+			*v = d;
+		}
+
+		Self { inner, from }
+	}
+}
+
 impl From<usize> for NiceU64 {
+	#[inline]
 	fn from(num: usize) -> Self { Self::from(num as u64) }
 }
 
-super::nice_default!(NiceU64, inner!(b','), SIZE);
-super::nice_from_nz!(NiceU64, NonZeroU64, NonZeroUsize);
-super::nice_parse!(NiceU64, u64);
+impl From<NonZeroUsize> for NiceU64 {
+	#[inline]
+	fn from(num: NonZeroUsize) -> Self { Self::from(num.get() as u64) }
+}
+
 
 impl NiceU64 {
 	/// # Minimum Value.
@@ -152,12 +195,19 @@ impl NiceU64 {
 	/// This method will panic if the separator is invalid ASCII.
 	pub fn with_separator(num: u64, sep: u8) -> Self {
 		assert!(sep.is_ascii(), "Invalid separator.");
-		let mut out = Self {
-			inner: inner!(sep),
-			from: SIZE,
+
+		let mut inner = inner!(sep);
+		let Some(digits) = Digiter::<u64>::new(num) else {
+			return Self { inner, from: SIZE - 1 };
 		};
-		out.parse(num);
-		out
+		let from = INDICES[digits.len() - 1];
+
+		let Ok(indices) = inner.get_disjoint_mut(INDICES) else { unreachable!(); };
+		for (d, v) in digits.zip(indices) {
+			*v = d;
+		}
+
+		Self { inner, from }
 	}
 
 	/// # Replace.
@@ -188,8 +238,18 @@ impl NiceU64 {
 	/// assert_eq!(num.as_str(), "12_345");
 	/// ```
 	pub fn replace(&mut self, num: u64) {
-		self.from = SIZE;
-		self.parse(num);
+		let Some(digits) = Digiter::<u64>::new(num) else {
+			self.from = SIZE - 1;
+			self.inner[SIZE - 1] = b'0';
+			return;
+		};
+
+		self.from = INDICES[digits.len() - 1];
+
+		let Ok(indices) = self.inner.get_disjoint_mut(INDICES) else { unreachable!(); };
+		for (d, v) in digits.zip(indices) {
+			*v = d;
+		}
 	}
 }
 
@@ -199,6 +259,24 @@ impl NiceU64 {
 mod tests {
 	use super::*;
 	use num_format::{ToFormattedString, Locale};
+
+	#[test]
+	fn t_digit_indices() {
+		// Find the digit indices.
+		let mut idx: Vec<usize> = inner!(b',').into_iter()
+			.enumerate()
+			.filter_map(|(k, v)|
+				if v == b',' { None }
+				else { Some(k) }
+			)
+			.collect();
+
+		// Reverse it to match our constant.
+		idx.reverse();
+
+		// Now they should match!
+		assert_eq!(INDICES.as_slice(), idx);
+	}
 
 	#[test]
 	fn t_nice_u64() {

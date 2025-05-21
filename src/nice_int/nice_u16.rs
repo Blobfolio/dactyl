@@ -2,7 +2,10 @@
 # Dactyl: Nice u16.
 */
 
-use crate::NiceWrapper;
+use crate::{
+	Digiter,
+	NiceWrapper,
+};
 use std::num::NonZeroU16;
 
 
@@ -12,8 +15,13 @@ use std::num::NonZeroU16;
 /// 65535 + one comma = six bytes.
 const SIZE: usize = 6;
 
-/// # Default Buffer.
-const ZERO: [u8; SIZE] = [b'0', b'0', b',', b'0', b'0', b'0'];
+/// # Digit Indices.
+const INDICES: [usize; 5] = [5, 4, 3, 1, 0];
+
+/// # Generate Inner Buffer.
+macro_rules! inner {
+	($sep:expr) => ([b'0', b'0', $sep, b'0', b'0', b'0']);
+}
 
 
 
@@ -60,46 +68,37 @@ const ZERO: [u8; SIZE] = [b'0', b'0', b',', b'0', b'0', b'0'];
 /// When converting from a `None`, the result will be equivalent to zero.
 pub type NiceU16 = NiceWrapper<SIZE>;
 
-super::nice_default!(NiceU16, ZERO, SIZE);
-super::nice_from_nz!(NiceU16, NonZeroU16);
+super::nice_default!(NiceU16, inner!(b','), SIZE);
 
 impl From<u16> for NiceU16 {
-	#[expect(clippy::cast_possible_truncation, reason = "False positive.")]
-	#[expect(clippy::many_single_char_names, reason = "Consistency is preferred.")]
+	#[inline]
 	fn from(num: u16) -> Self {
-		if 999 < num {
-			let (num, rem) = (num / 1000, num % 1000);
-			let [c, d, e] = crate::triple(rem as usize);
+		let Some(digits) = Digiter::<u16>::new(num) else { return Self::MIN; };
+		let from = INDICES[digits.len() - 1];
 
-			if 9 < num {
-				let [a, b] = crate::double(num as usize);
-				Self {
-					inner: [a, b, b',', c, d, e],
-					from: 0,
-				}
-			}
-			else {
-				let b = num as u8 + b'0';
-				Self {
-					inner: [b'0', b, b',', c, d, e],
-					from: 1,
-				}
-			}
+		let mut inner = inner!(b',');
+		let Ok(indices) = inner.get_disjoint_mut(INDICES) else { unreachable!(); };
+		for (d, v) in digits.zip(indices) {
+			*v = d;
 		}
-		else if 99 < num {
-			let [c, d, e] = crate::triple(num as usize);
-			Self {
-				inner: [b'0', b'0', b',', c, d, e],
-				from: 3,
-			}
+
+		Self { inner, from }
+	}
+}
+
+impl From<NonZeroU16> for NiceU16 {
+	#[inline]
+	fn from(num: NonZeroU16) -> Self {
+		let digits = Digiter(num.get());
+		let from = INDICES[digits.len() - 1];
+
+		let mut inner = inner!(b',');
+		let Ok(indices) = inner.get_disjoint_mut(INDICES) else { unreachable!(); };
+		for (d, v) in digits.zip(indices) {
+			*v = d;
 		}
-		else {
-			let [d, e] = crate::double(num as usize);
-			Self {
-				inner: [b'0', b'0', b',', b'0', d, e],
-				from: if d == b'0' { 5 } else { 4 },
-			}
-		}
+
+		Self { inner, from }
 	}
 }
 
@@ -122,7 +121,7 @@ impl NiceU16 {
 	/// );
 	/// ```
 	pub const MIN: Self = Self {
-		inner: ZERO,
+		inner: inner!(b','),
 		from: SIZE - 1,
 	};
 
@@ -175,12 +174,21 @@ impl NiceU16 {
 	/// This method will panic if the separator is invalid ASCII.
 	pub fn with_separator(num: u16, sep: u8) -> Self {
 		assert!(sep.is_ascii(), "Invalid separator.");
-		let mut out = Self::from(num);
-		out.inner[2] = sep;
-		out
+
+		let mut inner = inner!(sep);
+		let Some(digits) = Digiter::<u16>::new(num) else {
+			return Self { inner, from: SIZE - 1 };
+		};
+		let from = INDICES[digits.len() - 1];
+
+		let Ok(indices) = inner.get_disjoint_mut(INDICES) else { unreachable!(); };
+		for (d, v) in digits.zip(indices) {
+			*v = d;
+		}
+
+		Self { inner, from }
 	}
 
-	#[expect(clippy::cast_possible_truncation, reason = "False positive.")]
 	/// # Replace.
 	///
 	/// Reuse the backing storage behind `self` to hold a new nice number.
@@ -209,26 +217,17 @@ impl NiceU16 {
 	/// assert_eq!(num.as_str(), "12_345");
 	/// ```
 	pub fn replace(&mut self, num: u16) {
-		if 999 < num {
-			let (num, rem) = (num / 1000, num % 1000);
-			self.inner[3..].copy_from_slice(crate::triple(rem as usize).as_slice());
+		let Some(digits) = Digiter::<u16>::new(num) else {
+			self.from = SIZE - 1;
+			self.inner[SIZE - 1] = b'0';
+			return;
+		};
 
-			if 9 < num {
-				self.inner[..2].copy_from_slice(crate::double(num as usize).as_slice());
-				self.from = 0;
-			}
-			else {
-				self.inner[1] = num as u8 + b'0';
-				self.from = 1;
-			}
-		}
-		else if 99 < num {
-			self.inner[3..].copy_from_slice(crate::triple(num as usize).as_slice());
-			self.from = 3;
-		}
-		else {
-			self.inner[4..].copy_from_slice(crate::double(num as usize).as_slice());
-			self.from = if self.inner[4] == b'0' { 5 } else { 4 };
+		self.from = INDICES[digits.len() - 1];
+
+		let Ok(indices) = self.inner.get_disjoint_mut(INDICES) else { unreachable!(); };
+		for (d, v) in digits.zip(indices) {
+			*v = d;
 		}
 	}
 }
@@ -239,6 +238,24 @@ impl NiceU16 {
 mod tests {
 	use super::*;
 	use num_format::{ToFormattedString, Locale};
+
+	#[test]
+	fn t_digit_indices() {
+		// Find the digit indices.
+		let mut idx: Vec<usize> = inner!(b',').into_iter()
+			.enumerate()
+			.filter_map(|(k, v)|
+				if v == b',' { None }
+				else { Some(k) }
+			)
+			.collect();
+
+		// Reverse it to match our constant.
+		idx.reverse();
+
+		// Now they should match!
+		assert_eq!(INDICES.as_slice(), idx);
+	}
 
 	#[test]
 	fn t_nice_u16() {

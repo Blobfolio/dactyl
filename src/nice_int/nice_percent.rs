@@ -3,6 +3,7 @@
 */
 
 use crate::{
+	Digiter,
 	NiceWrapper,
 	traits::IntDivFloat,
 };
@@ -86,11 +87,9 @@ macro_rules! nice_from {
 				else if 9999 < whole { return Self::MAX; }
 
 				// Split the top and bottom.
-				let (top, bottom) = (whole / 100, whole % 100);
-
-				let [a, b] = crate::double(top as usize);
+				let [a, b] = Digiter(whole / 100).double();
+				let [c, d] = Digiter(whole % 100).double();
 				let from = if a == b'0' { SIZE - 5 } else { SIZE - 6 };
-				let [c, d] = crate::double(bottom as usize);
 
 				Self {
 					inner: [b'0', a, b, b'.', c, d, b'%'],
@@ -213,15 +212,9 @@ impl NicePercent {
 		else if 9999 < whole { return self.reset_max(); }
 
 		// Split the top and bottom.
-		let (top, bottom) = (whole / 100, whole % 100);
-
-		let [a, b] = crate::double(top as usize);
-		let [c, d] = crate::double(bottom as usize);
-		self.from = if a == b'0' { SIZE - 5 } else { SIZE - 6 };
-		self.inner[1] = a;
-		self.inner[2] = b;
-		self.inner[4] = c;
-		self.inner[5] = d;
+		[self.inner[1], self.inner[2]] = Digiter(whole / 100).double();
+		[self.inner[4], self.inner[5]] = Digiter(whole % 100).double();
+		self.from = if self.inner[1] == b'0' { SIZE - 5 } else { SIZE - 6 };
 	}
 
 	/// # Reset to Minimum.

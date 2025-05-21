@@ -2,7 +2,10 @@
 # Dactyl: Nice Float.
 */
 
-use crate::NiceWrapper;
+use crate::{
+	Digiter,
+	NiceWrapper,
+};
 
 
 
@@ -22,6 +25,9 @@ const IDX_DOT: usize = 27; // 36 - 8 - 1.
 
 /// # Precision Multiplier.
 const PRECISION: u32 = 100_000_000;
+
+/// # (Top) Digit Indices.
+const INDICES: [usize; 20] = [26, 25, 24, 22, 21, 20, 18, 17, 16, 14, 13, 12, 10, 9, 8, 6, 5, 4, 2, 1];
 
 /// # Generate Inner Buffer.
 macro_rules! inner {
@@ -114,14 +120,14 @@ impl From<f64> for NiceFloat {
 }
 
 impl From<FloatKind> for NiceFloat {
+	#[inline]
 	fn from(kind: FloatKind) -> Self {
 		match kind {
 			FloatKind::NaN => Self::NAN,
 			FloatKind::Zero => Self::ZERO,
 			FloatKind::Normal(top, bottom, neg) => {
 				let mut out = Self::ZERO;
-				out.parse_top(top, neg);
-				out.parse_bottom(bottom);
+				out.parse(top, neg, bottom);
 				out
 			},
 			FloatKind::Overflow(neg) => Self::overflow(neg),
@@ -270,8 +276,7 @@ impl NiceFloat {
 					from: IDX_DOT - 1,
 				};
 				out.inner[IDX_DOT] = point;
-				out.parse_top(top, neg);
-				out.parse_bottom(bottom);
+				out.parse(top, neg, bottom);
 				out
 			},
 			FloatKind::Overflow(neg) => {
@@ -457,44 +462,14 @@ impl NiceFloat {
 		)
 	}
 
-	#[expect(clippy::cast_possible_truncation, reason = "False positive.")]
-	/// # Parse Top.
-	///
-	/// Write the integer portion of the value. This works the same way as
-	/// [`NiceU64`](crate::NiceU64), except it may also write a negative sign
-	/// at the front.
-	fn parse_top(&mut self, mut top: u64, neg: bool) {
+	#[inline]
+	/// # Parse Parts.
+	fn parse(&mut self, top: u64, neg: bool, bottom: u32) {
 		// Write the top.
-		if 0 != top {
-			// Nudge the pointer to the dot; we'll re-rewind after each write.
-			self.from = IDX_DOT;
-
-			for chunk in self.inner[..IDX_DOT].rchunks_exact_mut(4) {
-				if 999 < top {
-					let rem = top % 1000;
-					top /= 1000;
-					chunk[1..].copy_from_slice(crate::triple(rem as usize).as_slice());
-					self.from -= 4;
-				}
-				else { break; }
-			}
-
-			if 99 < top {
-				self.from -= 3;
-				self.inner[self.from..self.from + 3].copy_from_slice(
-					crate::triple(top as usize).as_slice()
-				);
-			}
-			else if 9 < top {
-				self.from -= 2;
-				self.inner[self.from..self.from + 2].copy_from_slice(
-					crate::double(top as usize).as_slice()
-				);
-			}
-			else {
-				self.from -= 1;
-				self.inner[self.from] = top as u8 + b'0';
-			}
+		if let Some(digits) = Digiter::<u64>::new(top) {
+			self.from = INDICES[digits.len() - 1];
+			let Ok(indices) = self.inner.get_disjoint_mut(INDICES) else { unreachable!(); };
+			for (d, v) in digits.zip(indices) { *v = d; }
 
 			// Negative?
 			if neg {
@@ -502,33 +477,18 @@ impl NiceFloat {
 				self.inner[self.from] = b'-';
 			}
 		}
-	}
 
-	#[expect(clippy::integer_division, reason = "We want this.")]
-	/// # Parse Bottom.
-	///
-	/// This writes the fractional part of the float, if any.
-	///
-	/// Because decimals require no punctuation, we can handle it left-to-right
-	/// in chunks of two, aborting early if we run out of non-zero values to
-	/// write.
-	fn parse_bottom(&mut self, mut bottom: u32) {
-		if 0 != bottom {
-			let mut divisor = 1_000_000_u32;
-
-			for chunk in self.inner[IDX_DOT + 1..].chunks_exact_mut(2) {
-				let (a, b) = (bottom / divisor, bottom % divisor);
-
-				// Write the leftmost two digits.
-				if 0 != a {
-					chunk.copy_from_slice(crate::double(a as usize).as_slice());
+		// Write the bottom.
+		if let Some(mut digits) = Digiter::<u32>::new(bottom) {
+			// Drain extra digits if our bottom is too big for our precision.
+			if let Some(diff) = digits.len().checked_sub(8) {
+				for _ in 0..diff {
+					let _ = digits.next();
 				}
+			}
 
-				// Quitting time?
-				if 0 == b { break; }
-
-				bottom = b;
-				divisor /= 100;
+			for (d, v) in digits.zip(self.inner[IDX_DOT + 1..].iter_mut().rev()) {
+				*v = d;
 			}
 		}
 	}
@@ -776,6 +736,25 @@ mod tests {
 			assert_eq!(nice.len(), nice.as_bytes().len());
 			assert!(! nice.is_empty());
 		}
+	}
+
+	#[test]
+	fn t_digit_indices() {
+		// Find the digit indices.
+		let mut idx: Vec<usize> = inner!(b',').into_iter()
+			.enumerate()
+			.take(IDX_DOT) // Only applies to the top half.
+			.filter_map(|(k, v)|
+				if v == b'0' { Some(k) }
+				else { None }
+			)
+			.collect();
+
+		// Reverse it to match our constant.
+		idx.reverse();
+
+		// Now they should match!
+		assert_eq!(INDICES.as_slice(), idx);
 	}
 
 	#[test]

@@ -2,7 +2,10 @@
 # Dactyl: "Nice" Elapsed (Compact)
 */
 
-use crate::NiceElapsed;
+use crate::{
+	Digiter,
+	NiceElapsed,
+};
 use std::{
 	fmt,
 	num::{
@@ -15,16 +18,6 @@ use std::{
 		Instant,
 	},
 };
-
-
-
-/// # Minute Mask.
-///
-/// A lie for (computer) children: our h/m/s values can never exceed
-/// 23/59/59 respectively, but the compiler doesn't always understand that.
-/// This mask gives us a cheap way to let the compiler know these values cannot
-/// overflow the ASCII lookup table (max index 99).
-const TIME_MASK: u8 = 0b0011_1111;
 
 
 
@@ -195,9 +188,9 @@ impl From<u32> for NiceClock {
 	#[inline]
 	fn from(num: u32) -> Self {
 		let [h, m, s] = NiceElapsed::hms(num);
-		let h = crate::double(usize::from(h & TIME_MASK));
-		let m = crate::double(usize::from(m & TIME_MASK));
-		let s = crate::double(usize::from(s & TIME_MASK));
+		let h = Digiter(h).double();
+		let m = Digiter(m).double();
+		let s = Digiter(s).double();
 		Self {
 			inner: [h[0], h[1], b':', m[0], m[1], b':', s[0], s[1]],
 		}
@@ -271,17 +264,11 @@ impl NiceClock {
 	/// clock.replace(2);
 	/// assert_eq!(clock.as_str(), "00:00:02");
 	/// ```
-	pub fn replace(&mut self, num: u32) {
+	pub const fn replace(&mut self, num: u32) {
 		let [h, m, s] = NiceElapsed::hms(num);
-		let h = crate::double(usize::from(h & TIME_MASK));
-		let m = crate::double(usize::from(m & TIME_MASK));
-		let s = crate::double(usize::from(s & TIME_MASK));
-		self.inner[0] = h[0];
-		self.inner[1] = h[1];
-		self.inner[3] = m[0];
-		self.inner[4] = m[1];
-		self.inner[6] = s[0];
-		self.inner[7] = s[1];
+		[self.inner[0], self.inner[1]] = Digiter(h).double();
+		[self.inner[3], self.inner[4]] = Digiter(m).double();
+		[self.inner[6], self.inner[7]] = Digiter(s).double();
 	}
 }
 
