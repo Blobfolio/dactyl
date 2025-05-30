@@ -330,12 +330,6 @@ impl NiceElapsed {
 	///
 	/// Construct from a sorted slice of non-zero time parts.
 	fn from_parts_slice(parts: &[Part]) -> Self {
-		/// # Write Glue.
-		fn write(glue: &[u8], slice: &mut [u8]) -> usize {
-			slice[..glue.len()].copy_from_slice(glue);
-			glue.len()
-		}
-
 		let mut inner = [b' '; SIZE];
 		match parts {
 			[] => Self::min(),
@@ -345,7 +339,7 @@ impl NiceElapsed {
 			},
 			[a, b] => {
 				let mut len = a.write_to_inner(&mut inner);
-				len += write(b" and ", &mut inner[len..]);
+				len += write_one(b" and ", &mut inner[len..]);
 				len += b.write_to_inner(&mut inner[len..]);
 				Self { inner, len }
 			},
@@ -353,9 +347,9 @@ impl NiceElapsed {
 				let mut len = 0;
 				for a in rest {
 					len += a.write_to_inner(&mut inner[len..]);
-					len += write(b", ", &mut inner[len..]);
+					len += write_one(b", ", &mut inner[len..]);
 				}
-				len += write(b"and ", &mut inner[len..]);
+				len += write_one(b"and ", &mut inner[len..]);
 				len += b.write_to_inner(&mut inner[len..]);
 				Self { inner, len }
 			},
@@ -387,50 +381,72 @@ impl Part {
 	/// Write the number and unit to the beginning of a slice, returning the
 	/// length written.
 	fn write_to_inner(self, slice: &mut [u8]) -> usize {
-		/// # Do the Write.
-		fn write(num: &[u8], label: &[u8], slice: &mut [u8]) -> usize {
-			slice[num.len()..num.len() + label.len()].copy_from_slice(label);
-			slice[..num.len()].copy_from_slice(num);
-			num.len() + label.len()
+		/// # Trim Leading Zero.
+		///
+		/// Slice an array, dropping the first leading zero, if any.
+		const fn trim<const N: usize>(arr: &[u8; N]) -> &[u8] {
+			let slice = arr.as_slice();
+			if let [b'0', rest @ ..] = slice { rest }
+			else { slice }
 		}
 
 		match self {
 			Self::Day(n) =>
-				if n == 1 { write(b"1", b" day", slice) }
+				if n == 1 { write_one(b"1 day", slice) }
 				else {
 					let tmp = NiceU16::from(n);
-					write(tmp.as_bytes(), b" days", slice)
+					write_two(tmp.as_bytes(), b" days", slice)
 				},
 			Self::Hour(n) =>
-				if n == 1 { write(b"1", b" hour", slice) }
+				if n == 1 { write_one(b"1 hour", slice) }
 				else {
 					let tmp = Digiter(n).double();
-					if tmp[0] == b'0' { write(&[tmp[1]], b" hours", slice) }
-					else { write(tmp.as_slice(), b" hours", slice) }
+					let num = trim(&tmp);
+					write_two(num, b" hours", slice)
 				},
 			Self::Minute(n) =>
-				if n == 1 { write(b"1", b" minute", slice) }
+				if n == 1 { write_one(b"1 minute", slice) }
 				else {
 					let tmp = Digiter(n).double();
-					if tmp[0] == b'0' { write(&[tmp[1]], b" minutes", slice) }
-					else { write(tmp.as_slice(), b" minutes", slice) }
+					let num = trim(&tmp);
+					write_two(num, b" minutes", slice)
 				},
 			Self::Second(n, 0) =>
-				if n == 1 { write(b"1", b" second", slice) }
+				if n == 1 { write_one(b"1 second", slice) }
 				else {
 					let tmp = Digiter(n).double();
-					if tmp[0] == b'0' { write(&[tmp[1]], b" seconds", slice) }
-					else { write(tmp.as_slice(), b" seconds", slice) }
+					let num = trim(&tmp);
+					write_two(num, b" seconds", slice)
 				},
 			Self::Second(s, ms) => {
 				let a = Digiter(s).double();
 				let b = Digiter(ms).double();
 				let tmp = [a[0], a[1], b'.', b[0], b[1]];
-				if a[0] == b'0' { write(&tmp[1..], b" seconds", slice) }
-				else { write(tmp.as_slice(), b" seconds", slice) }
+				let num = trim(&tmp);
+				write_two(num, b" seconds", slice)
 			},
 		}
 	}
+}
+
+
+
+/// # Write One Thing.
+///
+/// Copy the data to the start of the slice and return its length.
+const fn write_one(a: &[u8], slice: &mut [u8]) -> usize {
+	let (slice, _) = slice.split_at_mut(a.len());
+	slice.copy_from_slice(a);
+	a.len()
+}
+
+/// # Write Two Things
+///
+/// Copy the data to the start of the slice and return its length.
+fn write_two(a: &[u8], b: &[u8], slice: &mut [u8]) -> usize {
+	slice[a.len()..a.len() + b.len()].copy_from_slice(b);
+	slice[..a.len()].copy_from_slice(a);
+	a.len() + b.len()
 }
 
 
