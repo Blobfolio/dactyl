@@ -12,7 +12,6 @@ use std::{
 		NonZero,
 		NonZeroU32,
 	},
-	ops::Deref,
 	time::{
 		Duration,
 		Instant,
@@ -86,13 +85,6 @@ impl ::std::borrow::Borrow<str> for NiceClock {
 impl Default for NiceClock {
 	#[inline]
 	fn default() -> Self { Self::MIN }
-}
-
-impl Deref for NiceClock {
-	type Target = [u8];
-
-	#[inline]
-	fn deref(&self) -> &Self::Target { self.as_bytes() }
 }
 
 impl fmt::Debug for NiceClock {

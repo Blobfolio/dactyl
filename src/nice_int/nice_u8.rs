@@ -44,7 +44,6 @@ const ZERO: [u8; SIZE] = [b'0', b'0', b'0'];
 /// * `Clone`
 /// * `Copy`
 /// * `Default`
-/// * `Deref<Target=[u8]>`
 /// * `Display`
 /// * `Eq` / `PartialEq`
 /// * `Hash`

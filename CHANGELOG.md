@@ -13,6 +13,11 @@
 * `NiceFloat::precise_bytes` is now const
 * `NiceFloat::precise_str` is now const
 
+### Breaking
+
+* Removed `Deref` impls for `Nice*` structs
+
+
 
 ## [0.11.1](https://github.com/Blobfolio/dactyl/releases/tag/v0.11.0) - 2025-05-30
 

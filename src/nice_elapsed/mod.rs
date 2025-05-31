@@ -12,7 +12,6 @@ use crate::{
 use std::{
 	fmt,
 	hash,
-	ops::Deref,
 	time::{
 		Duration,
 		Instant,
@@ -97,13 +96,6 @@ impl Default for NiceElapsed {
 			len: 0,
 		}
 	}
-}
-
-impl Deref for NiceElapsed {
-	type Target = [u8];
-
-	#[inline]
-	fn deref(&self) -> &Self::Target { self.as_bytes() }
 }
 
 impl fmt::Debug for NiceElapsed {
@@ -535,7 +527,7 @@ mod tests {
 
 	fn from_(num: u32, expected: &str) {
 		assert_eq!(
-			&*NiceElapsed::from(num),
+			NiceElapsed::from(num).as_bytes(),
 			expected.as_bytes(),
 			"{} should be equivalent to {:?}, not {:?}",
 			num,
@@ -546,7 +538,7 @@ mod tests {
 
 	fn from_d_(num: Duration, expected: &str) {
 		assert_eq!(
-			&*NiceElapsed::from(num),
+			NiceElapsed::from(num).as_bytes(),
 			expected.as_bytes(),
 			"{:?} should be equivalent to {:?}, not {:?}",
 			num,

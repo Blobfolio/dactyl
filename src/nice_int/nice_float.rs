@@ -87,7 +87,6 @@ macro_rules! inner {
 /// * `Clone`
 /// * `Copy`
 /// * `Default`
-/// * `Deref<Target=[u8]>`
 /// * `Display`
 /// * `Eq` / `PartialEq`
 /// * `Hash`

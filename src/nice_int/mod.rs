@@ -20,7 +20,6 @@ use std::{
 		Hash,
 		Hasher,
 	},
-	ops::Deref,
 };
 
 
@@ -57,12 +56,6 @@ impl<const S: usize> fmt::Debug for NiceWrapper<S> {
 			.field(&self.as_str())
 			.finish()
 	}
-}
-
-impl<const S: usize> Deref for NiceWrapper<S> {
-	type Target = [u8];
-	#[inline]
-	fn deref(&self) -> &Self::Target { self.as_bytes() }
 }
 
 impl<const S: usize> fmt::Display for NiceWrapper<S> {
