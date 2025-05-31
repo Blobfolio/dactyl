@@ -279,7 +279,10 @@ impl NiceElapsed {
 	///     b"1 minute and 1 second"
 	/// );
 	/// ```
-	pub fn as_bytes(&self) -> &[u8] { &self.inner[..self.len] }
+	pub const fn as_bytes(&self) -> &[u8] {
+		let (out, _) = self.inner.as_slice().split_at(self.len);
+		out
+	}
 
 	#[expect(unsafe_code, reason = "Content is ASCII.")]
 	#[must_use]
@@ -297,9 +300,13 @@ impl NiceElapsed {
 	///     "1 minute and 1 second"
 	/// );
 	/// ```
-	pub fn as_str(&self) -> &str {
-		debug_assert!(self.as_bytes().is_ascii(), "Bug: NiceElapsed is not ASCII.");
-		// Safety: numbers and labels are valid ASCII.
+	pub const fn as_str(&self) -> &str {
+		debug_assert!(
+			std::str::from_utf8(self.as_bytes()).is_ok(),
+			"BUG: NiceElapsed is not ASCII?!",
+		);
+
+		// Safety: values are always ASCII.
 		unsafe { std::str::from_utf8_unchecked(self.as_bytes()) }
 	}
 }

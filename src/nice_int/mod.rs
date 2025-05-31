@@ -124,17 +124,24 @@ impl<const S: usize> NiceWrapper<S> {
 	/// # As Bytes.
 	///
 	/// Return the value as a byte string.
-	pub fn as_bytes(&self) -> &[u8] { &self.inner[self.from..] }
+	pub const fn as_bytes(&self) -> &[u8] {
+		let (_, out) = self.inner.as_slice().split_at(self.from);
+		out
+	}
 
-	#[expect(unsafe_code, reason = "Content is ASCII.")]
+	#[expect(unsafe_code, reason = "Content is UTF-8.")]
 	#[must_use]
 	#[inline]
 	/// # As Str.
 	///
 	/// Return the value as a string slice.
-	pub fn as_str(&self) -> &str {
-		debug_assert!(std::str::from_utf8(self.as_bytes()).is_ok(), "NiceWrapper is not UTF.");
-		// Safety: numbers are valid ASCII.
+	pub const fn as_str(&self) -> &str {
+		debug_assert!(
+			std::str::from_utf8(self.as_bytes()).is_ok(),
+			"BUG: NiceWrapper is not UTF-8?!",
+		);
+
+		// Safety: values are always ASCII, except for NiceFloat::INFINITY.
 		unsafe { std::str::from_utf8_unchecked(self.as_bytes()) }
 	}
 

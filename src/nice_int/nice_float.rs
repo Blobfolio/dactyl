@@ -111,12 +111,12 @@ impl Default for NiceFloat {
 
 impl From<f32> for NiceFloat {
 	#[inline]
-	fn from(num: f32) -> Self { Self::from(FloatKind::from(num)) }
+	fn from(num: f32) -> Self { Self::from(FloatKind::from32(num)) }
 }
 
 impl From<f64> for NiceFloat {
 	#[inline]
-	fn from(num: f64) -> Self { Self::from(FloatKind::from(num)) }
+	fn from(num: f64) -> Self { Self::from(FloatKind::from64(num)) }
 }
 
 impl From<FloatKind> for NiceFloat {
@@ -263,7 +263,7 @@ impl NiceFloat {
 		assert!(sep.is_ascii(), "Invalid separator.");
 		assert!(point.is_ascii(), "Invalid decimal point.");
 
-		match FloatKind::from(num) {
+		match FloatKind::from64(num) {
 			FloatKind::NaN => Self::NAN,
 			FloatKind::Zero => {
 				let mut out = Self::ZERO;
@@ -318,7 +318,7 @@ impl NiceFloat {
 	/// assert_eq!(nice.as_bytes(), b"12,345.67833333");
 	/// assert_eq!(nice.compact_bytes(), b"12,345.67833333"); // Nothing to trim.
 	/// ```
-	pub fn compact_bytes(&self) -> &[u8] {
+	pub const fn compact_bytes(&self) -> &[u8] {
 		let mut out = self.as_bytes();
 		if self.from < IDX_DOT {
 			let mut idx: u8 = 0;
@@ -327,9 +327,7 @@ impl NiceFloat {
 					out = rest;
 					break;
 				}
-				else if b'0'.eq(last) {
-					out = rest;
-				}
+				else if *last == b'0' { out = rest; }
 				else { break; }
 				idx += 1;
 			}
@@ -337,7 +335,7 @@ impl NiceFloat {
 		out
 	}
 
-	#[expect(unsafe_code, reason = "Content is ASCII.")]
+	#[expect(unsafe_code, reason = "Content is UTF-8.")]
 	#[inline]
 	#[must_use]
 	/// # Compact String.
@@ -363,12 +361,13 @@ impl NiceFloat {
 	/// assert_eq!(nice.as_str(), "12,345.67833333");
 	/// assert_eq!(nice.compact_str(), "12,345.67833333"); // Nothing to trim.
 	/// ```
-	pub fn compact_str(&self) -> &str {
+	pub const fn compact_str(&self) -> &str {
 		debug_assert!(
 			std::str::from_utf8(self.compact_bytes()).is_ok(),
-			"Bug: NiceFloat is not UTF."
+			"BUG: NiceFloat is not UTF-8?!",
 		);
-		// Safety: numbers are valid ASCII.
+
+		// Safety: values are always ASCII, except for NiceFloat::INFINITY.
 		unsafe { std::str::from_utf8_unchecked(self.compact_bytes()) }
 	}
 
@@ -398,16 +397,25 @@ impl NiceFloat {
 	/// assert_eq!(nice.precise_bytes(6), b"12,345.678000");
 	/// assert_eq!(nice.precise_bytes(7), b"12,345.6780000");
 	/// assert_eq!(nice.precise_bytes(8), b"12,345.67800000");
+	///
+	/// // This has no effect on weird floats.
+	/// assert_eq!(NiceFloat::NAN.precise_bytes(8), b"NaN");
+	/// assert_eq!(NiceFloat::INFINITY.precise_bytes(8), "∞".as_bytes());
 	/// ```
-	pub fn precise_bytes(&self, precision: usize) -> &[u8] {
-		if precision < 8 && self.has_dot() {
-			if precision == 0 { &self.inner[self.from..IDX_DOT] }
-			else { &self.inner[self.from..=IDX_DOT + precision] }
+	pub const fn precise_bytes(&self, precision: usize) -> &[u8] {
+		let mut out = self.as_bytes();
+		if 9 < out.len() && precision < 8 && self.has_dot() {
+			if precision == 0 {
+				(out, _) = out.split_at(out.len() - 9);
+			}
+			else {
+				(out, _) = out.split_at(out.len() - (8 - precision));
+			}
 		}
-		else { self.as_bytes() }
+		out
 	}
 
-	#[expect(unsafe_code, reason = "Content is ASCII.")]
+	#[expect(unsafe_code, reason = "Content is UTF-8.")]
 	#[inline]
 	#[must_use]
 	/// # Precise String.
@@ -434,13 +442,18 @@ impl NiceFloat {
 	/// assert_eq!(nice.precise_str(6), "12,345.678000");
 	/// assert_eq!(nice.precise_str(7), "12,345.6780000");
 	/// assert_eq!(nice.precise_str(8), "12,345.67800000");
+	///
+	/// // This has no effect on weird floats.
+	/// assert_eq!(NiceFloat::NAN.precise_str(8), "NaN");
+	/// assert_eq!(NiceFloat::INFINITY.precise_str(8), "∞");
 	/// ```
-	pub fn precise_str(&self, precision: usize) -> &str {
+	pub const fn precise_str(&self, precision: usize) -> &str {
 		debug_assert!(
 			std::str::from_utf8(self.precise_bytes(precision)).is_ok(),
-			"Bug: NiceFloat is not UTF."
+			"BUG: NiceFloat is not UTF-8?!",
 		);
-		// Safety: numbers are valid ASCII.
+
+		// Safety: values are always ASCII, except for NiceFloat::INFINITY.
 		unsafe { std::str::from_utf8_unchecked(self.precise_bytes(precision)) }
 	}
 }
@@ -571,16 +584,26 @@ pub enum FloatKind {
 
 impl From<f32> for FloatKind {
 	#[inline]
-	fn from(num: f32) -> Self {
-		if num.is_nan() { Self::NaN }
-		else if num.is_infinite() { Self::Infinity }
-		else { parse_finite_f32(num) }
-	}
+	fn from(num: f32) -> Self { Self::from32(num) }
 }
 
 impl From<f64> for FloatKind {
 	#[inline]
-	fn from(num: f64) -> Self {
+	fn from(num: f64) -> Self { Self::from64(num) }
+}
+
+impl FloatKind {
+	#[must_use]
+	/// # From `f32`.
+	const fn from32(num: f32) -> Self {
+		if num.is_nan() { Self::NaN }
+		else if num.is_infinite() { Self::Infinity }
+		else { parse_finite_f32(num) }
+	}
+
+	#[must_use]
+	/// # From `f64`.
+	const fn from64(num: f64) -> Self {
 		if num.is_nan() { Self::NaN }
 		else if num.is_infinite() { Self::Infinity }
 		else { parse_finite_f64(num) }
@@ -597,7 +620,7 @@ impl From<f64> for FloatKind {
 ///
 /// This is essentially the same thing [`std::time::Duration`] does when
 /// instantiating from fractional seconds.
-fn parse_finite_f32(num: f32) -> FloatKind {
+const fn parse_finite_f32(num: f32) -> FloatKind {
 	/// # Minimum Exponent.
 	const MIN_EXP: i16 = 1 - (1 << 8) / 2;
 
@@ -616,18 +639,18 @@ fn parse_finite_f32(num: f32) -> FloatKind {
 		if exp < -31 { (0, 0) }
 		// Just a fraction.
 		else if exp < 0 {
-			let t = u64::from(mant) << (41 + exp);
-			(0, round_tie_even(23 + 41, u128::from(t)))
+			let t = (mant as u64) << (41 + exp);
+			(0, round_tie_even(23 + 41, t as u128))
 		}
 		// Both parts.
 		else if exp < 23 {
-			let top = u64::from(mant >> (23 - exp));
-			let bottom = round_tie_even(23, u128::from((mant << exp) & MANT_MASK));
+			let top = (mant >> (23 - exp)) as u64;
+			let bottom = round_tie_even(23, ((mant << exp) & MANT_MASK) as u128);
 			(top, bottom)
 		}
 		// Just an integer.
 		else if exp < 64 {
-			let top = u64::from(mant) << (exp - 23);
+			let top = (mant as u64) << (exp - 23);
 			(top, 0)
 		}
 		// Too big.
@@ -646,7 +669,7 @@ fn parse_finite_f32(num: f32) -> FloatKind {
 ///
 /// This is essentially the same thing [`std::time::Duration`] does when
 /// instantiating from fractional seconds.
-fn parse_finite_f64(num: f64) -> FloatKind {
+const fn parse_finite_f64(num: f64) -> FloatKind {
 	/// # Minimum Exponent.
 	const MIN_EXP: i16 = 1 - (1 << 11) / 2;
 
@@ -665,7 +688,7 @@ fn parse_finite_f64(num: f64) -> FloatKind {
 		if exp < -31 { (0, 0) }
 		// Just a fraction (probably).
 		else if exp < 0 {
-			let bottom = round_tie_even(52 + 44, u128::from(mant) << (44 + exp));
+			let bottom = round_tie_even(52 + 44, (mant as u128) << (44 + exp));
 
 			if bottom == PRECISION { (1, 0) }
 			else { (0, bottom) }
@@ -673,7 +696,7 @@ fn parse_finite_f64(num: f64) -> FloatKind {
 		// Both parts (probably).
 		else if exp < 52 {
 			let top = mant >> (52 - exp);
-			let bottom = round_tie_even(52, u128::from((mant << exp) & MANT_MASK));
+			let bottom = round_tie_even(52, ((mant << exp) & MANT_MASK) as u128);
 
 			if bottom == PRECISION { (top + 1, 0) }
 			else { (top, bottom) }

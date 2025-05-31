@@ -290,7 +290,7 @@ impl NiceClock {
 	/// ```
 	pub const fn as_bytes(&self) -> &[u8] { self.inner.as_slice() }
 
-	#[expect(unsafe_code, reason = "For performance.")]
+	#[expect(unsafe_code, reason = "Content is ASCII.")]
 	#[must_use]
 	/// # As String.
 	///
@@ -307,8 +307,13 @@ impl NiceClock {
 	/// );
 	/// ```
 	pub const fn as_str(&self) -> &str {
-		// Safety: all bytes are ASCII.
-		unsafe { std::str::from_utf8_unchecked(self.inner.as_slice()) }
+		debug_assert!(
+			std::str::from_utf8(self.as_bytes()).is_ok(),
+			"BUG: NiceClock is not ASCII?!",
+		);
+
+		// Safety: values are always ASCII.
+		unsafe { std::str::from_utf8_unchecked(self.as_bytes()) }
 	}
 
 	#[must_use]
