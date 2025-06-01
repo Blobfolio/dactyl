@@ -12,7 +12,6 @@ use std::{
 		NonZero,
 		NonZeroU32,
 	},
-	ops::Deref,
 	time::{
 		Duration,
 		Instant,
@@ -86,13 +85,6 @@ impl ::std::borrow::Borrow<str> for NiceClock {
 impl Default for NiceClock {
 	#[inline]
 	fn default() -> Self { Self::MIN }
-}
-
-impl Deref for NiceClock {
-	type Target = [u8];
-
-	#[inline]
-	fn deref(&self) -> &Self::Target { self.as_bytes() }
 }
 
 impl fmt::Debug for NiceClock {
@@ -290,7 +282,7 @@ impl NiceClock {
 	/// ```
 	pub const fn as_bytes(&self) -> &[u8] { self.inner.as_slice() }
 
-	#[expect(unsafe_code, reason = "For performance.")]
+	#[expect(unsafe_code, reason = "Content is ASCII.")]
 	#[must_use]
 	/// # As String.
 	///
@@ -307,9 +299,45 @@ impl NiceClock {
 	/// );
 	/// ```
 	pub const fn as_str(&self) -> &str {
-		// Safety: all bytes are ASCII.
-		unsafe { std::str::from_utf8_unchecked(self.inner.as_slice()) }
+		debug_assert!(
+			std::str::from_utf8(self.as_bytes()).is_ok(),
+			"BUG: NiceClock is not ASCII?!",
+		);
+
+		// Safety: values are always ASCII.
+		unsafe { std::str::from_utf8_unchecked(self.as_bytes()) }
 	}
+
+	#[must_use]
+	/// # Is Empty?
+	///
+	/// The string/byte output has a fixed length so is never empty.
+	///
+	/// ## Examples
+	///
+	/// ```
+	/// use dactyl::NiceClock;
+	/// assert!(! NiceClock::default().is_empty());
+	/// ```
+	pub const fn is_empty(&self) -> bool { false }
+
+	#[must_use]
+	/// # Length.
+	///
+	/// The length of the string/byte output is fixed, so this always returns
+	/// `8`.
+	///
+	/// ## Examples
+	///
+	/// ```
+	/// use dactyl::NiceClock;
+	///
+	/// let nice = NiceClock::default();
+	/// assert_eq!(nice.as_str(), "00:00:00");
+	/// assert_eq!(nice.len(), nice.as_str().len());
+	/// assert_eq!(nice.len(), 8);
+	/// ```
+	pub const fn len(&self) -> usize { self.inner.len() }
 
 	#[must_use]
 	/// # Hours.

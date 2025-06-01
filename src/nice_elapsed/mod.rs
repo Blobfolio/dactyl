@@ -12,7 +12,6 @@ use crate::{
 use std::{
 	fmt,
 	hash,
-	ops::Deref,
 	time::{
 		Duration,
 		Instant,
@@ -97,13 +96,6 @@ impl Default for NiceElapsed {
 			len: 0,
 		}
 	}
-}
-
-impl Deref for NiceElapsed {
-	type Target = [u8];
-
-	#[inline]
-	fn deref(&self) -> &Self::Target { self.as_bytes() }
 }
 
 impl fmt::Debug for NiceElapsed {
@@ -265,6 +257,39 @@ impl NiceElapsed {
 	}
 
 	#[must_use]
+	/// # Is Empty?
+	///
+	/// Returns `true` if the string/byte form is empty.
+	///
+	/// ## Examples
+	///
+	/// ```
+	/// use dactyl::NiceElapsed;
+	/// assert!(! NiceElapsed::from(61_u32).is_empty());
+	/// ```
+	pub const fn is_empty(&self) -> bool { self.len == 0 }
+
+	#[must_use]
+	/// # Length.
+	///
+	/// Return the length of the value in string/byte form.
+	///
+	/// ## Examples
+	///
+	/// ```
+	/// use dactyl::NiceElapsed;
+	///
+	/// let nice = NiceElapsed::from(61_u32);
+	/// assert_eq!(
+	///     nice.as_str(),
+	///     "1 minute and 1 second",
+	/// );
+	/// assert_eq!(nice.len(), nice.as_str().len());
+	/// assert_eq!(nice.len(), 21);
+	/// ```
+	pub const fn len(&self) -> usize { self.len }
+
+	#[must_use]
 	#[inline]
 	/// # As Bytes.
 	///
@@ -279,7 +304,10 @@ impl NiceElapsed {
 	///     b"1 minute and 1 second"
 	/// );
 	/// ```
-	pub fn as_bytes(&self) -> &[u8] { &self.inner[..self.len] }
+	pub const fn as_bytes(&self) -> &[u8] {
+		let (out, _) = self.inner.as_slice().split_at(self.len);
+		out
+	}
 
 	#[expect(unsafe_code, reason = "Content is ASCII.")]
 	#[must_use]
@@ -297,9 +325,13 @@ impl NiceElapsed {
 	///     "1 minute and 1 second"
 	/// );
 	/// ```
-	pub fn as_str(&self) -> &str {
-		debug_assert!(self.as_bytes().is_ascii(), "Bug: NiceElapsed is not ASCII.");
-		// Safety: numbers and labels are valid ASCII.
+	pub const fn as_str(&self) -> &str {
+		debug_assert!(
+			std::str::from_utf8(self.as_bytes()).is_ok(),
+			"BUG: NiceElapsed is not ASCII?!",
+		);
+
+		// Safety: values are always ASCII.
 		unsafe { std::str::from_utf8_unchecked(self.as_bytes()) }
 	}
 }
@@ -457,78 +489,78 @@ mod tests {
 
 	#[test]
 	fn t_from() {
-		_from(0, "0 seconds");
-		_from(1, "1 second");
-		_from(50, "50 seconds");
+		from_(0, "0 seconds");
+		from_(1, "1 second");
+		from_(50, "50 seconds");
 
-		_from(60, "1 minute");
-		_from(61, "1 minute and 1 second");
-		_from(100, "1 minute and 40 seconds");
-		_from(2101, "35 minutes and 1 second");
-		_from(2121, "35 minutes and 21 seconds");
+		from_(60, "1 minute");
+		from_(61, "1 minute and 1 second");
+		from_(100, "1 minute and 40 seconds");
+		from_(2101, "35 minutes and 1 second");
+		from_(2121, "35 minutes and 21 seconds");
 
-		_from(3600, "1 hour");
-		_from(3601, "1 hour and 1 second");
-		_from(3602, "1 hour and 2 seconds");
-		_from(3660, "1 hour and 1 minute");
-		_from(3661, "1 hour, 1 minute, and 1 second");
-		_from(3662, "1 hour, 1 minute, and 2 seconds");
-		_from(3720, "1 hour and 2 minutes");
-		_from(3721, "1 hour, 2 minutes, and 1 second");
-		_from(3723, "1 hour, 2 minutes, and 3 seconds");
-		_from(36001, "10 hours and 1 second");
-		_from(36015, "10 hours and 15 seconds");
-		_from(36060, "10 hours and 1 minute");
-		_from(37732, "10 hours, 28 minutes, and 52 seconds");
-		_from(37740, "10 hours and 29 minutes");
+		from_(3600, "1 hour");
+		from_(3601, "1 hour and 1 second");
+		from_(3602, "1 hour and 2 seconds");
+		from_(3660, "1 hour and 1 minute");
+		from_(3661, "1 hour, 1 minute, and 1 second");
+		from_(3662, "1 hour, 1 minute, and 2 seconds");
+		from_(3720, "1 hour and 2 minutes");
+		from_(3721, "1 hour, 2 minutes, and 1 second");
+		from_(3723, "1 hour, 2 minutes, and 3 seconds");
+		from_(36001, "10 hours and 1 second");
+		from_(36015, "10 hours and 15 seconds");
+		from_(36060, "10 hours and 1 minute");
+		from_(37732, "10 hours, 28 minutes, and 52 seconds");
+		from_(37740, "10 hours and 29 minutes");
 
-		_from(86400, "1 day");
-		_from(86401, "1 day and 1 second");
-		_from(86461, "1 day, 1 minute, and 1 second");
-		_from(428_390, "4 days, 22 hours, 59 minutes, and 50 seconds");
-		_from(878_428_390, "10,166 days, 23 hours, 53 minutes, and 10 seconds");
-		_from(u32::MAX, "49,710 days, 6 hours, 28 minutes, and 15 seconds");
+		from_(86400, "1 day");
+		from_(86401, "1 day and 1 second");
+		from_(86461, "1 day, 1 minute, and 1 second");
+		from_(428_390, "4 days, 22 hours, 59 minutes, and 50 seconds");
+		from_(878_428_390, "10,166 days, 23 hours, 53 minutes, and 10 seconds");
+		from_(u32::MAX, "49,710 days, 6 hours, 28 minutes, and 15 seconds");
 	}
 
 	#[test]
 	fn t_from_duration() {
-		_from_d(Duration::from_millis(0), "0 seconds");
-		_from_d(Duration::from_millis(1), "0 seconds");
-		_from_d(Duration::from_millis(10), "0.01 seconds");
-		_from_d(Duration::from_millis(100), "0.10 seconds");
-		_from_d(Duration::from_millis(1000), "1 second");
-		_from_d(Duration::from_millis(50000), "50 seconds");
-		_from_d(Duration::from_millis(50020), "50.02 seconds");
+		from_d_(Duration::from_millis(0), "0 seconds");
+		from_d_(Duration::from_millis(1), "0 seconds");
+		from_d_(Duration::from_millis(10), "0.01 seconds");
+		from_d_(Duration::from_millis(100), "0.10 seconds");
+		from_d_(Duration::from_millis(1000), "1 second");
+		from_d_(Duration::from_millis(50000), "50 seconds");
+		from_d_(Duration::from_millis(50020), "50.02 seconds");
 
-		_from_d(Duration::from_millis(60000), "1 minute");
-		_from_d(Duration::from_millis(60001), "1 minute");
-		_from_d(Duration::from_millis(60340), "1 minute and 0.34 seconds");
-		_from_d(Duration::from_millis(61000), "1 minute and 1 second");
-		_from_d(Duration::from_millis(61999), "1 minute and 1.99 seconds");
-		_from_d(Duration::from_millis(2_101_000), "35 minutes and 1 second");
-		_from_d(Duration::from_millis(2_101_050), "35 minutes and 1.05 seconds");
-		_from_d(Duration::from_millis(2_121_000), "35 minutes and 21 seconds");
-		_from_d(Duration::from_millis(2_121_820), "35 minutes and 21.82 seconds");
-		_from_d(Duration::from_nanos(2_121_999_999_999), "35 minutes and 21.99 seconds");
+		from_d_(Duration::from_millis(60000), "1 minute");
+		from_d_(Duration::from_millis(60001), "1 minute");
+		from_d_(Duration::from_millis(60340), "1 minute and 0.34 seconds");
+		from_d_(Duration::from_millis(61000), "1 minute and 1 second");
+		from_d_(Duration::from_millis(61999), "1 minute and 1.99 seconds");
+		from_d_(Duration::from_millis(2_101_000), "35 minutes and 1 second");
+		from_d_(Duration::from_millis(2_101_050), "35 minutes and 1.05 seconds");
+		from_d_(Duration::from_millis(2_121_000), "35 minutes and 21 seconds");
+		from_d_(Duration::from_millis(2_121_820), "35 minutes and 21.82 seconds");
+		from_d_(Duration::from_nanos(2_121_999_999_999), "35 minutes and 21.99 seconds");
 
-		_from_d(Duration::from_millis(3_600_000), "1 hour");
-		_from_d(Duration::from_millis(3_600_300), "1 hour and 0.30 seconds");
-		_from_d(Duration::from_millis(3_660_000), "1 hour and 1 minute");
-		_from_d(Duration::from_millis(3_661_000), "1 hour, 1 minute, and 1 second");
-		_from_d(Duration::from_millis(3_661_100), "1 hour, 1 minute, and 1.10 seconds");
-		_from_d(Duration::from_millis(37_732_000), "10 hours, 28 minutes, and 52 seconds");
-		_from_d(Duration::from_millis(37_732_030), "10 hours, 28 minutes, and 52.03 seconds");
-		_from_d(Duration::from_millis(37_740_000), "10 hours and 29 minutes");
-		_from_d(Duration::from_millis(37_740_030), "10 hours, 29 minutes, and 0.03 seconds");
+		from_d_(Duration::from_millis(3_600_000), "1 hour");
+		from_d_(Duration::from_millis(3_600_300), "1 hour and 0.30 seconds");
+		from_d_(Duration::from_millis(3_660_000), "1 hour and 1 minute");
+		from_d_(Duration::from_millis(3_661_000), "1 hour, 1 minute, and 1 second");
+		from_d_(Duration::from_millis(3_661_100), "1 hour, 1 minute, and 1.10 seconds");
+		from_d_(Duration::from_millis(37_732_000), "10 hours, 28 minutes, and 52 seconds");
+		from_d_(Duration::from_millis(37_732_030), "10 hours, 28 minutes, and 52.03 seconds");
+		from_d_(Duration::from_millis(37_740_000), "10 hours and 29 minutes");
+		from_d_(Duration::from_millis(37_740_030), "10 hours, 29 minutes, and 0.03 seconds");
 
-		_from_d(Duration::from_millis(428_390_000), "4 days, 22 hours, 59 minutes, and 50 seconds");
-		_from_d(Duration::from_millis(428_390_999), "4 days, 22 hours, 59 minutes, and 50.99 seconds");
-		_from_d(Duration::from_millis(878_428_390_999), "10,166 days, 23 hours, 53 minutes, and 10.99 seconds");
+		from_d_(Duration::from_millis(428_390_000), "4 days, 22 hours, 59 minutes, and 50 seconds");
+		from_d_(Duration::from_millis(428_390_999), "4 days, 22 hours, 59 minutes, and 50.99 seconds");
+		from_d_(Duration::from_millis(878_428_390_999), "10,166 days, 23 hours, 53 minutes, and 10.99 seconds");
 	}
 
-	fn _from(num: u32, expected: &str) {
+	fn from_(num: u32, expected: &str) {
 		assert_eq!(
-			&*NiceElapsed::from(num),
+			NiceElapsed::from(num).as_bytes(),
 			expected.as_bytes(),
 			"{} should be equivalent to {:?}, not {:?}",
 			num,
@@ -537,9 +569,9 @@ mod tests {
 		);
 	}
 
-	fn _from_d(num: Duration, expected: &str) {
+	fn from_d_(num: Duration, expected: &str) {
 		assert_eq!(
-			&*NiceElapsed::from(num),
+			NiceElapsed::from(num).as_bytes(),
 			expected.as_bytes(),
 			"{:?} should be equivalent to {:?}, not {:?}",
 			num,
