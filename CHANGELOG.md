@@ -2,7 +2,7 @@
 
 
 
-## [0.12.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.12.0) - TBD
+## [0.12.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.12.0) - 2025-06-01
 
 ### Changed
 
@@ -12,6 +12,7 @@
 * `NiceFloat::compact_str` is now const
 * `NiceFloat::precise_bytes` is now const
 * `NiceFloat::precise_str` is now const
+* Miscellaneous code cleanup and lints
 
 ### Breaking
 

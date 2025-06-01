@@ -48,7 +48,7 @@ But the niceness doesn't stop there. Dactyl provides several other structs, meth
 
 Add `dactyl` to your `dependencies` in `Cargo.toml`, like:
 
-```
+```toml
 [dependencies]
-dactyl = "0.10.*"
+dactyl = "0.12.*"
 ```
