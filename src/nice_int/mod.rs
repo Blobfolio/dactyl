@@ -144,7 +144,7 @@ impl<const S: usize> NiceWrapper<S> {
 
 	#[must_use]
 	/// # Length.
-	pub const fn len(&self) -> usize { S.wrapping_sub(self.from) }
+	pub const fn len(&self) -> usize { S.saturating_sub(self.from) }
 }
 
 
