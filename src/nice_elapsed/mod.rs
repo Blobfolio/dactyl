@@ -257,6 +257,39 @@ impl NiceElapsed {
 	}
 
 	#[must_use]
+	/// # Is Empty?
+	///
+	/// Returns `true` if the string/byte form is empty.
+	///
+	/// ## Examples
+	///
+	/// ```
+	/// use dactyl::NiceElapsed;
+	/// assert!(! NiceElapsed::from(61_u32).is_empty());
+	/// ```
+	pub const fn is_empty(&self) -> bool { self.len == 0 }
+
+	#[must_use]
+	/// # Length.
+	///
+	/// Return the length of the value in string/byte form.
+	///
+	/// ## Examples
+	///
+	/// ```
+	/// use dactyl::NiceElapsed;
+	///
+	/// let nice = NiceElapsed::from(61_u32);
+	/// assert_eq!(
+	///     nice.as_str(),
+	///     "1 minute and 1 second",
+	/// );
+	/// assert_eq!(nice.len(), nice.as_str().len());
+	/// assert_eq!(nice.len(), 21);
+	/// ```
+	pub const fn len(&self) -> usize { self.len }
+
+	#[must_use]
 	#[inline]
 	/// # As Bytes.
 	///

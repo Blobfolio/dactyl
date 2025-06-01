@@ -309,6 +309,37 @@ impl NiceClock {
 	}
 
 	#[must_use]
+	/// # Is Empty?
+	///
+	/// The string/byte output has a fixed length so is never empty.
+	///
+	/// ## Examples
+	///
+	/// ```
+	/// use dactyl::NiceClock;
+	/// assert!(! NiceClock::default().is_empty());
+	/// ```
+	pub const fn is_empty(&self) -> bool { false }
+
+	#[must_use]
+	/// # Length.
+	///
+	/// The length of the string/byte output is fixed, so this always returns
+	/// `8`.
+	///
+	/// ## Examples
+	///
+	/// ```
+	/// use dactyl::NiceClock;
+	///
+	/// let nice = NiceClock::default();
+	/// assert_eq!(nice.as_str(), "00:00:00");
+	/// assert_eq!(nice.len(), nice.as_str().len());
+	/// assert_eq!(nice.len(), 8);
+	/// ```
+	pub const fn len(&self) -> usize { self.inner.len() }
+
+	#[must_use]
 	/// # Hours.
 	///
 	/// Return the hours part as a number.
