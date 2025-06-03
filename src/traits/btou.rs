@@ -23,9 +23,6 @@ use std::num::{
 /// empty, contains non-numeric characters (including `+` and `-`), or is too
 /// large for the type.
 ///
-/// Only little endian architectures are optimized; for big endian machines,
-/// this trait just passes through the results of [`str::parse`].
-///
 /// For signed integer parsing, see [`BytesToSigned`](crate::traits::BytesToSigned);
 ///
 /// ## Examples
@@ -45,55 +42,31 @@ pub trait BytesToUnsigned: Sized {
 
 
 
-/// # Helper: Generate Fallbacks.
-macro_rules! big {
-	() => (
-		#[cfg(target_endian = "big")]
-		#[must_use]
-		/// # Bytes to Unsigned.
-		fn btou(src: &[u8]) -> Option<Self> {
-			if src.is_empty() || src[0] == b'+' { None }
-			else {
-				std::str::from_utf8(src).ok().and_then(|s| s.parse::<Self>().ok())
-			}
-		}
-	);
-}
-
-
-
 impl BytesToUnsigned for u8 {
-	#[cfg(target_endian = "little")]
 	/// # Bytes to Unsigned.
-	fn btou(src: &[u8]) -> Option<Self> {
-		match src.len() {
-			1 => parse1(src[0]),
-			2 => Some(parse1(src[0])? * 10 + parse1(src[1])?),
-			3 => match src[0] {
-				b'0' => Some(parse1(src[1])? * 10 + parse1(src[2])?),
-				b'1' => Some(100_u8 + parse1(src[1])? * 10 + parse1(src[2])?),
-				// This requires overflow checking, but a fairly simple variety.
-				b'2' => {
-					let end = parse1(src[1])? * 10 + parse1(src[2])?;
-					if end < 56 { Some(200 + end) }
-					else { None }
-				},
-				_ => None,
-			},
-			0 => None,
-			// We have to check anything larger for overflow.
-			_ => src.iter()
-				.try_fold(0_u8, |a, &b| a.checked_mul(10)?.checked_add(parse1(b)?)),
+	fn btou(mut src: &[u8]) -> Option<Self> {
+		/// # Anti-ASCII Mask.
+		const MASK: u8 = 0b0000_1111;
+
+		// Strip leading zeroes.
+		while let [ b'0', rest @ .. ] = src {
+			if rest.is_empty() { return Some(0); }
+			src = rest;
+		}
+
+		match src {
+			[                        c @ b'1'..=b'9' ] => Some(                          *c & MASK),
+			[       b @ b'1'..=b'9', c @ b'0'..=b'9' ] => Some(      (*b & MASK) * 10 + (*c & MASK)),
+			[ b'1', b @ b'0'..=b'9', c @ b'0'..=b'9' ] => Some(100 + (*b & MASK) * 10 + (*c & MASK)),
+			[ b'2', b @ b'0'..=b'5', c @ b'0'..=b'9' ] => 200_u8.checked_add((*b & MASK) * 10 + (*c & MASK)),
+			_ => None,
 		}
 	}
-
-	big!();
 }
 
 
 
 impl BytesToUnsigned for u16 {
-	#[cfg(target_endian = "little")]
 	/// # Bytes to Unsigned.
 	fn btou(src: &[u8]) -> Option<Self> {
 		match src.len() {
@@ -112,14 +85,11 @@ impl BytesToUnsigned for u16 {
 			}
 		}
 	}
-
-	big!();
 }
 
 
 
 impl BytesToUnsigned for u32 {
-	#[cfg(target_endian = "little")]
 	/// # Bytes to Unsigned.
 	fn btou(src: &[u8]) -> Option<Self> {
 		match src.len() {
@@ -153,14 +123,11 @@ impl BytesToUnsigned for u32 {
 			},
 		}
 	}
-
-	big!();
 }
 
 
 
 impl BytesToUnsigned for u64 {
-	#[cfg(target_endian = "little")]
 	/// # Bytes to Unsigned.
 	fn btou(src: &[u8]) -> Option<Self> {
 		match src.len() {
@@ -219,14 +186,11 @@ impl BytesToUnsigned for u64 {
 			},
 		}
 	}
-
-	big!();
 }
 
 
 
 impl BytesToUnsigned for u128 {
-	#[cfg(target_endian = "little")]
 	#[expect(clippy::cognitive_complexity, reason = "Readability.")]
 	#[expect(clippy::too_many_lines, reason = "These numbers are huge.")]
 	/// # Bytes to Unsigned.
@@ -351,8 +315,6 @@ impl BytesToUnsigned for u128 {
 			},
 		}
 	}
-
-	big!();
 }
 
 
@@ -399,7 +361,6 @@ nonzero!(
 
 
 
-#[cfg(target_endian = "little")]
 /// # Parse One.
 ///
 /// This converts a single byte into a digit, or dies trying.
@@ -409,7 +370,6 @@ const fn parse1(byte: u8) -> Option<u8> {
 	else { None }
 }
 
-#[cfg(target_endian = "little")]
 /// # Parse Two.
 ///
 /// This parses two digits as a single `u16`, reducing the number of
@@ -429,7 +389,6 @@ const fn parse2(src: &[u8]) -> Option<u16> {
 	else { None }
 }
 
-#[cfg(target_endian = "little")]
 #[expect(clippy::cast_possible_truncation, reason = "False positive.")]
 /// # Parse Four.
 ///
@@ -462,7 +421,6 @@ const fn parse4(src: &[u8]) -> Option<u16> {
 	else { None }
 }
 
-#[cfg(target_endian = "little")]
 #[expect(clippy::cast_possible_truncation, reason = "False positive.")]
 /// # Parse Eight.
 ///
@@ -497,7 +455,6 @@ const fn parse8(src: &[u8]) -> Option<u32> {
 	else { None }
 }
 
-#[cfg(target_endian = "little")]
 #[expect(clippy::cast_possible_truncation, reason = "False positive.")]
 /// # Parse Sixteen.
 ///
