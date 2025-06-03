@@ -282,7 +282,10 @@ mod tests {
 		#[cfg(miri)]
 		{
 			let mut rng = fastrand::Rng::new();
-			for i in std::iter::repeat_with(|| rng.u16(..)).take(1000) {
+			let set = std::iter::repeat_with(|| rng.u16(..))
+				.take(1000)
+				.collect::<std::collections::BTreeSet<_>>();
+			for i in set {
 				let nice = NiceU16::from(i);
 				assert_eq!(
 					nice.as_str(),

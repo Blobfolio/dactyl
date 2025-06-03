@@ -237,6 +237,7 @@ impl NiceU32 {
 mod tests {
 	use super::*;
 	use num_format::{ToFormattedString, Locale};
+	use std::collections::BTreeSet;
 
 	#[test]
 	fn t_digit_indices() {
@@ -293,7 +294,10 @@ mod tests {
 		// Check a subset of everything else.
 		let mut last = NiceU32::empty();
 		let mut rng = fastrand::Rng::new();
-		for i in std::iter::repeat_with(|| rng.u32(..)).take(SAMPLE_SIZE) {
+		let set = std::iter::repeat_with(|| rng.u32(..))
+			.take(SAMPLE_SIZE)
+			.collect::<BTreeSet<_>>();
+		for i in set {
 			let nice = NiceU32::from(i);
 			assert_eq!(
 				nice.as_str(),
