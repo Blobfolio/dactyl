@@ -7,7 +7,6 @@ use crate::{
 	NiceU16,
 	NiceU32,
 	NiceU64,
-	NiceWrapper,
 };
 use std::{
 	fmt,
@@ -40,7 +39,7 @@ pub trait Inflection: Sized + Copy + PartialEq {
 	/// ```
 	/// use dactyl::traits::Inflection;
 	/// assert_eq!(
-	///     3283.inflect("book", "books"),
+	///     3283_u16.inflect("book", "books"),
 	///     "books"
 	/// );
 	/// ```
@@ -52,7 +51,7 @@ pub trait Inflection: Sized + Copy + PartialEq {
 /// This extends the `Inflection` trait for types which can be represented as
 /// one of the `NiceU*` types, and their signed equivalents (minus signs will
 /// be prepended as necessary), i.e. `i/u/NonZeroU 8–64`.
-pub trait NiceInflection<const S: usize>: Inflection {
+pub trait NiceInflection<T>: Inflection {
 	/// # Inflect a String (Prefixed w/ Value)
 	///
 	/// This is like [`Inflection::inflect`], but prefixes the output with a
@@ -66,13 +65,13 @@ pub trait NiceInflection<const S: usize>: Inflection {
 	/// // The return type implements fmt::Display, so you can chuck it
 	/// // straight into a formatter pattern like this:
 	/// assert_eq!(
-	///     format!("I have {}!", 3283.nice_inflect("book", "books")),
+	///     format!("I have {}!", 3283_u16.nice_inflect("book", "books")),
 	///     "I have 3,283 books!",
 	/// );
 	///
 	/// // Alternatively, you can save it to a variable to access the
 	/// // inner parts.
-	/// let nice = 3283.nice_inflect("book", "books");
+	/// let nice = 3283_u16.nice_inflect("book", "books");
 	/// assert!(! nice.is_negative()); // Would be true for e.g. -5.
 	/// assert_eq!(
 	///     nice.nice().as_str(), // Note: always positive.
@@ -80,7 +79,7 @@ pub trait NiceInflection<const S: usize>: Inflection {
 	/// );
 	/// assert_eq!(nice.unit(), "books");
 	/// ```
-	fn nice_inflect<'a>(self, singular: &'a str, plural: &'a str) -> NiceInflected<'a, S>;
+	fn nice_inflect<'a>(self, singular: &'a str, plural: &'a str) -> NiceInflected<'a, T>;
 }
 
 
@@ -106,58 +105,18 @@ pub trait NiceInflection<const S: usize>: Inflection {
 ///     "I have eaten 1,001 hotdogs and 1 hamburger!",
 /// );
 /// ```
-pub struct NiceInflected<'a, const S: usize> {
+pub struct NiceInflected<'a, T> {
 	/// # Negative?
 	neg: bool,
 
 	/// # The Number.
-	nice: NiceWrapper<S>,
+	nice: T,
 
 	/// # The Inflected Text.
 	unit: &'a str,
 }
 
-impl<const S: usize> fmt::Display for NiceInflected<'_, S> {
-	#[inline]
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		// Add a minus sign to the start if negative.
-		if self.neg { f.write_str("-")?; }
-
-		// Print the number.
-		f.write_str(self.nice.as_str())?;
-
-		// Add a space.
-		f.write_str(" ")?;
-
-		// And print the text value.
-		f.write_str(self.unit)
-	}
-}
-
-impl<const S: usize> NiceInflected<'_, S> {
-	/// # Length.
-	///
-	/// Return the length of the string.
-	///
-	/// ## Examples
-	///
-	/// ```
-	/// use dactyl::traits::NiceInflection;
-	///
-	/// let dogs = 8_i32;
-	/// let nice_dogs = dogs.nice_inflect("dog", "dogs");
-	/// assert_eq!(nice_dogs.len(), 6); // "8 dogs"
-	///
-	/// let cats = -13_i32;
-	/// let nice_cats = cats.nice_inflect("cat", "cats");
-	/// assert_eq!(nice_cats.len(), 8); // "-13 cats"
-	/// ```
-	pub const fn len(&self) -> usize {
-		self.neg as usize + self.nice.len() + 1 + self.unit.len()
-	}
-}
-
-impl<const S: usize> NiceInflected<'_, S> {
+impl<T: Copy> NiceInflected<'_, T> {
 	/// Is Negative?
 	///
 	/// Returns `true` if the original number was negative.
@@ -192,7 +151,7 @@ impl<const S: usize> NiceInflected<'_, S> {
 	/// let nice = 3000_u16.nice_inflect("dog", "dogs");
 	/// assert_eq!(nice.nice().as_str(), "3,000");
 	/// ```
-	pub const fn nice(&self) -> NiceWrapper<S> { self.nice }
+	pub const fn nice(&self) -> T { self.nice }
 
 	/// Inflected Unit.
 	///
@@ -211,107 +170,42 @@ impl<const S: usize> NiceInflected<'_, S> {
 
 
 
-/// # Helper: Generate `Inflection` impls.
+/// # Helper: Inflection.
 macro_rules! inflect {
-	// Unsigned.
-	($ty:ty, $one:literal) => (
-		impl Inflection for $ty {
-			#[inline]
-			fn inflect<'a>(self, singular: &'a str, plural: &'a str) -> &'a str {
-				if self == $one { singular } else { plural }
-			}
-		}
-	);
-
-	// Nonzero.
-	($ty:ty, $one:expr) => (
-		impl Inflection for $ty {
-			#[inline]
-			fn inflect<'a>(self, singular: &'a str, plural: &'a str) -> &'a str {
-				if self == $one { singular } else { plural }
-			}
-		}
-	);
-
 	// Signed.
-	($ty:ty, $one:literal, $cast:ident) => (
+	(@signed $($ty:ty)+) => ($(
 		impl Inflection for $ty {
 			#[inline]
 			fn inflect<'a>(self, singular: &'a str, plural: &'a str) -> &'a str {
-				if self.$cast() == $one { singular } else { plural }
+				if self.unsigned_abs() == 1 { singular } else { plural }
 			}
 		}
-	);
+	)+);
+
+	// Unsigned.
+	(@unsigned $($ty:ty)+) => ($(
+		impl Inflection for $ty {
+			#[inline]
+			fn inflect<'a>(self, singular: &'a str, plural: &'a str) -> &'a str {
+				if self == 1 { singular } else { plural }
+			}
+		}
+	)+);
+
+	// Unsigned/non-zero.
+	(@nonzero $($ty:ty)+) => ($(
+		impl Inflection for $ty {
+			#[inline]
+			fn inflect<'a>(self, singular: &'a str, plural: &'a str) -> &'a str {
+				if self == Self::MIN { singular } else { plural }
+			}
+		}
+	)+);
 }
 
-/// # Helper: Generate `Inflection` and `NiceInflection` impls.
-macro_rules! inflect_nice {
-	// Unsigned.
-	($size:literal, $ty:ty, $nice:ty) => (
-		impl NiceInflection<$size> for $ty {
-			#[inline]
-			/// # Inflect a String.
-			fn nice_inflect<'a>(self, singular: &'a str, plural: &'a str) -> NiceInflected<'a, $size> {
-				let nice = <$nice>::from(self);
-				let unit = self.inflect(singular, plural);
-				NiceInflected { neg: false, nice, unit }
-			}
-		}
-	);
-
-	// Signed.
-	($size:literal, $ty:ty, $nice:ty, $cast:ident) => (
-		impl NiceInflection<$size> for $ty {
-			#[inline]
-			/// # Inflect a String.
-			fn nice_inflect<'a>(self, singular: &'a str, plural: &'a str) -> NiceInflected<'a, $size> {
-				let neg = self < 0;
-				let nice = <$nice>::from(self.$cast());
-				let unit = self.inflect(singular, plural);
-				NiceInflected { neg, nice, unit }
-			}
-		}
-	);
-
-	// Unsigned, both impls.
-	($size:literal, $ty:ty, $nice:ty, $one:literal) => (
-		inflect!($ty, $one);
-		inflect_nice!($size, $ty, $nice);
-	);
-
-	// Nonzero, both impls.
-	($size:literal, $ty:ty, $nice:ty, $one:expr) => (
-		inflect!($ty, $one);
-		inflect_nice!($size, $ty, $nice);
-	);
-
-	// Signed, both impls.
-	($size:literal, $ty:ty, $nice:ty, $one:literal, $cast:ident) => (
-		inflect!($ty, $one, $cast);
-		inflect_nice!($size, $ty, $nice, $cast);
-	);
-}
-
-inflect_nice!(3,  u8,           NiceU8,  1);
-inflect_nice!(6,  u16,          NiceU16, 1);
-inflect_nice!(13, u32,          NiceU32, 1);
-inflect_nice!(26, u64,          NiceU64, 1);
-inflect_nice!(26, usize,        NiceU64, 1);
-inflect_nice!(3,  NonZeroU8,    NiceU8,  Self::MIN);
-inflect_nice!(6,  NonZeroU16,   NiceU16, Self::MIN);
-inflect_nice!(13, NonZeroU32,   NiceU32, Self::MIN);
-inflect_nice!(26, NonZeroU64,   NiceU64, Self::MIN);
-inflect_nice!(26, NonZeroUsize, NiceU64, Self::MIN);
-inflect_nice!(3,  i8,           NiceU8,  1,         unsigned_abs);
-inflect_nice!(6,  i16,          NiceU16, 1,         unsigned_abs);
-inflect_nice!(13, i32,          NiceU32, 1,         unsigned_abs);
-inflect_nice!(26, i64,          NiceU64, 1,         unsigned_abs);
-inflect_nice!(26, isize,        NiceU64, 1,         unsigned_abs);
-
-// These aren't nice, but we can still do basic inflection.
-inflect!(u128, 1);
-inflect!(i128, 1, unsigned_abs);
-inflect!(NonZeroU128, Self::MIN);
+inflect!(@unsigned u8        u16        u32        u64        u128        usize);
+inflect!(@nonzero  NonZeroU8 NonZeroU16 NonZeroU32 NonZeroU64 NonZeroU128 NonZeroUsize);
+inflect!(@signed   i8        i16        i32        i64        i128        isize);
 
 impl Inflection for f32 {
 	#[inline]
@@ -328,6 +222,86 @@ impl Inflection for f64 {
 		if self.abs().eq(&1.0) { singular } else { plural }
 	}
 }
+
+
+
+/// # Helper: Nice Inflection.
+macro_rules! inflect_nice {
+	// Signed types.
+	(@signed $nice:ty: $($ty:ty)+) => ($(
+		impl NiceInflection<$nice> for $ty {
+			#[inline]
+			/// # Inflect a String.
+			fn nice_inflect<'a>(self, singular: &'a str, plural: &'a str) -> NiceInflected<'a, $nice> {
+				let neg = self < 0;
+				let nice = <$nice>::from(self.unsigned_abs());
+				let unit = self.inflect(singular, plural);
+				NiceInflected { neg, nice, unit }
+			}
+		}
+	)+);
+
+	// Default implementations.
+	($($nice:ty)+) => ($(
+		impl fmt::Display for NiceInflected<'_, $nice> {
+			#[inline]
+			fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+				// Add a minus sign to the start if negative.
+				if self.neg { f.write_str("-")?; }
+
+				// Print the number.
+				f.write_str(self.nice.as_str())?;
+
+				// Add a space.
+				f.write_str(" ")?;
+
+				// And print the text value.
+				f.write_str(self.unit)
+			}
+		}
+
+		impl NiceInflected<'_, $nice> {
+			/// # Length.
+			///
+			/// Return the length of the string.
+			///
+			/// ## Examples
+			///
+			/// ```
+			/// use dactyl::traits::NiceInflection;
+			///
+			/// let dogs = 8_i32;
+			/// let nice_dogs = dogs.nice_inflect("dog", "dogs");
+			/// assert_eq!(nice_dogs.len(), 6); // "8 dogs"
+			///
+			/// let cats = -13_i32;
+			/// let nice_cats = cats.nice_inflect("cat", "cats");
+			/// assert_eq!(nice_cats.len(), 8); // "-13 cats"
+			/// ```
+			pub const fn len(&self) -> usize {
+				self.neg as usize + self.nice.len() + 1 + self.unit.len()
+			}
+		}
+
+		impl<T: Inflection> NiceInflection<$nice> for T
+		where $nice: From<T> {
+			#[inline]
+			/// # Inflect a String.
+			fn nice_inflect<'a>(self, singular: &'a str, plural: &'a str) -> NiceInflected<'a, $nice> {
+				let nice = <$nice>::from(self);
+				let unit = self.inflect(singular, plural);
+				NiceInflected { neg: false, nice, unit }
+			}
+		}
+	)+);
+}
+
+inflect_nice!(NiceU8 NiceU16 NiceU32 NiceU64);
+inflect_nice!(@signed NiceU8:  i8);
+inflect_nice!(@signed NiceU16: i16);
+inflect_nice!(@signed NiceU32: i32);
+inflect_nice!(@signed NiceU64: i64 isize);
+
 
 
 

@@ -1,13 +1,8 @@
 /*!
-# Dactyl: "Nice" Elapsed (Compact)
+# Dactyl: Nice Clock.
 */
 
-use crate::{
-	Digiter,
-	NiceElapsed,
-};
 use std::{
-	fmt,
 	num::{
 		NonZero,
 		NonZeroU32,
@@ -17,10 +12,14 @@ use std::{
 		Instant,
 	},
 };
+use super::{
+	nice_uint,
+	NiceChar,
+};
 
 
 
-#[derive(Clone, Copy, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy)]
 /// # Nice Clock.
 ///
 /// This struct is used to efficiently convert some number of seconds into an
@@ -30,7 +29,7 @@ use std::{
 /// gigantic values are simply saturated to fit.
 ///
 /// If you prefer more of a list-like structure or need support for days, see
-/// [`NiceElapsed`].
+/// [`NiceElapsed`](crate::NiceElapsed).
 ///
 /// ## Examples
 ///
@@ -64,43 +63,10 @@ use std::{
 /// ```
 pub struct NiceClock {
 	/// # Formatted Data.
-	inner: [u8; 8],
+	data: [NiceChar; 8],
 }
 
-impl AsRef<[u8]> for NiceClock {
-	#[inline]
-	fn as_ref(&self) -> &[u8] { self.as_bytes() }
-}
-
-impl AsRef<str> for NiceClock {
-	#[inline]
-	fn as_ref(&self) -> &str { self.as_str() }
-}
-
-impl ::std::borrow::Borrow<str> for NiceClock {
-	#[inline]
-	fn borrow(&self) -> &str { self.as_str() }
-}
-
-impl Default for NiceClock {
-	#[inline]
-	fn default() -> Self { Self::MIN }
-}
-
-impl fmt::Debug for NiceClock {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		f.debug_tuple("NiceClock")
-			.field(&self.as_str())
-			.finish()
-	}
-}
-
-impl fmt::Display for NiceClock {
-	#[inline]
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		<str as fmt::Display>::fmt(self.as_str(), f)
-	}
-}
+nice_uint!(@traits NiceClock);
 
 /// # Helper: From Small.
 macro_rules! from_small {
@@ -177,14 +143,45 @@ impl From<Instant> for NiceClock {
 }
 
 impl From<u32> for NiceClock {
+	#[expect(clippy::cast_possible_truncation, reason = "False positive.")]
+	#[expect(clippy::cast_lossless, reason = "For performance (inlining).")]
 	#[inline]
-	fn from(num: u32) -> Self {
-		let [h, m, s] = NiceElapsed::hms(num);
-		let h = Digiter(h).double();
-		let m = Digiter(m).double();
-		let s = Digiter(s).double();
+	fn from(mut num: u32) -> Self {
+		// Overflow.
+		if 86_399 < num { return Self::MAX; }
+
+		// Hours.
+		let h =
+			if num >= 3600 {
+				let tmp = ((num * 0x91A3) >> 27) as u8;
+				num -= tmp as u32 * 3600;
+				[
+					NiceChar::from_digit(tmp / 10),
+					NiceChar::from_digit(tmp % 10),
+				]
+			}
+			else { [NiceChar::Digit0, NiceChar::Digit0] };
+
+		// Minutes.
+		let m =
+			if num >= 60 {
+				let tmp = ((num * 0x889) >> 17) as u8;
+				num -= tmp as u32 * 60;
+				[
+					NiceChar::from_digit(tmp / 10),
+					NiceChar::from_digit(tmp % 10),
+				]
+			}
+			else { [NiceChar::Digit0, NiceChar::Digit0] };
+
+		// Seconds (and return).
 		Self {
-			inner: [h[0], h[1], b':', m[0], m[1], b':', s[0], s[1]],
+			data: [
+				h[0], h[1], NiceChar::Colon,
+				m[0], m[1], NiceChar::Colon,
+				NiceChar::from_digit((num / 10) as u8),
+				NiceChar::from_digit((num % 10) as u8),
+			]
 		}
 	}
 }
@@ -196,7 +193,7 @@ impl From<NonZeroU32> for NiceClock {
 
 impl From<NiceClock> for [u8; 8] {
 	#[inline]
-	fn from(num: NiceClock) -> Self { num.inner }
+	fn from(src: NiceClock) -> Self { src.data.map(|b| b as u8) }
 }
 
 impl NiceClock {
@@ -216,7 +213,11 @@ impl NiceClock {
 	/// );
 	/// ```
 	pub const MIN: Self = Self {
-		inner: *b"00:00:00",
+		data: [
+			NiceChar::Digit0, NiceChar::Digit0, NiceChar::Colon,
+			NiceChar::Digit0, NiceChar::Digit0, NiceChar::Colon,
+			NiceChar::Digit0, NiceChar::Digit0,
+		],
 	};
 
 	/// # Maximum Value.
@@ -235,42 +236,22 @@ impl NiceClock {
 	/// );
 	/// ```
 	pub const MAX: Self = Self {
-		inner: *b"23:59:59",
+		data: [
+			NiceChar::Digit2, NiceChar::Digit3, NiceChar::Colon,
+			NiceChar::Digit5, NiceChar::Digit9, NiceChar::Colon,
+			NiceChar::Digit5, NiceChar::Digit9,
+		],
 	};
 }
 
 impl NiceClock {
-	#[inline]
-	/// # Replace.
-	///
-	/// Update the clock time, in place.
-	///
-	/// ## Examples.
-	///
-	/// ```
-	/// use dactyl::NiceClock;
-	///
-	/// let mut clock = NiceClock::from(1_u32);
-	/// assert_eq!(clock.as_str(), "00:00:01");
-	///
-	/// clock.replace(2);
-	/// assert_eq!(clock.as_str(), "00:00:02");
-	/// ```
-	pub const fn replace(&mut self, num: u32) {
-		let [h, m, s] = NiceElapsed::hms(num);
-		[self.inner[0], self.inner[1]] = Digiter(h).double();
-		[self.inner[3], self.inner[4]] = Digiter(m).double();
-		[self.inner[6], self.inner[7]] = Digiter(s).double();
-	}
-}
-
-impl NiceClock {
 	#[must_use]
-	/// # As Bytes.
+	#[inline]
+	/// # As Byte Slice.
 	///
-	/// Return the formatted value as a byte slice.
+	/// Return the value as a byte slice.
 	///
-	/// ## Examples.
+	/// ## Examples
 	///
 	/// ```
 	/// use dactyl::NiceClock;
@@ -280,15 +261,17 @@ impl NiceClock {
 	///     b"00:01:30",
 	/// );
 	/// ```
-	pub const fn as_bytes(&self) -> &[u8] { self.inner.as_slice() }
+	pub const fn as_bytes(&self) -> &[u8] {
+		NiceChar::as_bytes(self.data.as_slice())
+	}
 
-	#[expect(unsafe_code, reason = "Content is ASCII.")]
 	#[must_use]
-	/// # As String.
+	#[inline]
+	/// # As String Slice.
 	///
-	/// Return the formatted value as a string slice.
+	/// Return the value as a string slice.
 	///
-	/// ## Examples.
+	/// ## Examples
 	///
 	/// ```
 	/// use dactyl::NiceClock;
@@ -299,29 +282,18 @@ impl NiceClock {
 	/// );
 	/// ```
 	pub const fn as_str(&self) -> &str {
-		debug_assert!(
-			std::str::from_utf8(self.as_bytes()).is_ok(),
-			"BUG: NiceClock is not ASCII?!",
-		);
-
-		// Safety: values are always ASCII.
-		unsafe { std::str::from_utf8_unchecked(self.as_bytes()) }
+		NiceChar::as_str(self.data.as_slice())
 	}
 
 	#[must_use]
+	#[inline]
 	/// # Is Empty?
 	///
-	/// The string/byte output has a fixed length so is never empty.
-	///
-	/// ## Examples
-	///
-	/// ```
-	/// use dactyl::NiceClock;
-	/// assert!(! NiceClock::default().is_empty());
-	/// ```
+	/// No! Haha. But for consistency, this method exists.
 	pub const fn is_empty(&self) -> bool { false }
 
 	#[must_use]
+	#[inline]
 	/// # Length.
 	///
 	/// The length of the string/byte output is fixed, so this always returns
@@ -337,7 +309,7 @@ impl NiceClock {
 	/// assert_eq!(nice.len(), nice.as_str().len());
 	/// assert_eq!(nice.len(), 8);
 	/// ```
-	pub const fn len(&self) -> usize { self.inner.len() }
+	pub const fn len(&self) -> usize { 8 }
 
 	#[must_use]
 	/// # Hours.
@@ -356,10 +328,10 @@ impl NiceClock {
 	/// );
 	/// assert_eq!(clock.hours(), 3);
 	/// ```
-	pub const fn hours(&self) -> u8 {
+	pub const fn hours(self) -> u8 {
 		// Working backwards isn't a big deal since we only have two digits to
 		// worry about.
-		(self.inner[0] - b'0') * 10 + (self.inner[1] - b'0')
+		(self.data[0] as u8 - b'0') * 10 + (self.data[1] as u8 - b'0')
 	}
 
 	#[must_use]
@@ -379,10 +351,10 @@ impl NiceClock {
 	/// );
 	/// assert_eq!(clock.minutes(), 25);
 	/// ```
-	pub const fn minutes(&self) -> u8 {
+	pub const fn minutes(self) -> u8 {
 		// Working backwards isn't a big deal since we only have two digits to
 		// worry about.
-		(self.inner[3] - b'0') * 10 + (self.inner[4] - b'0')
+		(self.data[3] as u8 - b'0') * 10 + (self.data[4] as u8 - b'0')
 	}
 
 	#[must_use]
@@ -402,10 +374,65 @@ impl NiceClock {
 	/// );
 	/// assert_eq!(clock.seconds(), 45);
 	/// ```
-	pub const fn seconds(&self) -> u8 {
+	pub const fn seconds(self) -> u8 {
 		// Working backwards isn't a big deal since we only have two digits to
 		// worry about.
-		(self.inner[6] - b'0') * 10 + (self.inner[7] - b'0')
+		(self.data[6] as u8 - b'0') * 10 + (self.data[7] as u8 - b'0')
+	}
+}
+
+impl NiceClock {
+	#[expect(clippy::cast_possible_truncation, reason = "False positive.")]
+	#[inline]
+	/// # Replace.
+	///
+	/// Update the clock time, in place.
+	///
+	/// ## Examples.
+	///
+	/// ```
+	/// use dactyl::NiceClock;
+	///
+	/// let mut clock = NiceClock::from(1_u32);
+	/// assert_eq!(clock.as_str(), "00:00:01");
+	///
+	/// clock.replace(2);
+	/// assert_eq!(clock.as_str(), "00:00:02");
+	/// ```
+	pub const fn replace(&mut self, mut num: u32) {
+		// Overflow.
+		if 86_399 < num {
+			self.data = Self::MAX.data;
+			return;
+		}
+
+		// Hours.
+		if num >= 3600 {
+			let tmp = ((num * 0x91A3) >> 27) as u8;
+			num -= tmp as u32 * 3600;
+			self.data[0] = NiceChar::from_digit(tmp / 10);
+			self.data[1] = NiceChar::from_digit(tmp % 10);
+		}
+		else {
+			self.data[0] = NiceChar::Digit0;
+			self.data[1] = NiceChar::Digit0;
+		}
+
+		// Minutes.
+		if num >= 60 {
+			let tmp = ((num * 0x889) >> 17) as u8;
+			num -= tmp as u32 * 60;
+			self.data[3] = NiceChar::from_digit(tmp / 10);
+			self.data[4] = NiceChar::from_digit(tmp % 10);
+		}
+		else {
+			self.data[3] = NiceChar::Digit0;
+			self.data[4] = NiceChar::Digit0;
+		}
+
+		// Seconds.
+		self.data[6] = NiceChar::from_digit((num / 10) as u8);
+		self.data[7] = NiceChar::from_digit((num % 10) as u8);
 	}
 }
 
@@ -417,25 +444,46 @@ mod test {
 
 	#[test]
 	fn t_nice_clock() {
-		let mut last = NiceClock::MIN;
+		// Gather up the possible hour/minute/second combinations.
+		let mut set = Vec::new();
 		for h in 0..24_u32 {
 			for m in 0..60_u32 {
 				for s in 0..60_u32 {
-					let total = s + m * 60 + h * 60 * 60;
-					let clock = NiceClock::from(total);
-					assert_eq!(clock.as_str(), format!("{h:02}:{m:02}:{s:02}"));
-
-					// Check replacements too.
-					if total == 0 { assert_eq!(last, clock); }
-					else { assert_ne!(last, clock); }
-					last.replace(total);
-					assert_eq!(last, clock); // Should be the same now.
-
-					// Check the bigger types.
-					assert_eq!(clock, NiceClock::from(u64::from(total)));
-					assert_eq!(clock, NiceClock::from(u128::from(total)));
+					set.push([h, m, s]);
 				}
 			}
+		}
+
+		#[cfg(miri)]
+		// Miri is too slow to check everything; let's shuffle and cut the
+		// list to a more reasonable size.
+		{
+			fastrand::shuffle(&mut set);
+			set.truncate(500);
+
+			// Make sure the first and last are both present as our tests
+			// will get messed up otherwise.
+			set.push([0, 0, 0]);
+			set.push([23, 59, 59]);
+			set.sort();
+			set.dedup();
+		}
+
+		let mut last = NiceClock::MIN;
+		for [h, m, s] in set {
+			let total = s + m * 60 + h * 60 * 60;
+			let clock = NiceClock::from(total);
+			assert_eq!(clock.as_str(), format!("{h:02}:{m:02}:{s:02}"));
+
+			// Check replacements too.
+			if total == 0 { assert_eq!(last, clock); }
+			else { assert_ne!(last, clock); }
+			last.replace(total);
+			assert_eq!(last, clock); // Should be the same now.
+
+			// Check the bigger types.
+			assert_eq!(clock, NiceClock::from(u64::from(total)));
+			assert_eq!(clock, NiceClock::from(u128::from(total)));
 		}
 
 		// Check big saturating.

@@ -6,7 +6,10 @@ use brunch::{
 	Bench,
 	benches,
 };
-use dactyl::NiceU64;
+use dactyl::{
+	NiceSeparator,
+	NiceU64,
+};
 
 benches!(
 	Bench::new("dactyl::NiceU64::from(0)")
@@ -24,6 +27,8 @@ benches!(
 	Bench::new("dactyl::NiceU64::from(u64::MAX)")
 		.run(|| NiceU64::from(u64::MAX)),
 
+	Bench::spacer(),
+
 	Bench::new("dactyl::NiceU64::with_separator(1_999_999_999_999, b'_')")
-		.run(|| NiceU64::with_separator(1_999_999_999_999, b'_')),
+		.run(|| NiceU64::with_separator(1_999_999_999_999, NiceSeparator::Underscore)),
 );
