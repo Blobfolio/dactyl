@@ -6,16 +6,17 @@
 
 ### Changed
 
-* `BytesToUnsigned` is no longer endian-specific.
-* Refactored all the `Nice*` structs.
-* Miscellaneous unit test improvements and fixes.
+* Refactored `BytesToSigned`
+* Refactored `BytesToUnsigned`
+* Refactored all the `Nice*` structs
+* Miscellaneous code changes and lints
 
 ### Breaking
 
-* `NiceU8`-`NiceU64`, `NiceFloat`, and `NicePercent` are now distinct types instead of aliases to `NiceWrapper<N>`.
-* `NiceWrapper<N>` has been removed.
-* `NiceElapsed::min` (method) has been replaced with `NiceElapsed::MIN` (constant).
-* The `Nice*::with_separator` methods now take a `NiceSeparator` instead of a byte.
+* `NiceU8`-`NiceU64`, `NiceFloat`, and `NicePercent` are now distinct types instead of aliases to `NiceWrapper<N>`
+* Removed `NiceWrapper<N>`
+* `NiceElapsed::min` (method) has been replaced with `NiceElapsed::MIN` (constant)
+* The `Nice*::with_separator` methods now take a `NiceSeparator` instead of a byte
 
 
 
