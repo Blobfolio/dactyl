@@ -6,8 +6,8 @@
 
 ### Changed
 
-* Refactored `BytesToSigned`
-* Refactored `BytesToUnsigned`
+* Refactored `BytesToSigned`/`Unsigned`
+* Refactored `HexToSigned`/`Unsigned`
 * Refactored all the `Nice*` structs
 * Miscellaneous code changes and lints
 

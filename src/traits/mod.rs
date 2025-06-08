@@ -2,9 +2,9 @@
 # Dactyl: Traits
 */
 
-mod btoi;
-mod btou;
-mod hex;
+mod btoi; // TODO: remove when from_ascii is stable.
+mod btou; // TODO: remove when from_ascii is stable.
+mod hex;  // TODO: remove when from_ascii_radix is stable.
 mod inflect;
 mod intdiv;
 mod saturating_from;
