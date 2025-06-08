@@ -160,6 +160,12 @@ impl NiceFloatIdx {
 /// ## Examples
 ///
 /// ```
+/// use dactyl::NiceFloat;
+///
+/// assert_eq!(
+///     NiceFloat::from(1234.5501234501_f64).as_str(),
+///     "1,234.55012345", // Decimals only go to eight places.
+/// );
 /// ```
 pub struct NiceFloat(FloatKind);
 

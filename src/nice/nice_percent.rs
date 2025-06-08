@@ -50,6 +50,12 @@ impl NicePercentIdx {
 /// ## Examples
 ///
 /// ```
+/// use dactyl::NicePercent;
+///
+/// assert_eq!(
+///     NicePercent::from(0.55012345_f32).as_str(),
+///     "55.01%",
+/// );
 /// ```
 pub struct NicePercent {
 	/// # String Buffer.

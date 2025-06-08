@@ -328,7 +328,7 @@ impl BytesToUnsigned for u128 {
 		// The compiler doesn't seem to apply the same optimizations to u128
 		// as the smaller types. Working in chunks of eight (while we can)
 		// helps a lot.
-		// TODO: use array_chunks when stable.
+		// TODO: use slice_as_chunks when stable.
 		let mut out: Self = 0;
 		while let Some((chunk, rest)) = src.split_first_chunk::<8>() {
 			let chunk = Self::from(parse8(*chunk)?);
