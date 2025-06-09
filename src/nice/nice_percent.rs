@@ -2,7 +2,7 @@
 # Dactyl: Nice Percent.
 */
 
-use crate::traits::IntDivFloat;
+use crate::NiceFloat;
 use super::{
 	Digiter,
 	nice_uint,
@@ -47,14 +47,47 @@ impl NicePercentIdx {
 /// This struct can be used to quickly and efficiently stringify a "percent" —
 /// a float between `0.0..=1.0` — to a fixed precision of hundredths.
 ///
+/// Values outside that range are "clamped" to make them make sense,
+/// percentage-wise. (`NaN` and negative values are treated like zero; large
+/// positives like one.)
+///
 /// ## Examples
 ///
 /// ```
 /// use dactyl::NicePercent;
 ///
+/// // From a ready-made float:
 /// assert_eq!(
 ///     NicePercent::from(0.55012345_f32).as_str(),
 ///     "55.01%",
+/// );
+///
+/// // From separate "done" and "total" integers.
+/// assert_eq!(
+///     NicePercent::from((20_usize, 800_usize)).as_str(),
+///     "2.50%",
+/// );
+///
+/// // From weird shit.
+/// assert_eq!(
+///     NicePercent::from(-0.55012345_f32).as_str(), // Negative.
+///     "0.00%",
+/// );
+/// assert_eq!(
+///     NicePercent::from(f64::NAN).as_str(), // Not even a number!
+///     "0.00%",
+/// );
+/// assert_eq!(
+///     NicePercent::from(f64::NEG_INFINITY).as_str(), // Negative.
+///     "0.00%",
+/// );
+/// assert_eq!(
+///     NicePercent::from(55.012345_f32).as_str(), // Wrong scale.
+///     "100.00%",
+/// );
+/// assert_eq!(
+///     NicePercent::from(f64::INFINITY).as_str(), // So much more than one.
+///     "100.00%",
 /// );
 /// ```
 pub struct NicePercent {
@@ -126,6 +159,7 @@ macro_rules! from {
 			reason = "It is what it is.",
 		)]
 		impl From<$ty> for NicePercent {
+			#[doc = concat!("# Percent From `", stringify!($ty), "`.")]
 			fn from(num: $ty) -> Self {
 				// Treat NaN as zero.
 				if num.is_nan() { return Self::MIN; }
@@ -155,33 +189,40 @@ macro_rules! from {
 }
 from!(f32 f64);
 
-impl<T: IntDivFloat> TryFrom<(T, T)> for NicePercent {
-	type Error = ();
+/// # Helper: From `(done, total)` Integers.
+macro_rules! div_int {
+	($($ty:ident $fn:ident),+ $(,)?) => ($(
+		impl From<($ty, $ty)> for NicePercent {
+			#[inline]
+			#[doc = concat!("# Percent From `", stringify!($ty), "`/`", stringify!($ty), "`.")]
+			///
+			/// Create a [`NicePercent`] from the division of two integers
+			/// — e.g. a "done" and a "total" — leveraging
+			#[doc = concat!("[`NiceFloat::", stringify!($fn), "`]")]
+			/// for the nitty-gritty.
+			fn from((e, d): ($ty, $ty)) -> Self {
+				match NiceFloat::$fn(e, d) {
+					Ok(f) | Err(f) => Self::from(f)
+				}
+			}
+		}
+	)+);
+}
 
-	#[inline]
-	/// # Percent From T/T.
-	///
-	/// This method is a shorthand that performs the (decimal) division of
-	/// `T1 / T2` for you, then converts the result into a [`NicePercent`],
-	/// clamping to `0.0`/`1.0` as usual.
-	///
-	/// ```
-	/// use dactyl::NicePercent;
-	///
-	/// assert_eq!(
-	///     NicePercent::from(0.5_f64),
-	///     NicePercent::try_from((10_u8, 20_u8)).unwrap(),
-	/// );
-	/// ```
-	///
-	/// ## Errors
-	///
-	/// Conversion will fail if the resulting float isn't finite.
-	fn try_from(src: (T, T)) -> Result<Self, Self::Error> {
-		src.0.div_float(src.1)
-			.map(Self::from)
-			.ok_or(())
-	}
+div_int! {
+	u8    div_u8,
+	u16   div_u16,
+	u32   div_u32,
+	u64   div_u64,
+	u128  div_u128,
+	usize div_usize,
+
+	i8    div_i8,
+	i16   div_i16,
+	i32   div_i32,
+	i64   div_i64,
+	i128  div_i128,
+	isize div_isize,
 }
 
 nice_uint!(@traits NicePercent);
@@ -278,7 +319,8 @@ mod tests {
 	fn t_nice() {
 		const TOTAL: u32 = 10_000;
 
-		// Explicitly check the default, min, and max.
+		// Explicitly check the weird shit.
+		assert_eq!(NicePercent::MIN, NicePercent::from(f32::NAN));
 		assert_eq!(NicePercent::default(), NicePercent::from(f32::MIN));
 		assert_eq!(NicePercent::MIN, NicePercent::from(f32::MIN));
 		assert_eq!(NicePercent::MAX, NicePercent::from(f32::MAX));

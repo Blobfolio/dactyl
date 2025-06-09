@@ -199,6 +199,12 @@ impl From<f64> for NiceFloat {
 	}
 }
 
+impl From<Result<f64, f64>> for NiceFloat {
+	fn from(src: Result<f64, f64>) -> Self {
+		src.map_or_else(Self::from, Self::from)
+	}
+}
+
 impl NiceFloat {
 	/// # "Minimum".
 	///
@@ -586,6 +592,269 @@ impl NiceFloat {
 	}
 }
 
+/// # Helper: Integer Division Methods.
+macro_rules! div_int {
+	// Generic documentation.
+	(@doc_start $ty:expr, $fn:expr) => (
+		concat!(
+"# Divide Two `", $ty, "` as `f64`.
+
+Recast two integers as floats and divide them, returning the result.
+
+## Examples
+
+```
+use dactyl::NiceFloat;
+
+assert_eq!(
+    NiceFloat::", $fn, "(0, 13),
+    Ok(0.0),
+);
+assert_eq!(
+    NiceFloat::", $fn, "(13, 13),
+    Ok(1.0),
+    \"testing 13 / 13", $fn, "\"
+);
+assert_eq!(
+    NiceFloat::", $fn, "(20, 16),
+    Ok(1.25),
+);
+```
+
+[`Result::Err`] is used to draw attention to weird/lossy values, such as
+what happens when dividing by zero.
+
+```
+# use dactyl::NiceFloat;
+assert!(
+    NiceFloat::", $fn, "(0, 0).is_err_and(|e| e.is_nan()),
+);
+assert!(
+    NiceFloat::", $fn, "(5, 0).is_err_and(|e| e.is_infinite()),
+);
+```
+",
+		)
+	);
+
+	// Generic documentation bottom.
+	(@doc_end $fn:expr) => (
+		concat!("
+If you ultimately need a [`NiceFloat`], the result can be converted as usual.
+
+```
+# use dactyl::NiceFloat;
+// Conditional niceness.
+if let Ok(nice) = NiceFloat::", $fn, "(3, 100).map(NiceFloat::from) {
+	assert_eq!(nice.as_str(), \"0.03000000\");
+}
+
+// Unconditional niceness.
+assert_eq!(
+    NiceFloat::from(NiceFloat::", $fn, "(3, 100)).as_str(),
+    \"0.03000000\", // Result was good.
+);
+assert_eq!(
+    NiceFloat::from(NiceFloat::", $fn, "(3, 0)).as_str(),
+    \"∞\", // Result was infinite!
+);
+```
+
+## Errors
+
+The result is returned either way, but will come back as an error if
+`NaN`, infinite, or the integer portion lost precision.
+")
+	);
+
+	// Docs w/ middle.
+	(@docs $ty:expr, $fn:expr, $mid:expr) => (
+		concat!(
+			div_int!(@doc_start $ty, $fn),
+			$mid,
+			div_int!(@doc_end $fn),
+		)
+	);
+
+	// Docs w/o middle.
+	(@docs $ty:expr, $fn:expr) => (
+		concat!(
+			div_int!(@doc_start $ty, $fn),
+			div_int!(@doc_end $fn),
+		)
+	);
+
+	// Small types that shouldn't need anything special.
+	(@small $ty:ty, $fn:tt) => (
+		#[doc = div_int!(@docs stringify!($ty), stringify!($fn))]
+		pub const fn $fn(e: $ty, d: $ty) -> Result<f64, f64> {
+			// Rule out stupid.
+			if d == 0 {
+				return Err(if e == 0 { f64::NAN } else { f64::INFINITY });
+			}
+			if e == 0 { return Ok(0.0); }
+
+			let out = e as f64 / d as f64;
+			if out.is_finite() { Ok(out) }
+			else { Err(out) }
+		}
+	);
+
+	// Big and unsigned.
+	(@big $ty:ty, $fn:ident, $gcd:ident) => (
+		#[doc = div_int!(@docs
+			stringify!($ty),
+			stringify!($fn),
+			concat!(
+				"
+Integers with more than 15-16 digits — as can happen with `", stringify!($ty), "` —
+can also be problematic.
+
+```
+# use dactyl::NiceFloat;
+assert_eq!(
+    NiceFloat::", stringify!($fn), "(9_223_372_036_854_775_806, 1),
+    Err(9_223_372_036_854_776_000.0), // Almost!
+);
+```
+")
+		)]
+		pub const fn $fn(mut e: $ty, mut d: $ty) -> Result<f64, f64> {
+			// Rule out stupid.
+			if d == 0 {
+				return Err(if e == 0 { f64::NAN } else { f64::INFINITY });
+			}
+			if e == 0 { return Ok(0.0); }
+
+			// Shrink the numbers to give them a better chance.
+			if let Some(gcd) = $gcd(e, d) {
+				e /= gcd;
+				d /= gcd;
+			}
+
+			// Avoid pointless division.
+			if d == 1 {
+				let out = e as f64;
+				if out.is_finite() && e == (out as $ty) {
+					return Ok(out);
+				}
+				return Err(out);
+			}
+
+			// Try it and see what happens.
+			let out = e as f64 / d as f64;
+			if
+				out.is_finite() &&
+				e.wrapping_div(d).abs_diff(out as $ty) <= 1
+			{
+				Ok(out)
+			}
+			else { Err(out) }
+		}
+	);
+
+	// Big and signed.
+	(@big $ty:ty, $fn:ident, $gcd:ident, $tyu:ty, $fnu:ident) => (
+		#[doc = div_int!(@docs
+			stringify!($ty),
+			stringify!($fn),
+			concat!(
+				"
+Integers with more than 15-16 digits — as can happen with `", stringify!($ty), "` —
+can also be problematic.
+
+```
+# use dactyl::NiceFloat;
+assert_eq!(
+    NiceFloat::", stringify!($fn), "(9_223_372_036_854_775_806, 1),
+    Err(9_223_372_036_854_776_000.0), // Almost!
+);
+assert_eq!(
+    NiceFloat::", stringify!($fn), "(-9_223_372_036_854_775_806, 1),
+    Err(-9_223_372_036_854_776_000.0), // Almost!
+);
+```
+")
+		)]
+		pub const fn $fn(mut e: $ty, mut d: $ty) -> Result<f64, f64> {
+			// Rule out stupid.
+			match (e.signum(), d.signum()) {
+				(n, 0) => return
+					if n == 0 { Err(f64::NAN) }
+					else if n == -1 { Err(f64::NEG_INFINITY) }
+					else { Err(f64::INFINITY) },
+
+				(0, _) => return Ok(0.0),
+
+				// If the result is going to be positive anyway, defer to the
+				// unsigned sister method since it's safer.
+				(-1, -1) | (1, 1) => return Self::$fnu(e.unsigned_abs(), d.unsigned_abs()),
+
+				_ => {},
+			}
+
+			// Try to reduce.
+			if let Some(gcd) = $gcd(e, d) {
+				e /= gcd;
+				d /= gcd;
+			}
+
+			// Avoid pointless division.
+			if d.abs() == 1 {
+				let out =
+					if d == 1 { e as f64 }
+					else if let Some(e) = e.checked_neg() { e as f64 }
+					else { e as f64 * -1.0 };
+
+				if out.is_finite() && e == (out as $ty) { return Ok(out); }
+				return Err(out);
+			}
+
+			// Try it and see what happens.
+			let out = e as f64 / d as f64;
+			if
+				out.is_finite() &&
+				e.wrapping_div(d).unsigned_abs().abs_diff(out.abs() as $tyu) <= 1
+			{
+				Ok(out)
+			}
+			else { Err(out) }
+		}
+	);
+}
+
+#[expect(
+	clippy::cast_precision_loss,
+	clippy::cast_possible_truncation,
+	reason = "We're trying not to let that happen…"
+)]
+#[expect(clippy::cast_sign_loss, reason = "False positive.")]
+impl NiceFloat {
+	div_int!(@small u8,   div_u8);
+	div_int!(@small u16,  div_u16);
+	div_int!(@small u32,  div_u32);
+	div_int!(@big   u64,  div_u64,  gcd_u64);
+	div_int!(@big   u128, div_u128, gcd_u128);
+
+	div_int!(@small i8,   div_i8);
+	div_int!(@small i16,  div_i16);
+	div_int!(@small i32,  div_i32);
+	div_int!(@big   i64,  div_i64,  gcd_i64,  u64,  div_u64);
+	div_int!(@big   i128, div_i128, gcd_i128, u128, div_u128);
+
+	#[inline]
+	#[doc = div_int!(@docs "usize", "div_usize")]
+	pub const fn div_usize(e: usize, d: usize) -> Result<f64, f64> {
+		Self::div_u64(e as u64, d as u64)
+	}
+
+	#[inline]
+	#[doc = div_int!(@docs "isize", "div_isize")]
+	pub const fn div_isize(e: isize, d: isize) -> Result<f64, f64> {
+		Self::div_i64(e as i64, d as i64)
+	}
+}
+
 
 
 #[derive(Clone, Copy, Eq, PartialEq)]
@@ -626,6 +895,10 @@ impl FloatKind {
 
 		/// # Exponent Mask.
 		const EXP_MASK: u32 = (1 << 8) - 1;
+
+		const {
+			assert!(f32::MANTISSA_DIGITS - 1 == 23, "Bug: wrong f32 mantissa count.");
+		}
 
 		// Quick weirdness checks.
 		if num.is_nan() { return Ok(Self::NaN); }
@@ -680,6 +953,10 @@ impl FloatKind {
 
 		/// # Exponent Mask.
 		const EXP_MASK: u64 = (1 << 11) - 1;
+
+		const {
+			assert!(f64::MANTISSA_DIGITS - 1 == 52, "Bug: wrong f64 mantissa count.");
+		}
 
 		// Quick weirdness checks.
 		if num.is_nan() { return Ok(Self::NaN); }
@@ -853,6 +1130,104 @@ impl NiceInner {
 
 
 
+/// # Helper: GCD.
+///
+/// These methods are used to help reduce big-type numbers before
+/// floatification, increasing the chances of their being represented
+/// correctly.
+///
+/// The particulars are heavily borrowed from the `num` crate, but in our case
+/// values are only returned if greater than one.
+macro_rules! gcd {
+	// Unsigned.
+	(@unsigned $ty:ty, $fn:ident) => (
+		/// # Greatest Common Divisor.
+		const fn $fn(mut m: $ty, mut n: $ty) -> Option<$ty> {
+			// Use Stein's algorithm
+			if m == 0 || n == 0 {
+				let out = m | n;
+				if 1 < out { return Some(out); }
+				return None;
+			}
+
+			// Find common factors of 2.
+			let shift = (m | n).trailing_zeros();
+
+			// Divide n and m by 2 until odd.
+			m >>= m.trailing_zeros();
+			n >>= n.trailing_zeros();
+
+			while m != n {
+				if m > n {
+					m -= n;
+					m >>= m.trailing_zeros();
+				}
+				else {
+					n -= m;
+					n >>= n.trailing_zeros();
+				}
+			}
+
+			let out = m << shift;
+			if 1 < out { Some(out) }
+			else { None }
+		}
+	);
+
+	// Signed.
+	(@signed $ty:ty, $fn:ident) => (
+		/// # Greatest Common Divisor.
+		const fn $fn(mut m: $ty, mut n: $ty) -> Option<$ty> {
+			// Use Stein's algorithm
+			if m == 0 || n == 0 {
+				let out = (m | n).abs();
+				if 1 < out { return Some(out); }
+				return None;
+			}
+
+			// Find common factors of 2.
+			let shift = (m | n).trailing_zeros();
+
+			// Positivity is required, but that won't work if the value is MIN.
+			if m == <$ty>::MIN || n == <$ty>::MIN {
+				// Workaround: .abs() can't infer the type from `out`.
+				const ONE: $ty = 1;
+				let out = (ONE << shift).abs();
+				if 1 < out { return Some(out); }
+				return None;
+			}
+			m = m.abs();
+			n = n.abs();
+
+			// Divide n and m by 2 until odd.
+			m >>= m.trailing_zeros();
+			n >>= n.trailing_zeros();
+
+			while m != n {
+				if m > n {
+					m -= n;
+					m >>= m.trailing_zeros();
+				}
+				else {
+					n -= m;
+					n >>= n.trailing_zeros();
+				}
+			}
+
+			let out = m << shift;
+			if 1 < out { Some(out) }
+			else { None }
+		}
+	);
+}
+
+gcd!(@unsigned u64,  gcd_u64);
+gcd!(@unsigned u128, gcd_u128);
+gcd!(@signed   i64,  gcd_i64);
+gcd!(@signed   i128, gcd_i128);
+
+
+
 #[expect(clippy::cast_possible_truncation, reason = "False positive.")]
 /// # Round, Tie to Even.
 ///
@@ -1009,6 +1384,84 @@ mod tests {
 				NiceSeparator::Space,
 			).precise_str(3),
 			"> 18-446-744-073-709-551-615",
+		);
+	}
+
+	/// # Helper: div_int.
+	///
+	/// Float math is really hard to check programmatically. For this round,
+	/// we're checking 5/4 and 4/5 at different scales to make sure they always
+	/// come out as expected.
+	macro_rules! t_div_int {
+		($fnt:ident, $ty:ident, $fn:ident) => (
+			#[test]
+			fn $fnt() {
+				use std::collections::BTreeSet;
+
+				#[cfg(not(miri))]
+				const SAMPLE_SIZE: usize = 1_000_000;
+
+				#[cfg(miri)]
+				const SAMPLE_SIZE: usize = 500;
+
+				let max_five = <$ty>::MAX.wrapping_div(5);
+				let mut rng = fastrand::Rng::new();
+				let set = std::iter::repeat_with(|| rng.$ty(1..=max_five))
+					.take(SAMPLE_SIZE)
+					.chain(std::iter::once(max_five))
+					.map(|scale| (5 * scale, 4 * scale))
+					.collect::<BTreeSet<_>>();
+
+				// Set has (n5, n4) pairs of all different sizes, so we
+				// should get the same result no matter what we do?
+				for (five, four) in set {
+					assert_eq!(
+						NiceFloat::$fn(five, four),
+						Ok(1.25),
+						"Failed for {five} / {four}",
+					);
+					assert_eq!(
+						NiceFloat::$fn(four, five),
+						Ok(0.8),
+						"Failed for {four} / {five}",
+					);
+
+					// Either by itself should work or overflow.
+					let res = NiceFloat::$fn(five, 1);
+					assert!(
+						res.ok().is_none_or(|n| n as $ty == five),
+						"Failed for {five} / 1 ({res:?})",
+					);
+				}
+			}
+		);
+	}
+
+	t_div_int!(t_div_u8,    u8,    div_u8);
+	t_div_int!(t_div_u16,   u16,   div_u16);
+	t_div_int!(t_div_u32,   u32,   div_u32);
+	t_div_int!(t_div_u64,   u64,   div_u64);
+	t_div_int!(t_div_u128,  u128,  div_u128);
+	t_div_int!(t_div_usize, usize, div_usize);
+
+	t_div_int!(t_div_i8,    i8,    div_i8);
+	t_div_int!(t_div_i16,   i16,   div_i16);
+	t_div_int!(t_div_i32,   i32,   div_i32);
+	t_div_int!(t_div_i64,   i64,   div_i64);
+	t_div_int!(t_div_i128,  i128,  div_i128);
+	t_div_int!(t_div_isize, isize, div_isize);
+
+	#[test]
+	fn t_div_int_weird() {
+		let e =  92_23_372_036_854_775_807_u128;
+		let d = 276_70_116_110_564_327_421_u128;
+		let Ok(res) = NiceFloat::div_u128(e, d) else {
+			panic!("Gigantic u128 division failed.");
+		};
+		assert!(
+			// Precision will vary, but we should see roughly a third.
+			format!("{res}").starts_with("0.33333"),
+			"Gigantic u128 division doesn't start 0.33333.",
 		);
 	}
 }
