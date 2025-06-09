@@ -148,7 +148,7 @@ mod tests {
 		#[cfg(miri)]
 		{
 			let mut rng = fastrand::Rng::new();
-			for i in std::iter::repeat_with(|| rng.u16(..)).take(SAMPLE_SIZE) {
+			for i in std::iter::repeat_with(|| rng.u16(1..u16::MAX)).take(SAMPLE_SIZE) {
 				t_digiter!(i, u16);
 			}
 
@@ -165,7 +165,7 @@ mod tests {
 
 		// Testing the full range takes too long.
 		let mut rng = fastrand::Rng::new();
-		for i in std::iter::repeat_with(|| rng.u32(..)).take(SAMPLE_SIZE) {
+		for i in std::iter::repeat_with(|| rng.u32(1..u32::MAX)).take(SAMPLE_SIZE) {
 			t_digiter!(i, u32);
 		}
 
@@ -181,7 +181,7 @@ mod tests {
 
 		// Testing the full range takes too long.
 		let mut rng = fastrand::Rng::new();
-		for i in std::iter::repeat_with(|| rng.u64(..)).take(SAMPLE_SIZE) {
+		for i in std::iter::repeat_with(|| rng.u64(1..u64::MAX)).take(SAMPLE_SIZE) {
 			t_digiter!(i, u64);
 		}
 
