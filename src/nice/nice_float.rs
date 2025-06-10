@@ -200,8 +200,11 @@ impl From<f64> for NiceFloat {
 }
 
 impl From<Result<f64, f64>> for NiceFloat {
+	#[inline]
 	fn from(src: Result<f64, f64>) -> Self {
-		src.map_or_else(Self::from, Self::from)
+		match src {
+			Ok(f) | Err(f) => Self::from(f)
+		}
 	}
 }
 
