@@ -13,6 +13,7 @@
 
 * Refactored `BytesToSigned`/`Unsigned`
 * Refactored `HexToSigned`/`Unsigned`
+* Refactored `SaturatingFrom`
 * Refactored all the `Nice*` structs
 * Miscellaneous code changes and lints
 * Miscellaneous test/coverage fixes and improvements
