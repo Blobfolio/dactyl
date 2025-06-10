@@ -4,6 +4,7 @@
 
 #![expect(clippy::cast_lossless, reason = "False positive.")]
 
+use crate::int;
 use std::hash::{
 	BuildHasherDefault,
 	Hasher,
@@ -123,26 +124,25 @@ pub type NoHash = BuildHasherDefault<NoHasher>;
 pub struct NoHasher(u64);
 
 /// # Helper: Write Method(s) for Unsigned Ints.
-macro_rules! write_unsigned {
-	($($fn:ident, $ty:ty),+ $(,)?) => ($(
+macro_rules! write_int {
+	// Signed.
+	(@signed $($fn:ident $ty:ident),+ $(,)?) => ($(
+		#[expect(clippy::cast_sign_loss, reason = "False positive.")]
+		#[inline]
+		#[doc = concat!("# Write `", stringify!($ty), "`")]
+		fn $fn(&mut self, val: $ty) {
+			debug_assert!(self.0 == 0, "cannot call `Hasher::write_*` more than once");
+			self.0 = (val as int!(@flip $ty)) as u64;
+		}
+	)+);
+
+	// Unsigned.
+	($($fn:ident $ty:ident),+ $(,)?) => ($(
 		#[inline]
 		#[doc = concat!("# Write `", stringify!($ty), "`")]
 		fn $fn(&mut self, val: $ty) {
 			debug_assert!(self.0 == 0, "cannot call `Hasher::write_*` more than once");
 			self.0 = val as u64;
-		}
-	)+);
-}
-
-/// # Helper: Write Method(s) for Signed Ints.
-macro_rules! write_signed {
-	($($fn:ident, $ty1:ty, $ty2:ty),+ $(,)?) => ($(
-		#[expect(clippy::cast_sign_loss, reason = "False positive.")]
-		#[inline]
-		#[doc = concat!("# Write `", stringify!($ty1), "`")]
-		fn $fn(&mut self, val: $ty1) {
-			debug_assert!(self.0 == 0, "cannot call `Hasher::write_*` more than once");
-			self.0 = (val as $ty2) as u64;
 		}
 	)+);
 }
@@ -154,18 +154,19 @@ impl Hasher for NoHasher {
 		unimplemented!("NoHash only implements the type-specific write methods (like `write_u16`)");
 	}
 
-	write_unsigned!(
-		write_u8, u8,
-		write_u16, u16,
-		write_u32, u32,
-		write_usize, usize,
-	);
-	write_signed!(
-		write_i8, i8, u8,
-		write_i16, i16, u16,
-		write_i32, i32, u32,
-		write_isize, isize, usize,
-	);
+	write_int! {
+		write_u8    u8,
+		write_u16   u16,
+		write_u32   u32,
+		write_usize usize,
+	}
+	write_int! {
+		@signed
+		write_i8    i8,
+		write_i16   i16,
+		write_i32   i32,
+		write_isize isize,
+	}
 
 	#[inline]
 	/// # Real Write.

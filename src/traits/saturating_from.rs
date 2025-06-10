@@ -1,27 +1,5 @@
 /*!
 # Dactyl: Saturated Unsigned Integer Conversion
-
-The `SaturatingFrom` trait allows integer primitives to be freely converted
-between one another in a saturating fashion.
-
-To make life easy, `int::saturating_from(float)` is implemented as well, but
-this is functionally identical to writing `float as int`, since such casts are
-already saturating in Rust.
-
-## Examples
-
-```
-use dactyl::traits::SaturatingFrom;
-
-// Too big.
-assert_eq!(u8::saturating_from(1026_u16), 255_u8);
-
-// Too small.
-assert_eq!(u8::saturating_from(-1026_i32), 0_u8);
-
-// Just right.
-assert_eq!(u8::saturating_from(99_u64), 99_u8);
-```
 */
 
 #![expect(
@@ -32,6 +10,8 @@ assert_eq!(u8::saturating_from(99_u64), 99_u8);
 	trivial_numeric_casts,
 	reason = "We're doing a lot of this here.",
 )]
+
+use crate::int;
 
 
 
@@ -52,88 +32,15 @@ assert_eq!(u8::saturating_from(99_u64), 99_u8);
 ///     i8::saturating_from(-123_456_789_i32),
 ///     -128_i8, // Saturated!
 /// );
+///
+/// assert_eq!(
+///     i8::saturating_from(7_u64),
+///     7_i8, // Unsaturated.
+/// );
 /// ```
 pub trait SaturatingFrom<T> {
 	/// # Saturating From.
 	fn saturating_from(src: T) -> Self;
-}
-
-#[cfg(target_pointer_width = "16")]
-/// # Helper: `isize`/`usize` Properties.
-///
-/// TODO: merge with `minmax` if #cfg can ever be expanded in a macro.
-macro_rules! sized {
-	(@min isize) => ( -32768 );
-	(@min usize) => ( 0 );
-
-	(@max isize) => ( 32767 );
-	(@max usize) => ( 65535 );
-
-	(@alias isize) => ( i16 );
-	(@alias usize) => ( u16 );
-}
-
-#[cfg(target_pointer_width = "32")]
-/// # Helper: `isize`/`usize` Properties.
-///
-/// TODO: merge with `minmax` if #cfg can ever be expanded in a macro.
-macro_rules! sized {
-	(@min isize) => ( -2147483648 );
-	(@min usize) => ( 0 );
-
-	(@max isize) => ( 2147483647 );
-	(@max usize) => ( 4294967295 );
-
-	(@alias isize) => ( i32 );
-	(@alias usize) => ( u32 );
-}
-
-#[cfg(target_pointer_width = "64")]
-/// # Helper: `isize`/`usize` Properties.
-///
-/// TODO: merge with `minmax` if #cfg can ever be expanded in a macro.
-macro_rules! sized {
-	(@min isize) => ( -9223372036854775808 );
-	(@min usize) => ( 0 );
-
-	(@max isize) => ( 9223372036854775807 );
-	(@max usize) => ( 18446744073709551615 );
-
-	(@alias isize) => ( i64 );
-	(@alias usize) => ( u64 );
-}
-
-/// # Helper: Type Min and Max.
-macro_rules! minmax {
-	// Minimums.
-	(@min i8) =>   ( -128 );
-	(@min i16) =>  ( -32768 );
-	(@min i32) =>  ( -2147483648 );
-	(@min i64) =>  ( -9223372036854775808 );
-	(@min i128) => ( -170141183460469231731687303715884105728 );
-	(@min isize) =>( sized!(@min isize) );
-
-	(@min u8) =>   ( 0 );
-	(@min u16) =>  ( 0 );
-	(@min u32) =>  ( 0 );
-	(@min u64) =>  ( 0 );
-	(@min u128) => ( 0 );
-	(@min usize) =>( 0 );
-
-	// Maximums.
-	(@max i8) =>   ( 127 );
-	(@max i16) =>  ( 32767 );
-	(@max i32) =>  ( 2147483647 );
-	(@max i64) =>  ( 9223372036854775807 );
-	(@max i128) => ( 170141183460469231731687303715884105727 );
-	(@max isize) =>( sized!(@max isize) );
-
-	(@max u8) =>   ( 255 );
-	(@max u16) =>  ( 65535 );
-	(@max u32) =>  ( 4294967295 );
-	(@max u64) =>  ( 18446744073709551615 );
-	(@max u128) => ( 340282366920938463463374607431768211455 );
-	(@max usize) =>( sized!(@max usize) );
 }
 
 /// # Helper: Saturating From!
@@ -177,11 +84,11 @@ $examples,
 				stringify!($ty),
 				concat!("assert_eq!(
     ", stringify!($ty), "::saturating_from(", stringify!($from), "::MIN),
-    ", minmax!(@min $from), ",
+    ", int!(@min $from), ",
 );
 assert_eq!(
     ", stringify!($ty), "::saturating_from(", stringify!($from), "::MAX),
-    ", minmax!(@max $from), ",
+    ", int!(@max $from), ",
 );"),
 			)]
 			fn saturating_from(src: $from) -> Self { src as Self }
@@ -197,15 +104,15 @@ assert_eq!(
 				stringify!($ty),
 				concat!("assert_eq!(
     ", stringify!($ty), "::saturating_from(", stringify!($from), "::MIN),
-    ", minmax!(@min $ty), ", // Saturated.
+    ", int!(@min $ty), ", // Saturated.
 );
 assert_eq!(
     ", stringify!($ty), "::saturating_from(", stringify!($from), "::MAX),
-    ", minmax!(@max $from), ",
+    ", int!(@max $from), ",
 );"),
 			)]
 			fn saturating_from(src: $from) -> Self {
-				if src <= minmax!(@min $ty) { minmax!(@min $ty) }
+				if src <= int!(@min $ty) { int!(@min $ty) }
 				else { src as Self }
 			}
 		}
@@ -220,15 +127,15 @@ assert_eq!(
 				stringify!($ty),
 				concat!("assert_eq!(
     ", stringify!($ty), "::saturating_from(", stringify!($from), "::MIN),
-    ", minmax!(@min $from), ",
+    ", int!(@min $from), ",
 );
 assert_eq!(
     ", stringify!($ty), "::saturating_from(", stringify!($from), "::MAX),
-    ", minmax!(@max $ty), ", // Saturated.
+    ", int!(@max $ty), ", // Saturated.
 );"),
 			)]
 			fn saturating_from(src: $from) -> Self {
-				if minmax!(@max $ty) <= src { minmax!(@max $ty) }
+				if int!(@max $ty) <= src { int!(@max $ty) }
 				else { src as Self }
 			}
 		}
@@ -243,16 +150,16 @@ assert_eq!(
 				stringify!($ty),
 				concat!("assert_eq!(
     ", stringify!($ty), "::saturating_from(", stringify!($from), "::MIN),
-    ", minmax!(@min $ty), ", // Saturated.
+    ", int!(@min $ty), ", // Saturated.
 );
 assert_eq!(
     ", stringify!($ty), "::saturating_from(", stringify!($from), "::MAX),
-    ", minmax!(@max $ty), ", // Saturated.
+    ", int!(@max $ty), ", // Saturated.
 );"),
 			)]
 			fn saturating_from(src: $from) -> Self {
-				if src <= minmax!(@min $ty) { minmax!(@min $ty) }
-				else if minmax!(@max $ty) <= src { minmax!(@max $ty) }
+				if src <= int!(@min $ty) { int!(@min $ty) }
+				else if int!(@max $ty) <= src { int!(@max $ty) }
 				else { src as Self }
 			}
 		}
@@ -267,11 +174,11 @@ assert_eq!(
 				stringify!($ty),
 				concat!("assert_eq!(
     ", stringify!($ty), "::saturating_from(", stringify!($from), "::NEG_INFINITY),
-    ", minmax!(@min $ty), ", // Saturated.
+    ", int!(@min $ty), ", // Saturated.
 );
 assert_eq!(
     ", stringify!($ty), "::saturating_from(", stringify!($from), "::INFINITY),
-    ", minmax!(@max $ty), ", // Saturated.
+    ", int!(@max $ty), ", // Saturated.
 );"),
 			)]
 			fn saturating_from(src: $from) -> Self { src as Self }
@@ -372,19 +279,19 @@ sat!(@both isize        i64 i128);
 sat!(@both isize            i128);
 
 // Handle reverse i/usize generically.
-impl<T: SaturatingFrom<sized!(@alias usize)>> SaturatingFrom<usize> for T {
+impl<T: SaturatingFrom<int!(@alias usize)>> SaturatingFrom<usize> for T {
 	#[inline]
 	/// # Saturating From `usize`
 	fn saturating_from(src: usize) -> T {
-		T::saturating_from(src as sized!(@alias usize))
+		T::saturating_from(src as int!(@alias usize))
 	}
 }
 
-impl<T: SaturatingFrom<sized!(@alias isize)>> SaturatingFrom<isize> for T {
+impl<T: SaturatingFrom<int!(@alias isize)>> SaturatingFrom<isize> for T {
 	#[inline]
 	/// # Saturating From `isize`
 	fn saturating_from(src: isize) -> T {
-		T::saturating_from(src as sized!(@alias isize))
+		T::saturating_from(src as int!(@alias isize))
 	}
 }
 
@@ -401,38 +308,6 @@ sat!(@float f64 u8 u16 u32 u64 u128 usize i8 i16 i32 i64 i128 isize);
 )]
 mod tests {
 	use super::*;
-
-	#[test]
-	/// # Test `minmax!` macro.
-	///
-	/// Make sure the `MIN`/`MAX` constants agree with our hardcoded literals.
-	fn t_minmax() {
-		assert_eq!(i8::MIN,    minmax!(@min i8));
-		assert_eq!(i8::MAX,    minmax!(@max i8));
-		assert_eq!(i16::MIN,   minmax!(@min i16));
-		assert_eq!(i16::MAX,   minmax!(@max i16));
-		assert_eq!(i32::MIN,   minmax!(@min i32));
-		assert_eq!(i32::MAX,   minmax!(@max i32));
-		assert_eq!(i64::MIN,   minmax!(@min i64));
-		assert_eq!(i64::MAX,   minmax!(@max i64));
-		assert_eq!(i128::MIN,  minmax!(@min i128));
-		assert_eq!(i128::MAX,  minmax!(@max i128));
-		assert_eq!(isize::MIN, minmax!(@min isize));
-		assert_eq!(isize::MAX, minmax!(@max isize));
-
-		assert_eq!(u8::MIN,    minmax!(@min u8));
-		assert_eq!(u8::MAX,    minmax!(@max u8));
-		assert_eq!(u16::MIN,   minmax!(@min u16));
-		assert_eq!(u16::MAX,   minmax!(@max u16));
-		assert_eq!(u32::MIN,   minmax!(@min u32));
-		assert_eq!(u32::MAX,   minmax!(@max u32));
-		assert_eq!(u64::MIN,   minmax!(@min u64));
-		assert_eq!(u64::MAX,   minmax!(@max u64));
-		assert_eq!(u128::MIN,  minmax!(@min u128));
-		assert_eq!(u128::MAX,  minmax!(@max u128));
-		assert_eq!(usize::MIN, minmax!(@min usize));
-		assert_eq!(usize::MAX, minmax!(@max usize));
-	}
 
 	#[test]
 	/// # Saturating From Coverage Check.
@@ -489,7 +364,7 @@ mod tests {
 					// The reverse shouldn't saturate.
 					assert_eq!(
 						<$src>::saturating_from(<$target>::MIN),
-						minmax!(@min $target),
+						int!(@min $target),
 						concat!("MIN saturation failed for ", stringify!($target), " to ", stringify!($src)),
 					);
 				)+
@@ -534,7 +409,7 @@ mod tests {
 					// The reverse shouldn't saturate.
 					assert_eq!(
 						<$src>::saturating_from(<$target>::MAX),
-						minmax!(@max $target),
+						int!(@max $target),
 						concat!("MAX saturation failed for ", stringify!($target), " to ", stringify!($src)),
 					);
 				)+

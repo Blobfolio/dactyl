@@ -52,26 +52,6 @@ pub struct NiceElapsed {
 
 nice_uint!(@traits NiceElapsed);
 
-/// # Helper: Generate Impl
-macro_rules! elapsed_from {
-	($($type:ty),+) => ($(
-		impl From<$type> for NiceElapsed {
-			#[inline]
-			/// This will never fail, however large values will be capped to
-			/// [`u32::MAX`] before parsing, so may not reflect all the seconds
-			/// you hoped they would.
-			fn from(num: $type) -> Self {
-				// Nothing!
-				if 0 == num { Self::MIN }
-				// Something!
-				else {
-					Self::from(u32::saturating_from(num))
-				}
-			}
-		}
-	)+);
-}
-
 impl From<Duration> for NiceElapsed {
 	#[expect(clippy::cast_possible_truncation, reason = "False positive.")]
 	fn from(src: Duration) -> Self {
@@ -108,6 +88,24 @@ impl From<u32> for NiceElapsed {
 			Self::from_parts(d, h, m, s, 0)
 		}
 	}
+}
+
+/// # Helper: Generate Impl
+macro_rules! elapsed_from {
+	($($ty:ty),+) => ($(
+		impl From<$ty> for NiceElapsed {
+			#[inline]
+			/// This will never fail, however large values will be capped to
+			/// [`u32::MAX`] before parsing, so may not reflect all the seconds
+			/// you hoped they would.
+			fn from(num: $ty) -> Self {
+				// Nothing!
+				if 0 == num { Self::MIN }
+				// Something!
+				else { Self::from(u32::saturating_from(num)) }
+			}
+		}
+	)+);
 }
 
 // These all work the same way.

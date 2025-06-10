@@ -9,6 +9,8 @@
 	reason = "Macros made me do it.",
 )]
 
+use crate::int;
+
 
 
 /// # Hex (ASCII Bytes) to Unsigned.
@@ -81,25 +83,12 @@ macro_rules! unsigned {
 
 unsigned!(u8 u16 u32 u64 u128);
 
-#[cfg(target_pointer_width = "16")]
 impl HexToUnsigned for usize {
 	#[inline]
 	/// # Hex (ASCII Bytes) to Unsigned.
-	fn htou(src: &[u8]) -> Option<Self> { u16::htou(src).map(Self::from) }
-}
-
-#[cfg(target_pointer_width = "32")]
-impl HexToUnsigned for usize {
-	#[inline]
-	/// # Hex (ASCII Bytes) to Unsigned.
-	fn htou(src: &[u8]) -> Option<Self> { u32::htou(src).map(|n| n as Self) }
-}
-
-#[cfg(target_pointer_width = "64")]
-impl HexToUnsigned for usize {
-	#[inline]
-	/// # Hex (ASCII Bytes) to Unsigned.
-	fn htou(src: &[u8]) -> Option<Self> { u64::htou(src).map(|n| n as Self) }
+	fn htou(src: &[u8]) -> Option<Self> {
+		<int!(@alias usize)>::htou(src).map(|n| n as Self)
+	}
 }
 
 
@@ -140,25 +129,18 @@ pub trait HexToSigned: Sized {
 /// Signed types use their unsigned counterpart's decoder, then are transmuted
 /// after to handle any wrapping.
 macro_rules! signed {
-	($($signed:ty = $unsigned:ty),+ $(,)?) => ($(
-		impl HexToSigned for $signed {
+	($($ty:ident)+) => ($(
+		impl HexToSigned for $ty {
 			#[inline]
 			/// # Hex (ASCII Bytes) to Signed.
 			fn htoi(src: &[u8]) -> Option<Self> {
-				<$unsigned>::htou(src).map(<$unsigned>::cast_signed)
+				<int!(@flip $ty)>::htou(src).map(<int!(@flip $ty)>::cast_signed)
 			}
 		}
 	)+);
 }
 
-signed!(
-	i8 =    u8,
-	i16 =   u16,
-	i32 =   u32,
-	i64 =   u64,
-	i128 =  u128,
-	isize = usize,
-);
+signed!{ i8 i16 i32 i64 i128 isize }
 
 
 

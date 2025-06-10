@@ -2,6 +2,7 @@
 # Dactyl — Bytes to Unsigned.
 */
 
+use crate::int;
 use std::num::{
 	NonZeroU8,
 	NonZeroU16,
@@ -41,39 +42,51 @@ pub trait BytesToUnsigned: Sized {
 
 
 
+/// # Helper: Documentation.
+macro_rules! docs {
+	($ty:ident) => (concat!(
+"# (ASCII) Bytes to Unsigned.
+
+Parse a `", stringify!($ty), "` from an ASCII byte slice.
+
+## Examples
+
+```
+use dactyl::traits::BytesToUnsigned;
+
+assert_eq!(
+    ", stringify!($ty), "::btou(b\"", int!(@min $ty), "\"),
+    Some(", stringify!($ty), "::MIN),
+);
+assert_eq!(
+    ", stringify!($ty), "::btou(b\"", int!(@max $ty), "\"),
+    Some(", stringify!($ty), "::MAX),
+);
+
+// Leading zeroes are fine.
+assert_eq!(
+    ", stringify!($ty), "::btou(b\"00000123\"),
+    Some(123),
+);
+
+// These are all bad.
+assert!(", stringify!($ty), "::btou(&[]).is_none()); // Empty.
+assert!(", stringify!($ty), "::btou(b\"+13\").is_none()); // Plus.
+assert!(", stringify!($ty), "::btou(b\" 2223231  \").is_none()); // Whitespace.
+assert!(", stringify!($ty), "::btou(b\"nope\").is_none()); // Not a number.
+assert!(", stringify!($ty), "::btou(
+    b\"4402823669209384634633746074317682114550\").is_none()
+); // Too big.
+```
+"
+	));
+}
+
+
+
 impl BytesToUnsigned for u8 {
 	#[inline]
-	/// # (ASCII) Bytes to Unsigned.
-	///
-	/// Parse a `u8` from an ASCII byte slice.
-	///
-	/// ## Examples
-	///
-	/// ```
-	/// use dactyl::traits::BytesToUnsigned;
-	///
-	/// assert_eq!(
-	///     u8::btou(b"0"),
-	///     Some(u8::MIN),
-	/// );
-	/// assert_eq!(
-	///     u8::btou(b"255"),
-	///     Some(u8::MAX),
-	/// );
-	///
-	/// // Leading zeroes are fine.
-	/// assert_eq!(
-	///     u8::btou(b"00000123"),
-	///     Some(123_u8),
-	/// );
-	///
-	/// // These are all bad.
-	/// assert!(u8::btou(&[]).is_none());     // Empty.
-	/// assert!(u8::btou(b"+255").is_none()); // "+"
-	/// assert!(u8::btou(b" 222").is_none()); // Whitespace.
-	/// assert!(u8::btou(b"1234").is_none()); // Too big.
-	/// assert!(u8::btou(b"duh!").is_none()); // Not a number.
-	/// ```
+	#[doc = docs!(u8)]
 	fn btou(mut src: &[u8]) -> Option<Self> {
 		loop {
 			return match src {
@@ -98,37 +111,7 @@ impl BytesToUnsigned for u8 {
 impl BytesToUnsigned for u16 {
 	#[expect(clippy::many_single_char_names, reason = "For readability.")]
 	#[inline]
-	/// # (ASCII) Bytes to Unsigned.
-	///
-	/// Parse a `u16` from an ASCII byte slice.
-	///
-	/// ## Examples
-	///
-	/// ```
-	/// use dactyl::traits::BytesToUnsigned;
-	///
-	/// assert_eq!(
-	///     u16::btou(b"0"),
-	///     Some(u16::MIN),
-	/// );
-	/// assert_eq!(
-	///     u16::btou(b"65535"),
-	///     Some(u16::MAX),
-	/// );
-	///
-	/// // Leading zeroes are fine.
-	/// assert_eq!(
-	///     u16::btou(b"00000123"),
-	///     Some(123_u16),
-	/// );
-	///
-	/// // These are all bad.
-	/// assert!(u16::btou(&[]).is_none());       // Empty.
-	/// assert!(u16::btou(b"+25500").is_none()); // "+"
-	/// assert!(u16::btou(b" 222  ").is_none()); // Whitespace.
-	/// assert!(u16::btou(b"123456").is_none()); // Too big.
-	/// assert!(u16::btou(b"no way").is_none()); // Not a number.
-	/// ```
+	#[doc = docs!(u16)]
 	fn btou(mut src: &[u8]) -> Option<Self> {
 		loop {
 			return match src {
@@ -155,37 +138,7 @@ impl BytesToUnsigned for u16 {
 
 impl BytesToUnsigned for u32 {
 	#[inline]
-	/// # (ASCII) Bytes to Unsigned.
-	///
-	/// Parse a `u32` from an ASCII byte slice.
-	///
-	/// ## Examples
-	///
-	/// ```
-	/// use dactyl::traits::BytesToUnsigned;
-	///
-	/// assert_eq!(
-	///     u32::btou(b"0"),
-	///     Some(u32::MIN),
-	/// );
-	/// assert_eq!(
-	///     u32::btou(b"4294967295"),
-	///     Some(u32::MAX),
-	/// );
-	///
-	/// // Leading zeroes are fine.
-	/// assert_eq!(
-	///     u32::btou(b"00000123"),
-	///     Some(123_u32),
-	/// );
-	///
-	/// // These are all bad.
-	/// assert!(u32::btou(&[]).is_none());           // Empty.
-	/// assert!(u32::btou(b"+255003320").is_none()); // "+"
-	/// assert!(u32::btou(b" 2223231  ").is_none()); // Whitespace.
-	/// assert!(u32::btou(b"4294967296").is_none()); // Too big.
-	/// assert!(u32::btou(b"yeah, nope").is_none()); // Not a number.
-	/// ```
+	#[doc = docs!(u32)]
 	fn btou(mut src: &[u8]) -> Option<Self> {
 		// The number of digits that can be safely multiplied by 10 without
 		// risking overflow.
@@ -221,39 +174,7 @@ impl BytesToUnsigned for u32 {
 
 impl BytesToUnsigned for u64 {
 	#[inline]
-	/// # (ASCII) Bytes to Unsigned.
-	///
-	/// Parse a `u64` from an ASCII byte slice.
-	///
-	/// ## Examples
-	///
-	/// ```
-	/// use dactyl::traits::BytesToUnsigned;
-	///
-	/// assert_eq!(
-	///     u64::btou(b"0"),
-	///     Some(u64::MIN),
-	/// );
-	/// assert_eq!(
-	///     u64::btou(b"18446744073709551615"),
-	///     Some(u64::MAX),
-	/// );
-	///
-	/// // Leading zeroes are fine.
-	/// assert_eq!(
-	///     u64::btou(b"00000123"),
-	///     Some(123_u64),
-	/// );
-	///
-	/// // These are all bad.
-	/// assert!(u64::btou(&[]).is_none());           // Empty.
-	/// assert!(u64::btou(b"+255003320").is_none()); // "+"
-	/// assert!(u64::btou(b" 2223231  ").is_none()); // Whitespace.
-	/// assert!(u64::btou(b"yeah, nope").is_none()); // Not a number.
-	/// assert!(u64::btou(
-	///     b"28446744073709551615").is_none()
-	/// ); // Too big.
-	/// ```
+	#[doc = docs!(u64)]
 	fn btou(mut src: &[u8]) -> Option<Self> {
 		// The number of digits that can be safely multiplied by 10 without
 		// risking overflow.
@@ -289,39 +210,7 @@ impl BytesToUnsigned for u64 {
 
 impl BytesToUnsigned for u128 {
 	#[inline]
-	/// # (ASCII) Bytes to Unsigned.
-	///
-	/// Parse a `u128` from an ASCII byte slice.
-	///
-	/// ## Examples
-	///
-	/// ```
-	/// use dactyl::traits::BytesToUnsigned;
-	///
-	/// assert_eq!(
-	///     u128::btou(b"0"),
-	///     Some(u128::MIN),
-	/// );
-	/// assert_eq!(
-	///     u128::btou(b"340282366920938463463374607431768211455"),
-	///     Some(u128::MAX),
-	/// );
-	///
-	/// // Leading zeroes are fine.
-	/// assert_eq!(
-	///     u128::btou(b"00000123"),
-	///     Some(123_u128),
-	/// );
-	///
-	/// // These are all bad.
-	/// assert!(u128::btou(&[]).is_none());           // Empty.
-	/// assert!(u128::btou(b"+255003320").is_none()); // "+"
-	/// assert!(u128::btou(b" 2223231  ").is_none()); // Whitespace.
-	/// assert!(u128::btou(b"yeah, nope").is_none()); // Not a number.
-	/// assert!(u128::btou(
-	///     b"4402823669209384634633746074317682114550").is_none()
-	/// ); // Too big.
-	/// ```
+	#[doc = docs!(u128)]
 	fn btou(mut src: &[u8]) -> Option<Self> {
 		if src.is_empty() { return None; }
 
@@ -346,6 +235,38 @@ impl BytesToUnsigned for u128 {
 		})
 	}
 }
+
+
+
+impl BytesToUnsigned for usize {
+	#[allow(
+		clippy::allow_attributes,
+		clippy::cast_possible_truncation,
+		reason = "False positive.",
+	)]
+	#[inline]
+	#[doc = docs!(usize)]
+	fn btou(src: &[u8]) -> Option<Self> {
+		<int!(@alias usize)>::btou(src).map(|n| n as Self)
+	}
+}
+
+
+
+/// # Helper: Non-Zero.
+macro_rules! nz {
+	($($ty:ident)+) => ($(
+		impl BytesToUnsigned for $ty {
+			#[inline]
+			/// # (ASCII) Bytes to Unsigned.
+			fn btou(src: &[u8]) -> Option<Self> {
+				<int!(@alias $ty)>::btou(src).and_then(Self::new)
+			}
+		}
+	)+);
+}
+
+nz! { NonZeroU8 NonZeroU16 NonZeroU32 NonZeroU64 NonZeroU128 NonZeroUsize }
 
 
 
@@ -379,52 +300,6 @@ const fn parse8(src: [u8; 8]) -> Option<u32> {
 	else { None }
 }
 
-
-
-#[expect(clippy::cast_possible_truncation, reason = "False positive.")]
-impl BytesToUnsigned for usize {
-	#[cfg(target_pointer_width = "16")]
-	#[inline]
-	/// # (ASCII) Bytes to Unsigned.
-	fn btou(src: &[u8]) -> Option<Self> { u16::btou(src).map(Self::from) }
-
-	#[cfg(target_pointer_width = "32")]
-	#[inline]
-	/// # (ASCII) Bytes to Unsigned.
-	fn btou(src: &[u8]) -> Option<Self> { Some(u32::btou(src)? as Self) }
-
-	#[cfg(target_pointer_width = "64")]
-	#[inline]
-	/// # (ASCII) Bytes to Unsigned.
-	fn btou(src: &[u8]) -> Option<Self> { Some(u64::btou(src)? as Self) }
-}
-
-
-
-/// # Helper: Non-Zero.
-macro_rules! nonzero {
-	($($outer:ty, $inner:ty),+ $(,)?) => ($(
-		impl BytesToUnsigned for $outer {
-			#[inline]
-			/// # (ASCII) Bytes to Unsigned.
-			fn btou(src: &[u8]) -> Option<Self> {
-				<$inner>::btou(src).and_then(Self::new)
-			}
-		}
-	)+);
-}
-
-nonzero!(
-	NonZeroU8, u8,
-	NonZeroU16, u16,
-	NonZeroU32, u32,
-	NonZeroU64, u64,
-	NonZeroU128, u128,
-	NonZeroUsize, usize,
-);
-
-
-
 #[cold]
 /// # Strip Leading Zeroes.
 const fn strip0(mut src: &[u8]) -> Option<&[u8]> {
@@ -447,122 +322,76 @@ mod tests {
 	#[cfg(miri)]
 	const SAMPLE_SIZE: usize = 500; // Miri runs way too slow for a million tests.
 
-	macro_rules! sanity_check {
-		($ty:ty) => (
-			assert_eq!(<$ty>::btou(b""), None);
-			assert_eq!(<$ty>::btou(b" 1"), None);
-			assert_eq!(<$ty>::btou(b"1.0"), None);
-			assert_eq!(<$ty>::btou(b"+123"), None);
-			assert_eq!(<$ty>::btou(b"apples"), None);
-
-			assert_eq!(<$ty>::btou(b"0"), Some(0));
-			assert_eq!(<$ty>::btou(b"00"), Some(0));
-			assert_eq!(<$ty>::btou(b"0000"), Some(0));
-			assert_eq!(<$ty>::btou(b"00000000"), Some(0));
-			assert_eq!(<$ty>::btou(b"0000000000000000"), Some(0));
-			assert_eq!(<$ty>::btou(b"000000000000000000000000000000000000000000000000"), Some(0));
+	macro_rules! test {
+		(@eq $ty:ident, $raw:expr, $expected:expr $(,)?) => (
+			assert_eq!(
+				<$ty>::btou($raw),
+				$expected,
+				concat!(stringify!($ty), "::btou({:?})"),
+				$raw,
+			);
 		);
-	}
 
-	#[test]
-	fn t_u8() {
-		sanity_check!(u8);
-		assert_eq!(u8::btou(b"0255"), Some(u8::MAX));
-		assert_eq!(u8::btou(b"256"), None);
+		($($fn:ident $ty:ident),+ $(,)?) => ($(
+			#[test]
+			fn $fn() {
+				use std::num::NonZero;
 
-		// This is small enough we can check every value.
-		for i in 0..=u8::MAX {
-			let s = i.to_string();
-			assert_eq!(u8::btou(s.as_bytes()), Some(i));
-			assert_eq!(NonZeroU8::btou(s.as_bytes()), NonZeroU8::new(i));
-		}
-	}
+				// Common sanity checks.
+				test!(@eq $ty, b"", None);
+				test!(@eq $ty, b" 1", None);
+				test!(@eq $ty, b"1.0", None);
+				test!(@eq $ty, b"apples", None);
+				test!(@eq $ty, b"+123", None);
 
-	#[test]
-	fn t_u16() {
-		sanity_check!(u16);
-		assert_eq!(u16::btou(b"065535"), Some(u16::MAX));
-		assert_eq!(u16::btou(b"65536"), None);
+				// Zero is zero no matter how many.
+				test!(@eq $ty, b"0", Some(0));
+				test!(@eq $ty, b"00", Some(0));
+				test!(@eq $ty, b"0000", Some(0));
+				test!(@eq $ty, b"00000000", Some(0));
+				test!(@eq $ty, b"0000000000000000", Some(0));
+				test!(@eq $ty, b"000000000000000000000000000000000000000000000000", Some(0));
 
-		// This is small enough we can check every value.
-		#[cfg(not(miri))]
-		for i in 0..=u16::MAX {
-			let s = i.to_string();
-			assert_eq!(u16::btou(s.as_bytes()), Some(i));
-			assert_eq!(NonZeroU16::btou(s.as_bytes()), NonZeroU16::new(i));
-		}
+				// Maximum should work with or without a zero.
+				test!(@eq $ty, concat!(int!(@max $ty)).as_bytes(), Some(<$ty>::MAX));
+				test!(@eq $ty, concat!("0", int!(@max $ty)).as_bytes(), Some(<$ty>::MAX));
 
-		#[cfg(miri)]
-		{
-			let mut rng = fastrand::Rng::new();
-			for i in std::iter::repeat_with(|| rng.u16(..)).take(SAMPLE_SIZE) {
-				let s = i.to_string();
-				assert_eq!(u16::btou(s.as_bytes()), Some(i));
-				assert_eq!(NonZeroU16::btou(s.as_bytes()), NonZeroU16::new(i));
+				// But not if bigger.
+				test!(@eq $ty, concat!(int!(@max $ty), "0").as_bytes(), None);
+
+				// i8 can go all the way.
+				if size_of::<$ty>() == 1 {
+					for i in <$ty>::MIN..<$ty>::MAX {
+						let s = i.to_string();
+						test!(@eq $ty, s.as_bytes(), Some(i));
+						assert_eq!(
+							<NonZero<$ty>>::btou(s.as_bytes()),
+							NonZero::<$ty>::new(i),
+						);
+					}
+					return;
+				}
+
+				// Test a random sample.
+				let mut rng = fastrand::Rng::new();
+				for i in std::iter::repeat_with(|| rng.$ty(..)).take(SAMPLE_SIZE) {
+					let s = i.to_string();
+					test!(@eq $ty, s.as_bytes(), Some(i));
+					assert_eq!(
+						<NonZero<$ty>>::btou(s.as_bytes()),
+						NonZero::<$ty>::new(i),
+					);
+				}
 			}
-		}
+		)+);
 	}
 
-	#[test]
-	fn t_u32() {
-		sanity_check!(u32);
-		assert_eq!(u32::btou(b"4294967295"), Some(u32::MAX));
-		assert_eq!(u32::btou(b"04294967295"), Some(u32::MAX));
-		assert_eq!(u32::btou(b"4294967296"), None);
-
-		// Now let's check ten million random values and hope they all hit.
-		let mut rng = fastrand::Rng::new();
-		for i in std::iter::repeat_with(|| rng.u32(..)).take(SAMPLE_SIZE) {
-			let s = i.to_string();
-			assert_eq!(u32::btou(s.as_bytes()), Some(i));
-			assert_eq!(NonZeroU32::btou(s.as_bytes()), NonZeroU32::new(i));
-		}
-	}
-
-	#[test]
-	fn t_u64() {
-		sanity_check!(u64);
-		assert_eq!(u64::btou(b"18446744073709551615"), Some(u64::MAX));
-		assert_eq!(u64::btou(b"018446744073709551615"), Some(u64::MAX));
-		assert_eq!(u64::btou(b"18446744073709551616"), None);
-
-		// Now let's check ten million random values and hope they all hit.
-		let mut rng = fastrand::Rng::new();
-		for i in std::iter::repeat_with(|| rng.u64(..)).take(SAMPLE_SIZE) {
-			let s = i.to_string();
-			assert_eq!(u64::btou(s.as_bytes()), Some(i));
-			assert_eq!(NonZeroU64::btou(s.as_bytes()), NonZeroU64::new(i));
-		}
-	}
-
-	#[test]
-	fn t_u128() {
-		sanity_check!(u128);
-		assert_eq!(u128::btou(b"340282366920938463463374607431768211455"), Some(u128::MAX));
-		assert_eq!(u128::btou(b"0340282366920938463463374607431768211455"), Some(u128::MAX));
-		assert_eq!(u128::btou(b"340282366920938463463374607431768211456"), None);
-
-		// Now let's check ten million random values and hope they all hit.
-		let mut rng = fastrand::Rng::new();
-		for i in std::iter::repeat_with(|| rng.u128(..)).take(SAMPLE_SIZE) {
-			let s = i.to_string();
-			assert_eq!(u128::btou(s.as_bytes()), Some(i));
-			assert_eq!(NonZeroU128::btou(s.as_bytes()), NonZeroU128::new(i));
-		}
-	}
-
-	#[test]
-	fn t_usize() {
-		sanity_check!(usize);
-		assert_eq!(usize::btou(usize::MAX.to_string().as_bytes()), Some(usize::MAX));
-
-		// Usize just wraps the appropriate sized type, but let's check some
-		// random values anyway.
-		let mut rng = fastrand::Rng::new();
-		for i in std::iter::repeat_with(|| rng.usize(..)).take(SAMPLE_SIZE.min(50_000)) {
-			let s = i.to_string();
-			assert_eq!(usize::btou(s.as_bytes()), Some(i));
-			assert_eq!(NonZeroUsize::btou(s.as_bytes()), NonZeroUsize::new(i));
-		}
-	}
+	test!(
+		t_u8  u8,
+		t_u16 u16,
+		t_u32 u32,
+		t_u64 u64,
+		t_u128 u128,
+		t_usize usize,
+	);
 }

@@ -104,13 +104,12 @@ macro_rules! from_big {
 
 /// # Helper: From Signed.
 macro_rules! from_signed {
-	($($ty:ty, $unsigned:ty),+ $(,)?) => ($(
+	($($ty:ty),+ $(,)?) => ($(
 		impl From<$ty> for NiceClock {
-			#[expect(clippy::cast_sign_loss, reason = "False positive.")]
 			#[inline]
 			fn from(num: $ty) -> Self {
 				if num <= 0 { Self::MIN }
-				else { Self::from(num as $unsigned) }
+				else { Self::from(num.cast_unsigned()) }
 			}
 		}
 
@@ -123,14 +122,7 @@ macro_rules! from_signed {
 
 from_small!(u8, u16);
 from_big!(u64, u128, usize);
-from_signed!(
-	i8, u8,
-	i16, u16,
-	i32, u32,
-	i64, u64,
-	i128, u128,
-	isize, usize,
-);
+from_signed!(i8, i16, i32, i64, i128, isize);
 
 impl From<Duration> for NiceClock {
 	#[inline]
