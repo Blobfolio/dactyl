@@ -79,6 +79,8 @@ macro_rules! digiter {
 				else { self.0.ilog10() as usize + 1 }
 			}
 		}
+
+		impl std::iter::FusedIterator for Digiter<$ty> {}
 	)+);
 }
 
