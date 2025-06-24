@@ -94,7 +94,6 @@ But the niceness doesn't stop there. Dactyl provides several other structs, meth
 
 
 
-#[macro_use] mod macros;
 mod hash;
 mod nice;
 pub mod traits;
