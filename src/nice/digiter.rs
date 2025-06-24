@@ -18,7 +18,7 @@ pub(super) struct Digiter<T>(T);
 
 /// # Helper: Primitive Implementations.
 macro_rules! digiter {
-	($($ty:ty),+) => ($(
+	($($ty:ident $conv:ident),+ $(,)?) => ($(
 		#[allow(
 			dead_code,
 			clippy::allow_attributes,
@@ -58,7 +58,7 @@ macro_rules! digiter {
 			fn next(&mut self) -> Option<Self::Item> {
 				if self.0 == 0 { None }
 				else {
-					let next = NiceChar::from_digit((self.0 % 10) as u8);
+					let next = NiceChar::$conv(self.0);
 					self.0 = self.0.wrapping_div(10);
 					Some(next)
 				}
@@ -84,7 +84,12 @@ macro_rules! digiter {
 	)+);
 }
 
-digiter!(u8, u16, u32, u64);
+digiter! {
+	 u8 from_digit_u8,
+	u16 from_digit_u16,
+	u32 from_digit_u32,
+	u64 from_digit_u64,
+}
 
 
 

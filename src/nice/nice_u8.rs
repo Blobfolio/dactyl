@@ -173,20 +173,20 @@ const fn data_from(num: u8) -> ([NiceChar; 3], NiceU8Idx) {
 	// Three digits.
 	if 99 < num {
 		let a = if 199 < num { NiceChar::Digit2 } else { NiceChar::Digit1 };
-		let c = NiceChar::from_digit(num % 10);
-		let b = NiceChar::from_digit((num / 10) % 10);
+		let b = NiceChar::from_digit_u8(num / 10);
+		let c = NiceChar::from_digit_u8(num);
 		([a, b, c], NiceU8Idx::From00)
 	}
 	// Two digits.
 	else if 9 < num {
-		let c = NiceChar::from_digit(num % 10);
-		let b = NiceChar::from_digit(num / 10);
+		let b = NiceChar::from_digit_u8(num / 10);
+		let c = NiceChar::from_digit_u8(num);
 		([NiceChar::Digit0, b, c], NiceU8Idx::From01)
 	}
 	// One digit.
 	else {
 		(
-			[NiceChar::Digit0, NiceChar::Digit0, NiceChar::from_digit(num)],
+			[NiceChar::Digit0, NiceChar::Digit0, NiceChar::from_digit_u8(num)],
 			NiceU8Idx::From02
 		)
 	}

@@ -38,7 +38,35 @@ impl NiceSeparator {
 
 /// # Helper: `NiceChar` Definition.
 macro_rules! nice_chars {
-	($($k:ident $v:literal),+ $(,)*) => (
+	(@from_digit $($fn:ident $ty:ident),+ $(,)+) => (
+		impl NiceChar {
+			$(
+				#[inline(always)]
+				#[must_use]
+				/// # From Digit.
+				///
+				/// Convert a single digit (`0..=9`) to the corresponding `NiceChar`.
+				/// (For big numbers, only the last digit is used.)
+				pub(super) const fn $fn(src: $ty) -> Self {
+					match src % 10 {
+						0 => Self::Digit0,
+						1 => Self::Digit1,
+						2 => Self::Digit2,
+						3 => Self::Digit3,
+						4 => Self::Digit4,
+						5 => Self::Digit5,
+						6 => Self::Digit6,
+						7 => Self::Digit7,
+						8 => Self::Digit8,
+						9 => Self::Digit9,
+						_ => unreachable!(),
+					}
+				}
+			)+
+		}
+	);
+
+	($($k:ident $v:literal),+ $(,)?) => (
 		#[repr(u8)]
 		#[derive(Debug, Clone, Copy, Eq, Hash, Ord, PartialEq, PartialOrd)]
 		/// # Nice Characters.
@@ -56,30 +84,6 @@ macro_rules! nice_chars {
 		}
 
 		impl NiceChar {
-			#[inline(always)]
-			#[must_use]
-			/// # From Digit.
-			///
-			/// Convert a single digit (`0..=9`) to the corresponding `NiceChar`.
-			///
-			/// Because the callers are already neck-deep in calculations and
-			/// checks, this method saturates the result rather than verifying
-			/// the source is actually a single digit.
-			pub(super) const fn from_digit(src: u8) -> Self {
-				match src {
-					0 => Self::Digit0,
-					1 => Self::Digit1,
-					2 => Self::Digit2,
-					3 => Self::Digit3,
-					4 => Self::Digit4,
-					5 => Self::Digit5,
-					6 => Self::Digit6,
-					7 => Self::Digit7,
-					8 => Self::Digit8,
-					_ => Self::Digit9,
-				}
-			}
-
 			#[expect(unsafe_code, reason = "For transmute.")]
 			#[inline(always)]
 			#[must_use]
@@ -114,6 +118,14 @@ macro_rules! nice_chars {
 				// sequences.
 				unsafe { std::str::from_utf8_unchecked(Self::as_bytes(src)) }
 			}
+		}
+
+		nice_chars! {
+			@from_digit
+			from_digit_u8  u8,
+			from_digit_u16 u16,
+			from_digit_u32 u32,
+			from_digit_u64 u64,
 		}
 	);
 }

@@ -346,12 +346,12 @@ impl NiceElapsed {
 		// Hours.
 		if let Some(label) = has_h {
 			if 9 < h {
-				out.data[out.len] = NiceChar::from_digit(h / 10);
-				out.data[out.len + 1] = NiceChar::from_digit(h % 10);
+				out.data[out.len] = NiceChar::from_digit_u8(h / 10);
+				out.data[out.len + 1] = NiceChar::from_digit_u8(h);
 				out.len += 2;
 			}
 			else {
-				out.data[out.len] = NiceChar::from_digit(h % 10);
+				out.data[out.len] = NiceChar::from_digit_u8(h);
 				out.len += 1;
 			}
 
@@ -364,12 +364,12 @@ impl NiceElapsed {
 		// Minutes.
 		if let Some(label) = has_m {
 			if 9 < m {
-				out.data[out.len] = NiceChar::from_digit(m / 10);
-				out.data[out.len + 1] = NiceChar::from_digit(m % 10);
+				out.data[out.len] = NiceChar::from_digit_u8(m / 10);
+				out.data[out.len + 1] = NiceChar::from_digit_u8(m);
 				out.len += 2;
 			}
 			else {
-				out.data[out.len] = NiceChar::from_digit(m % 10);
+				out.data[out.len] = NiceChar::from_digit_u8(m);
 				out.len += 1;
 			}
 
@@ -382,12 +382,12 @@ impl NiceElapsed {
 		// Seconds and/or milliseconds.
 		if let Some(label) = has_s {
 			if 9 < s {
-				out.data[out.len] = NiceChar::from_digit(s / 10);
-				out.data[out.len + 1] = NiceChar::from_digit(s % 10);
+				out.data[out.len] = NiceChar::from_digit_u8(s / 10);
+				out.data[out.len + 1] = NiceChar::from_digit_u8(s);
 				out.len += 2;
 			}
 			else {
-				out.data[out.len] = NiceChar::from_digit(s % 10);
+				out.data[out.len] = NiceChar::from_digit_u8(s);
 				out.len += 1;
 			}
 
@@ -395,8 +395,8 @@ impl NiceElapsed {
 			if ms != 0 {
 				out.data[out.len..out.len + 3].copy_from_slice(&[
 					NiceChar::Period,
-					NiceChar::from_digit(ms / 10),
-					NiceChar::from_digit(ms % 10),
+					NiceChar::from_digit_u8(ms / 10),
+					NiceChar::from_digit_u8(ms),
 				]);
 				out.len += 3;
 			}

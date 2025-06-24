@@ -148,8 +148,8 @@ impl From<u32> for NiceClock {
 				let tmp = ((num * 0x91A3) >> 27) as u8;
 				num -= tmp as u32 * 3600;
 				[
-					NiceChar::from_digit(tmp / 10),
-					NiceChar::from_digit(tmp % 10),
+					NiceChar::from_digit_u8(tmp / 10),
+					NiceChar::from_digit_u8(tmp),
 				]
 			}
 			else { [NiceChar::Digit0, NiceChar::Digit0] };
@@ -160,8 +160,8 @@ impl From<u32> for NiceClock {
 				let tmp = ((num * 0x889) >> 17) as u8;
 				num -= tmp as u32 * 60;
 				[
-					NiceChar::from_digit(tmp / 10),
-					NiceChar::from_digit(tmp % 10),
+					NiceChar::from_digit_u8(tmp / 10),
+					NiceChar::from_digit_u8(tmp),
 				]
 			}
 			else { [NiceChar::Digit0, NiceChar::Digit0] };
@@ -171,8 +171,8 @@ impl From<u32> for NiceClock {
 			data: [
 				h[0], h[1], NiceChar::Colon,
 				m[0], m[1], NiceChar::Colon,
-				NiceChar::from_digit((num / 10) as u8),
-				NiceChar::from_digit((num % 10) as u8),
+				NiceChar::from_digit_u32(num / 10),
+				NiceChar::from_digit_u32(num),
 			]
 		}
 	}
@@ -402,8 +402,8 @@ impl NiceClock {
 		if num >= 3600 {
 			let tmp = ((num * 0x91A3) >> 27) as u8;
 			num -= tmp as u32 * 3600;
-			self.data[0] = NiceChar::from_digit(tmp / 10);
-			self.data[1] = NiceChar::from_digit(tmp % 10);
+			self.data[0] = NiceChar::from_digit_u8(tmp / 10);
+			self.data[1] = NiceChar::from_digit_u8(tmp);
 		}
 		else {
 			self.data[0] = NiceChar::Digit0;
@@ -414,8 +414,8 @@ impl NiceClock {
 		if num >= 60 {
 			let tmp = ((num * 0x889) >> 17) as u8;
 			num -= tmp as u32 * 60;
-			self.data[3] = NiceChar::from_digit(tmp / 10);
-			self.data[4] = NiceChar::from_digit(tmp % 10);
+			self.data[3] = NiceChar::from_digit_u8(tmp / 10);
+			self.data[4] = NiceChar::from_digit_u8(tmp);
 		}
 		else {
 			self.data[3] = NiceChar::Digit0;
@@ -423,8 +423,8 @@ impl NiceClock {
 		}
 
 		// Seconds.
-		self.data[6] = NiceChar::from_digit((num / 10) as u8);
-		self.data[7] = NiceChar::from_digit((num % 10) as u8);
+		self.data[6] = NiceChar::from_digit_u32(num / 10);
+		self.data[7] = NiceChar::from_digit_u32(num);
 	}
 }
 

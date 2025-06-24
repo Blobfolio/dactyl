@@ -7,7 +7,8 @@
 ### New
 
 * `NiceElapsed::MIN`
-* `NiceFloat::div_u8`, `NiceFloat::div_u16`, etc.
+* `NiceFloat::div_u8`..=`NiceFloat::div_u128`
+* `NiceFloat::div_i8`..=`NiceFloat::div_i128`
 
 ### Changed
 
@@ -21,7 +22,7 @@
 
 ### Breaking
 
-* `NiceU8`-`NiceU64`, `NiceFloat`, and `NicePercent` no longer alias the generic `NiceWrapper<N>` struct
+* `NiceU8`-`NiceU64`, `NiceFloat`, and `NicePercent` are now unique tyes (instead of aliases to a generic)
 * Removed `NiceWrapper<N>`
 * Removed `traits::IntDivFloat` (use `NiceFloat::div_*` instead)
 * Removed `NiceElapsed::min` (use `NiceElapsed::MIN` instead)
