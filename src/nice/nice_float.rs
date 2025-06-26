@@ -807,7 +807,7 @@ assert_eq!(
 				let out =
 					if d == 1 { e as f64 }
 					else if let Some(e) = e.checked_neg() { e as f64 }
-					else { e as f64 * -1.0 };
+					else { -(e as f64) };
 
 				if out.is_finite() && e == (out as $ty) { return Ok(out); }
 				return Err(out);
