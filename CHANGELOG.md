@@ -2,7 +2,7 @@
 
 
 
-## [0.13.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.13.0) - TBD
+## [0.13.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.13.0) - 2025-06-26
 
 ### New
 
