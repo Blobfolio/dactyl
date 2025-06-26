@@ -2,6 +2,35 @@
 
 
 
+## [0.13.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.13.0) - 2025-06-26
+
+### New
+
+* `NiceElapsed::MIN`
+* `NiceFloat::div_u8`..=`NiceFloat::div_u128`
+* `NiceFloat::div_i8`..=`NiceFloat::div_i128`
+
+### Changed
+
+* Bump MSRV to `1.88`
+* Refactored `BytesToSigned`/`Unsigned`
+* Refactored `HexToSigned`/`Unsigned`
+* Refactored `SaturatingFrom`
+* Refactored all the `Nice*` structs
+* Miscellaneous code changes and lints
+* Miscellaneous doc/test/coverage fixes and improvements
+
+### Breaking
+
+* `NiceU8`-`NiceU64`, `NiceFloat`, and `NicePercent` are now unique tyes (instead of aliases to a generic)
+* Removed `NiceWrapper<N>`
+* Removed `total_cmp!` macro (use `f32`/`f64::total_cmp` instead)
+* Removed `traits::IntDivFloat` (use `NiceFloat::div_*` instead)
+* Removed `NiceElapsed::min` (use `NiceElapsed::MIN` instead)
+* The `Nice*::with_separator` methods now take a `NiceSeparator` instead of a byte
+
+
+
 ## [0.12.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.12.0) - 2025-06-01
 
 ### Changed

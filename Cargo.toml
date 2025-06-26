@@ -1,9 +1,9 @@
 [package]
 name = "dactyl"
-version = "0.12.0"
+version = "0.13.0"
 authors = ["Josh Stoik <josh@blobfolio.com>"]
 edition = "2024"
-rust-version = "1.87"
+rust-version = "1.88"
 description = "A small library to quickly stringify integers with basic formatting."
 license = "WTFPL"
 repository = "https://github.com/Blobfolio/dactyl"
@@ -39,6 +39,10 @@ harness = false
 
 [[bench]]
 name = "fn_htou"
+harness = false
+
+[[bench]]
+name = "fn_nice_clock"
 harness = false
 
 [[bench]]

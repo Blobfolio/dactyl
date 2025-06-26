@@ -6,7 +6,10 @@ use brunch::{
 	Bench,
 	benches,
 };
-use dactyl::NiceU16;
+use dactyl::{
+	NiceSeparator,
+	NiceU16,
+};
 
 benches!(
 	Bench::new("dactyl::NiceU16::from(0)")
@@ -27,8 +30,10 @@ benches!(
 	Bench::new("dactyl::NiceU16::from(u16::MAX)")
 		.run(|| NiceU16::from(u16::MAX)),
 
+	Bench::spacer(),
+
 	Bench::new("dactyl::NiceU16::with_separator(40_999, b'_')")
-		.run(|| NiceU16::with_separator(40_999_u16, b'_')),
+		.run(|| NiceU16::with_separator(40_999_u16, NiceSeparator::Underscore)),
 
 	Bench::spacer(),
 

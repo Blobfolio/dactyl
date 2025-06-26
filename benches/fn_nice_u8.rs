@@ -19,5 +19,5 @@ benches!(
 		.run(|| NiceU8::from(101_u8)),
 
 	Bench::new("dactyl::NiceU8::from(u8::MAX)")
-		.run(|| NiceU8::from(u8::MAX))
+		.run(|| NiceU8::from(u8::MAX)),
 );

@@ -1,27 +1,5 @@
 /*!
 # Dactyl: Saturated Unsigned Integer Conversion
-
-The `SaturatingFrom` trait allows integer primitives to be freely converted
-between one another in a saturating fashion.
-
-To make life easy, `int::saturating_from(float)` is implemented as well, but
-this is functionally identical to writing `float as int`, since such casts are
-already saturating in Rust.
-
-## Examples
-
-```
-use dactyl::traits::SaturatingFrom;
-
-// Too big.
-assert_eq!(u8::saturating_from(1026_u16), 255_u8);
-
-// Too small.
-assert_eq!(u8::saturating_from(-1026_i32), 0_u8);
-
-// Just right.
-assert_eq!(u8::saturating_from(99_u64), 99_u8);
-```
 */
 
 #![expect(
@@ -29,578 +7,425 @@ assert_eq!(u8::saturating_from(99_u64), 99_u8);
 	clippy::cast_possible_truncation,
 	clippy::cast_possible_wrap,
 	clippy::cast_sign_loss,
+	trivial_numeric_casts,
 	reason = "We're doing a lot of this here.",
 )]
+
+use crate::int;
 
 
 
 /// # Saturating From.
 ///
-/// Convert between numeric types, clamping to `Self::MIN..=Self::MAX` to
-/// prevent overflow or wrapping issues.
+/// Convert between signed/unsigned integers, clamping to the target's
+/// `MIN`/`MAX` to prevent overflow or wrapping issues.
+///
+/// This trait is implemented for all combinations of `u8`, `u16`, `u32`,
+/// `u64`, `u128`, `usize`, `i8`, `i16`, `i32`, `i64`, `i128`, and `isize`.
+///
+/// ## Examples
+///
+/// ```
+/// use dactyl::traits::SaturatingFrom;
+///
+/// assert_eq!(
+///     i8::saturating_from(-123_456_789_i32),
+///     -128_i8, // Saturated!
+/// );
+///
+/// assert_eq!(
+///     i8::saturating_from(7_u64),
+///     7_i8, // Unsaturated.
+/// );
+/// ```
 pub trait SaturatingFrom<T> {
 	/// # Saturating From.
-	///
-	/// Convert `T` to `Self`, clamping to `Self::MIN..=Self::MAX` as required
-	/// to prevent overflow or wrapping.
 	fn saturating_from(src: T) -> Self;
 }
 
-// All the integer conversions are built at compile-time.
-include!(concat!(env!("OUT_DIR"), "/dactyl-saturation.rs"));
-
-/// # Helper: Generate Float Impls.
+/// # Helper: Saturating From!
 ///
-/// Floats are mercifully saturating on their own.
-macro_rules! float {
-	($from:ty, $($to:ty),+) => ($(
-		impl SaturatingFrom<$from> for $to {
+/// The documentation makes this look worse than it is. The methods come in
+/// four possible flavors:
+///
+/// * Unsaturated (type fits naturally);
+/// * Saturated lower bound;
+/// * Saturated upper bound;
+/// * Saturated upper and lower bounds;
+///
+/// (There is also a float-specific version at the end, which just does a
+/// naive `as` cast.)
+macro_rules! sat {
+	// Documentation.
+	(@docs $from:expr, $to:expr, $examples:expr $(,)?) => (concat!(
+		"# Saturating From `", $from, "`
+
+Recast a `", $from, "` to a `", $to, "`, clamping values to `",
+$to, "::MIN..=", $to, "::MAX` when necessary to prevent wrapping/overflow
+issues.
+
+## Examples
+
+```
+use dactyl::traits::SaturatingFrom;
+
+",
+$examples,
+"
+```",
+	));
+
+	// Unchecked.
+	($ty:ident $($from:ident)+) => ($(
+		impl SaturatingFrom<$from> for $ty {
 			#[inline]
-			#[doc = concat!("# Saturating From `", stringify!($from), "`")]
-			#[doc = ""]
-			#[doc = concat!("This method will safely recast any `", stringify!($from), "` into a `", stringify!($to), "`, clamping the values to `", stringify!($to), "::MIN..=", stringify!($to), "::MAX` to prevent overflow or wrapping.")]
+			#[doc = sat!(@docs
+				stringify!($from),
+				stringify!($ty),
+				concat!("assert_eq!(
+    ", stringify!($ty), "::saturating_from(", stringify!($from), "::MIN),
+    ", int!(@min $from), ",
+);
+assert_eq!(
+    ", stringify!($ty), "::saturating_from(", stringify!($from), "::MAX),
+    ", int!(@max $from), ",
+);"),
+			)]
+			fn saturating_from(src: $from) -> Self { src as Self }
+		}
+	)+);
+
+	// Minimum Bound Check.
+	(@min $ty:ident $($from:ident)+) => ($(
+		impl SaturatingFrom<$from> for $ty {
+			#[inline]
+			#[doc = sat!(@docs
+				stringify!($from),
+				stringify!($ty),
+				concat!("assert_eq!(
+    ", stringify!($ty), "::saturating_from(", stringify!($from), "::MIN),
+    ", int!(@min $ty), ", // Saturated.
+);
+assert_eq!(
+    ", stringify!($ty), "::saturating_from(", stringify!($from), "::MAX),
+    ", int!(@max $from), ",
+);"),
+			)]
+			fn saturating_from(src: $from) -> Self {
+				if src <= int!(@min $ty) { int!(@min $ty) }
+				else { src as Self }
+			}
+		}
+	)+);
+
+	// Maximum Bound Check.
+	(@max $ty:ident $($from:ident)+) => ($(
+		impl SaturatingFrom<$from> for $ty {
+			#[inline]
+			#[doc = sat!(@docs
+				stringify!($from),
+				stringify!($ty),
+				concat!("assert_eq!(
+    ", stringify!($ty), "::saturating_from(", stringify!($from), "::MIN),
+    ", int!(@min $from), ",
+);
+assert_eq!(
+    ", stringify!($ty), "::saturating_from(", stringify!($from), "::MAX),
+    ", int!(@max $ty), ", // Saturated.
+);"),
+			)]
+			fn saturating_from(src: $from) -> Self {
+				if int!(@max $ty) <= src { int!(@max $ty) }
+				else { src as Self }
+			}
+		}
+	)+);
+
+	// Minimum and Maximum Bound Checks.
+	(@both $ty:ident $($from:ident)+) => ($(
+		impl SaturatingFrom<$from> for $ty {
+			#[inline]
+			#[doc = sat!(@docs
+				stringify!($from),
+				stringify!($ty),
+				concat!("assert_eq!(
+    ", stringify!($ty), "::saturating_from(", stringify!($from), "::MIN),
+    ", int!(@min $ty), ", // Saturated.
+);
+assert_eq!(
+    ", stringify!($ty), "::saturating_from(", stringify!($from), "::MAX),
+    ", int!(@max $ty), ", // Saturated.
+);"),
+			)]
+			fn saturating_from(src: $from) -> Self {
+				if src <= int!(@min $ty) { int!(@min $ty) }
+				else if int!(@max $ty) <= src { int!(@max $ty) }
+				else { src as Self }
+			}
+		}
+	)+);
+
+	// Floats.
+	(@float $from:ident $($ty:ident)+) => ($(
+		impl SaturatingFrom<$from> for $ty {
+			#[inline]
+			#[doc = sat!(@docs
+				stringify!($from),
+				stringify!($ty),
+				concat!("assert_eq!(
+    ", stringify!($ty), "::saturating_from(", stringify!($from), "::NEG_INFINITY),
+    ", int!(@min $ty), ", // Saturated.
+);
+assert_eq!(
+    ", stringify!($ty), "::saturating_from(", stringify!($from), "::INFINITY),
+    ", int!(@max $ty), ", // Saturated.
+);"),
+			)]
 			fn saturating_from(src: $from) -> Self { src as Self }
 		}
 	)+);
 }
 
-float!(f32, u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
-float!(f64, u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
+// No saturation.
+sat!(u128 u128 u64 u32 u16 u8);
+sat!(u64       u64 u32 u16 u8);
+sat!(u32           u32 u16 u8);
+sat!(u16               u16 u8);
+sat!(u8                    u8);
+
+#[cfg(target_pointer_width = "16")]
+sat!(usize             u16 u8);
+#[cfg(target_pointer_width = "32")]
+sat!(usize         u32 u16 u8);
+#[cfg(target_pointer_width = "64")]
+sat!(usize     u64 u32 u16 u8);
+
+sat!(i128      u64 u32 u16 u8 i128 i64 i32 i16 i8);
+sat!(i64           u32 u16 u8      i64 i32 i16 i8);
+sat!(i32               u16 u8          i32 i16 i8);
+sat!(i16                   u8              i16 i8);
+sat!(i8                                        i8);
+
+#[cfg(target_pointer_width = "16")]
+sat!(isize                 u8 i16 i8);
+#[cfg(target_pointer_width = "32")]
+sat!(isize             u16 u8 i32 i16 i8);
+#[cfg(target_pointer_width = "64")]
+sat!(isize         u32 u16 u8 i64 i32 i16 i8);
+
+// Saturate MAX.
+sat!(@max u8     u16 u32 u64 u128);
+sat!(@max        u16 u32 u64 u128);
+sat!(@max            u32 u64 u128);
+sat!(@max                u64 u128);
+
+#[cfg(target_pointer_width = "16")]
+sat!(@max usize      u32 u64 u128);
+#[cfg(target_pointer_width = "32")]
+sat!(@max usize          u64 u128);
+#[cfg(target_pointer_width = "64")]
+sat!(@max usize              u128);
+
+sat!(@max i8  u8 u16 u32 u64 u128);
+sat!(@max i16    u16 u32 u64 u128);
+sat!(@max i32        u32 u64 u128);
+sat!(@max i64            u64 u128);
+sat!(@max i128               u128);
+
+#[cfg(target_pointer_width = "16")]
+sat!(@max isize  u16 u32 u64 u128);
+#[cfg(target_pointer_width = "32")]
+sat!(@max isize      u32 u64 u128);
+#[cfg(target_pointer_width = "64")]
+sat!(@max isize          u64 u128);
+
+// Saturate MIN.
+sat!(@min u8    i8);
+sat!(@min u16   i8 i16);
+sat!(@min u32   i8 i16 i32);
+sat!(@min u64   i8 i16 i32 i64);
+sat!(@min u128  i8 i16 i32 i64 i128);
+
+#[cfg(target_pointer_width = "16")]
+sat!(@min usize i8 i16);
+#[cfg(target_pointer_width = "32")]
+sat!(@min usize i8 i16 i32);
+#[cfg(target_pointer_width = "64")]
+sat!(@min usize i8 i16 i32 i64);
+
+// Saturate MIN and MAX.
+sat!(@both u8   i16 i32 i64 i128);
+sat!(@both u16      i32 i64 i128);
+sat!(@both u32          i64 i128);
+sat!(@both u64              i128);
+
+#[cfg(target_pointer_width = "16")]
+sat!(@both usize    i32 i64 i128);
+#[cfg(target_pointer_width = "32")]
+sat!(@both usize        i64 i128);
+#[cfg(target_pointer_width = "64")]
+sat!(@both usize            i128);
+
+sat!(@both i8   i16 i32 i64 i128);
+sat!(@both i16      i32 i64 i128);
+sat!(@both i32          i64 i128);
+sat!(@both i64              i128);
+
+#[cfg(target_pointer_width = "16")]
+sat!(@both isize    i32 i64 i128);
+#[cfg(target_pointer_width = "32")]
+sat!(@both isize        i64 i128);
+#[cfg(target_pointer_width = "64")]
+sat!(@both isize            i128);
+
+// Handle reverse i/usize generically.
+impl<T: SaturatingFrom<int!(@alias usize)>> SaturatingFrom<usize> for T {
+	#[inline]
+	/// # Saturating From `usize`
+	fn saturating_from(src: usize) -> T {
+		T::saturating_from(src as int!(@alias usize))
+	}
+}
+
+impl<T: SaturatingFrom<int!(@alias isize)>> SaturatingFrom<isize> for T {
+	#[inline]
+	/// # Saturating From `isize`
+	fn saturating_from(src: isize) -> T {
+		T::saturating_from(src as int!(@alias isize))
+	}
+}
+
+// Floats (one-way).
+sat!(@float f32 u8 u16 u32 u64 u128 usize i8 i16 i32 i64 i128 isize);
+sat!(@float f64 u8 u16 u32 u64 u128 usize i8 i16 i32 i64 i128 isize);
 
 
 
 #[cfg(test)]
 #[expect(
 	clippy::cognitive_complexity,
-	trivial_numeric_casts,
 	reason = "It is what it is.",
 )]
-/// # Saturation Tests.
-///
-/// There isn't a particularly good way to do this other than to walk through
-/// fixed ranges and assert smaller types get clamped, and greater-equal ones
-/// don't.
-///
-/// Usize/isize tests vanish beyond the 16-bit ranges to avoid clutter, but
-/// have their own separate cfg-gated test that should verify they work/fail
-/// beyond that given the target's pointer width.
-///
-/// The 16-bit and 128-bit sized tests may be buggy as they haven't actually
-/// been run since Rust doesn't support any architectures at either width
-/// yet. TBD.
 mod tests {
 	use super::*;
 
-	#[cfg(not(miri))]
-	const SAMPLE_SIZE: usize = 500_000;
+	#[test]
+	/// # Saturating From Coverage Check.
+	///
+	/// Test all combinations with a neutral zero to make sure we didn't
+	/// accidentally miss any implementations.
+	fn t_zero() {
+		macro_rules! test {
+			($($ty:ty)+) => ($(
+				assert_eq!(<$ty>::saturating_from(0_u8), 0);
+				assert_eq!(<$ty>::saturating_from(0_u16), 0);
+				assert_eq!(<$ty>::saturating_from(0_u32), 0);
+				assert_eq!(<$ty>::saturating_from(0_u64), 0);
+				assert_eq!(<$ty>::saturating_from(0_u128), 0);
+				assert_eq!(<$ty>::saturating_from(0_usize), 0);
 
-	#[cfg(miri)]
-	const SAMPLE_SIZE: usize = 500; // Miri runs way too slow for half a million tests.
+				assert_eq!(<$ty>::saturating_from(0_i8), 0);
+				assert_eq!(<$ty>::saturating_from(0_i16), 0);
+				assert_eq!(<$ty>::saturating_from(0_i32), 0);
+				assert_eq!(<$ty>::saturating_from(0_i64), 0);
+				assert_eq!(<$ty>::saturating_from(0_i128), 0);
+				assert_eq!(<$ty>::saturating_from(0_isize), 0);
 
-	/// # Helper: Assert `SaturatingFrom` is Lossless.
-	macro_rules! cast_assert_same {
-		($to:ty, $raw:ident, $($from:ty),+) => ($(
-			assert_eq!(
-				<$to>::saturating_from($raw as $from),
-				$raw as $to,
-				concat!("Expected {}_", stringify!($to), " from {}_", stringify!($from), "."),
-				$raw,
-				$raw,
+				assert_eq!(<$ty>::saturating_from(0_f32), 0);
+				assert_eq!(<$ty>::saturating_from(0_f64), 0);
+			)+);
+		}
+
+		test! { u8 u16 u32 u64 u128 usize i8 i16 i32 i64 i128 isize }
+	}
+
+	#[test]
+	/// # Test Minimum Clamps.
+	///
+	/// Test all pairs ordered by their minimum value, ensuring clamps happen
+	/// when needed, and don't when not.
+	fn t_min() {
+		macro_rules! test {
+			($target:ident) => (
+				assert_eq!(
+					<$target>::saturating_from(<$target>::MIN),
+					<$target>::MIN,
+					concat!("MIN saturation failed for ", stringify!($target), " to ", stringify!($target)),
+				);
 			);
-		)+);
-	}
+			($target:ident $($src:ident)+) => (
+				$(
+					assert_eq!(
+						<$target>::saturating_from(<$src>::MIN),
+						<$target>::MIN,
+						concat!("MIN saturation failed for ", stringify!($src), " to ", stringify!($target)),
+					);
 
-	/// # Helper: Assert `SaturatingFrom` Clamps to `Self::MAX`.
-	macro_rules! cast_assert_max {
-		($to:ty, $raw:ident, $($from:ty),+) => ($(
-			assert_eq!(
-				<$to>::saturating_from($raw as $from),
-				<$to>::MAX,
-				concat!("Expected {}_", stringify!($to), " from {}_", stringify!($from), "."),
-				<$to>::MAX,
-				$raw,
+					// The reverse shouldn't saturate.
+					assert_eq!(
+						<$src>::saturating_from(<$target>::MIN),
+						int!(@min $target),
+						concat!("MIN saturation failed for ", stringify!($target), " to ", stringify!($src)),
+					);
+				)+
+
+				// Recurse form the next size.
+				test!($($src)+);
 			);
-		)+);
+		}
+
+		#[cfg(target_pointer_width = "16")]
+		test! { u16 usize u32 u64 u128 i8 i16 isize i32 i64 i128 }
+
+		#[cfg(target_pointer_width = "32")]
+		test! { u16 u32 usize u64 u128 i8 i16 i32 isize i64 i128 }
+
+		#[cfg(target_pointer_width = "64")]
+		test! { u16 u32 u64 usize u128 i8 i16 i32 i64 isize i128 }
 	}
 
-	/// # Helper: Assert `SaturatingFrom` Clamps to `Self::MIN`.
-	macro_rules! cast_assert_min {
-		($to:ty, $raw:ident, $($from:ty),+) => ($(
-			assert_eq!(
-				<$to>::saturating_from($raw as $from),
-				<$to>::MIN,
-				concat!("Expected {}_", stringify!($to), " from {}_", stringify!($from), "."),
-				<$to>::MIN,
-				$raw,
+	#[test]
+	/// # Test Maximum Clamps.
+	///
+	/// Test all pairs ordered by their maximum value, ensuring clamps happen
+	/// when needed, and don't when not.
+	fn t_max() {
+		macro_rules! test {
+			($target:ident) => (
+				assert_eq!(
+					<$target>::saturating_from(<$target>::MAX),
+					<$target>::MAX,
+					concat!("MAX saturation failed for ", stringify!($target), " to ", stringify!($target)),
+				);
 			);
-		)+);
-	}
+			($target:ident $($src:ident)+) => (
+				$(
+					assert_eq!(
+						<$target>::saturating_from(<$src>::MAX),
+						<$target>::MAX,
+						concat!("MAX saturation failed for ", stringify!($src), " to ", stringify!($target)),
+					);
 
-	#[test]
-	fn t_saturating_rng_i28min_i64min() {
-		let mut rng = fastrand::Rng::new();
-		for i in std::iter::repeat_with(|| rng.i128(i128::MIN..i64::MIN as i128)).take(SAMPLE_SIZE) {
-			// Floor reached.
-			cast_assert_min!( u8,    i, i128);
-			cast_assert_min!( u16,   i, i128);
-			cast_assert_min!( u32,   i, i128);
-			cast_assert_min!( u64,   i, i128);
-			cast_assert_min!( u128,  i, i128);
-			cast_assert_min!( usize, i, i128);
-			cast_assert_min!( i8,    i, i128);
-			cast_assert_min!( i16,   i, i128);
-			cast_assert_min!( i32,   i, i128);
-			cast_assert_min!( i64,   i, i128);
+					// The reverse shouldn't saturate.
+					assert_eq!(
+						<$src>::saturating_from(<$target>::MAX),
+						int!(@max $target),
+						concat!("MAX saturation failed for ", stringify!($target), " to ", stringify!($src)),
+					);
+				)+
 
-			// Still in range.
-			cast_assert_same!(i128,  i, i128);
-		}
-	}
-
-	#[test]
-	fn t_saturating_rng_i64min_i32min() {
-		let mut rng = fastrand::Rng::new();
-		for i in std::iter::repeat_with(|| rng.i64(i64::MIN..i32::MIN as i64)).take(SAMPLE_SIZE) {
-			// Floor reached.
-			cast_assert_min!( u8,    i, i64, i128);
-			cast_assert_min!( u16,   i, i64, i128);
-			cast_assert_min!( u32,   i, i64, i128);
-			cast_assert_min!( u64,   i, i64, i128);
-			cast_assert_min!( u128,  i, i64, i128);
-			cast_assert_min!( usize, i, i64, i128);
-			cast_assert_min!( i8,    i, i64, i128);
-			cast_assert_min!( i16,   i, i64, i128);
-			cast_assert_min!( i32,   i, i64, i128);
-
-			// Still in range.
-			cast_assert_same!(i64,   i, i64, i128);
-			cast_assert_same!(i128,  i, i64, i128);
-		}
-	}
-
-	#[test]
-	fn t_saturating_rng_i32min_i16min() {
-		let mut rng = fastrand::Rng::new();
-		for i in std::iter::repeat_with(|| rng.i32(i32::MIN..i16::MIN as i32)).take(SAMPLE_SIZE) {
-			// Floor reached.
-			cast_assert_min!( u8,    i, i32, i64, i128);
-			cast_assert_min!( u16,   i, i32, i64, i128);
-			cast_assert_min!( u32,   i, i32, i64, i128);
-			cast_assert_min!( u64,   i, i32, i64, i128);
-			cast_assert_min!( u128,  i, i32, i64, i128);
-			cast_assert_min!( usize, i, i32, i64, i128);
-			cast_assert_min!( i8,    i, i32, i64, i128);
-			cast_assert_min!( i16,   i, i32, i64, i128);
-
-			// Still in range.
-			cast_assert_same!(i32,   i, i32, i64, i128);
-			cast_assert_same!(i64,   i, i32, i64, i128);
-			cast_assert_same!(i128,  i, i32, i64, i128);
-		}
-	}
-
-	#[cfg(not(miri))]
-	#[test]
-	fn t_saturating_rng_i16min_i8min() {
-		for i in i16::MIN..i8::MIN as i16 {
-			// Floor reached.
-			cast_assert_min!( u8,    i, i16, i32, i64, i128, isize);
-			cast_assert_min!( u16,   i, i16, i32, i64, i128, isize);
-			cast_assert_min!( u32,   i, i16, i32, i64, i128, isize);
-			cast_assert_min!( u64,   i, i16, i32, i64, i128, isize);
-			cast_assert_min!( u128,  i, i16, i32, i64, i128, isize);
-			cast_assert_min!( usize, i, i16, i32, i64, i128, isize);
-			cast_assert_min!( i8,    i, i16, i32, i64, i128, isize);
-
-			// Still in range.
-			cast_assert_same!(i16,   i, i16, i32, i64, i128, isize);
-			cast_assert_same!(i32,   i, i16, i32, i64, i128, isize);
-			cast_assert_same!(i64,   i, i16, i32, i64, i128, isize);
-			cast_assert_same!(i128,  i, i16, i32, i64, i128, isize);
-			cast_assert_same!(isize, i, i16, i32, i64, i128, isize);
-		}
-	}
-
-	#[cfg(miri)]
-	#[test]
-	fn t_saturating_rng_i16min_i8min() {
-		let mut rng = fastrand::Rng::new();
-		for i in std::iter::repeat_with(|| rng.i16(i16::MIN..i8::MIN as i16)).take(SAMPLE_SIZE) {
-			// Floor reached.
-			cast_assert_min!( u8,    i, i16, i32, i64, i128, isize);
-			cast_assert_min!( u16,   i, i16, i32, i64, i128, isize);
-			cast_assert_min!( u32,   i, i16, i32, i64, i128, isize);
-			cast_assert_min!( u64,   i, i16, i32, i64, i128, isize);
-			cast_assert_min!( u128,  i, i16, i32, i64, i128, isize);
-			cast_assert_min!( usize, i, i16, i32, i64, i128, isize);
-			cast_assert_min!( i8,    i, i16, i32, i64, i128, isize);
-
-			// Still in range.
-			cast_assert_same!(i16,   i, i16, i32, i64, i128, isize);
-			cast_assert_same!(i32,   i, i16, i32, i64, i128, isize);
-			cast_assert_same!(i64,   i, i16, i32, i64, i128, isize);
-			cast_assert_same!(i128,  i, i16, i32, i64, i128, isize);
-			cast_assert_same!(isize, i, i16, i32, i64, i128, isize);
-		}
-	}
-
-	#[test]
-	fn t_saturating_rng_i8min_0() {
-		// All unsigned should be floored, but all signed should be fine.
-		for i in i8::MIN..0 {
-			// Floor reached.
-			cast_assert_min!( u8,    i, i8, i16, i32, i64, i128, isize);
-			cast_assert_min!( u16,   i, i8, i16, i32, i64, i128, isize);
-			cast_assert_min!( u32,   i, i8, i16, i32, i64, i128, isize);
-			cast_assert_min!( u64,   i, i8, i16, i32, i64, i128, isize);
-			cast_assert_min!( u128,  i, i8, i16, i32, i64, i128, isize);
-			cast_assert_min!( usize, i, i8, i16, i32, i64, i128, isize);
-
-			// Still in range.
-			cast_assert_same!(i8,    i, i8, i16, i32, i64, i128, isize);
-			cast_assert_same!(i16,   i, i8, i16, i32, i64, i128, isize);
-			cast_assert_same!(i32,   i, i8, i16, i32, i64, i128, isize);
-			cast_assert_same!(i64,   i, i8, i16, i32, i64, i128, isize);
-			cast_assert_same!(i128,  i, i8, i16, i32, i64, i128, isize);
-			cast_assert_same!(isize, i, i8, i16, i32, i64, i128, isize);
-		}
-	}
-
-	#[test]
-	fn t_saturating_rng_0_i8max() {
-		// All saturations should be lossless for upper i8 range.
-		for i in 0..=i8::MAX {
-			cast_assert_same!(i8,    i, i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
-			cast_assert_same!(i16,   i, i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
-			cast_assert_same!(i32,   i, i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
-			cast_assert_same!(i64,   i, i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
-			cast_assert_same!(i128,  i, i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
-			cast_assert_same!(isize, i, i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
-			cast_assert_same!(u8,    i, i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
-			cast_assert_same!(u16,   i, i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
-			cast_assert_same!(u32,   i, i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
-			cast_assert_same!(u64,   i, i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
-			cast_assert_same!(u128,  i, i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
-			cast_assert_same!(usize, i, i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
-		}
-	}
-
-	#[test]
-	fn t_saturating_rng_i8max_u8max() {
-		for i in (i8::MAX as u8 + 1)..=u8::MAX {
-			// Ceiling reached.
-			cast_assert_max!( i8,    i, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
-
-			// Still in range.
-			cast_assert_same!(i16,   i, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
-			cast_assert_same!(i32,   i, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
-			cast_assert_same!(i64,   i, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
-			cast_assert_same!(i128,  i, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
-			cast_assert_same!(isize, i, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
-			cast_assert_same!(u8,    i, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
-			cast_assert_same!(u16,   i, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
-			cast_assert_same!(u32,   i, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
-			cast_assert_same!(u64,   i, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
-			cast_assert_same!(u128,  i, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
-			cast_assert_same!(usize, i, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
-		}
-	}
-
-	#[cfg(not(miri))]
-	#[test]
-	fn t_saturating_rng_u8max_i16max() {
-		for i in (u8::MAX as i16 + 1)..=i16::MAX {
-			// Ceiling reached.
-			cast_assert_max!( i8,    i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
-			cast_assert_max!( u8,    i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
-
-			// Still in range.
-			cast_assert_same!(i16,   i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
-			cast_assert_same!(i32,   i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
-			cast_assert_same!(i64,   i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
-			cast_assert_same!(i128,  i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
-			cast_assert_same!(isize, i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
-			cast_assert_same!(u16,   i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
-			cast_assert_same!(u32,   i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
-			cast_assert_same!(u64,   i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
-			cast_assert_same!(u128,  i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
-			cast_assert_same!(usize, i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
-		}
-	}
-
-	#[cfg(miri)]
-	#[test]
-	fn t_saturating_rng_u8max_i16max() {
-		let mut rng = fastrand::Rng::new();
-		for i in std::iter::repeat_with(|| rng.i16((u8::MAX as i16 + 1)..=i16::MAX)).take(SAMPLE_SIZE) {
-			// Ceiling reached.
-			cast_assert_max!( i8,    i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
-			cast_assert_max!( u8,    i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
-
-			// Still in range.
-			cast_assert_same!(i16,   i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
-			cast_assert_same!(i32,   i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
-			cast_assert_same!(i64,   i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
-			cast_assert_same!(i128,  i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
-			cast_assert_same!(isize, i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
-			cast_assert_same!(u16,   i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
-			cast_assert_same!(u32,   i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
-			cast_assert_same!(u64,   i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
-			cast_assert_same!(u128,  i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
-			cast_assert_same!(usize, i, i16, i32, i64, i128, isize, u16, u32, u64, u128, usize);
-		}
-	}
-
-	#[cfg(not(miri))]
-	#[test]
-	fn t_saturating_rng_i16max_u16max() {
-		for i in (i16::MAX as u16 + 1)..=u16::MAX {
-			// Ceiling reached.
-			cast_assert_max!( i8,    i, i32, i64, i128, u16, u32, u64, u128, usize);
-			cast_assert_max!( u8,    i, i32, i64, i128, u16, u32, u64, u128, usize);
-			cast_assert_max!( i16,   i, i32, i64, i128, u16, u32, u64, u128, usize);
-
-			// Still in range.
-			cast_assert_same!(i32,   i, i32, i64, i128, u16, u32, u64, u128, usize);
-			cast_assert_same!(i64,   i, i32, i64, i128, u16, u32, u64, u128, usize);
-			cast_assert_same!(i128,  i, i32, i64, i128, u16, u32, u64, u128, usize);
-			cast_assert_same!(u16,   i, i32, i64, i128, u16, u32, u64, u128, usize);
-			cast_assert_same!(u32,   i, i32, i64, i128, u16, u32, u64, u128, usize);
-			cast_assert_same!(u64,   i, i32, i64, i128, u16, u32, u64, u128, usize);
-			cast_assert_same!(u128,  i, i32, i64, i128, u16, u32, u64, u128, usize);
-			cast_assert_same!(usize, i, i32, i64, i128, u16, u32, u64, u128, usize);
-		}
-	}
-
-	#[cfg(miri)]
-	#[test]
-	fn t_saturating_rng_i16max_u16max() {
-		let mut rng = fastrand::Rng::new();
-		for i in std::iter::repeat_with(|| rng.u16((i16::MAX as u16 + 1)..=u16::MAX)).take(SAMPLE_SIZE) {
-			// Ceiling reached.
-			cast_assert_max!( i8,    i, i32, i64, i128, u16, u32, u64, u128, usize);
-			cast_assert_max!( u8,    i, i32, i64, i128, u16, u32, u64, u128, usize);
-			cast_assert_max!( i16,   i, i32, i64, i128, u16, u32, u64, u128, usize);
-
-			// Still in range.
-			cast_assert_same!(i32,   i, i32, i64, i128, u16, u32, u64, u128, usize);
-			cast_assert_same!(i64,   i, i32, i64, i128, u16, u32, u64, u128, usize);
-			cast_assert_same!(i128,  i, i32, i64, i128, u16, u32, u64, u128, usize);
-			cast_assert_same!(u16,   i, i32, i64, i128, u16, u32, u64, u128, usize);
-			cast_assert_same!(u32,   i, i32, i64, i128, u16, u32, u64, u128, usize);
-			cast_assert_same!(u64,   i, i32, i64, i128, u16, u32, u64, u128, usize);
-			cast_assert_same!(u128,  i, i32, i64, i128, u16, u32, u64, u128, usize);
-			cast_assert_same!(usize, i, i32, i64, i128, u16, u32, u64, u128, usize);
-		}
-	}
-
-	#[test]
-	fn t_saturating_rng_u16max_i32max() {
-		let mut rng = fastrand::Rng::new();
-		for i in std::iter::repeat_with(|| rng.i32((u16::MAX as i32 + 1)..=i32::MAX)).take(SAMPLE_SIZE) {
-			// Ceiling reached.
-			cast_assert_max!( i8,    i, i32, i64, i128, u32, u64, u128);
-			cast_assert_max!( u8,    i, i32, i64, i128, u32, u64, u128);
-			cast_assert_max!( i16,   i, i32, i64, i128, u32, u64, u128);
-			cast_assert_max!( u16,   i, i32, i64, i128, u32, u64, u128);
-
-			// Still in range.
-			cast_assert_same!(i32,   i, i32, i64, i128, u32, u64, u128);
-			cast_assert_same!(i64,   i, i32, i64, i128, u32, u64, u128);
-			cast_assert_same!(i128,  i, i32, i64, i128, u32, u64, u128);
-			cast_assert_same!(u32,   i, i32, i64, i128, u32, u64, u128);
-			cast_assert_same!(u64,   i, i32, i64, i128, u32, u64, u128);
-			cast_assert_same!(u128,  i, i32, i64, i128, u32, u64, u128);
-		}
-	}
-
-	#[test]
-	fn t_saturating_rng_i32max_u32max() {
-		let mut rng = fastrand::Rng::new();
-		for i in std::iter::repeat_with(|| rng.u32((i32::MAX as u32 + 1)..=u32::MAX)).take(SAMPLE_SIZE) {
-			// Ceiling reached.
-			cast_assert_max!( i8,    i, i64, i128, u32, u64, u128);
-			cast_assert_max!( u8,    i, i64, i128, u32, u64, u128);
-			cast_assert_max!( i16,   i, i64, i128, u32, u64, u128);
-			cast_assert_max!( u16,   i, i64, i128, u32, u64, u128);
-			cast_assert_max!( i32,   i, i64, i128, u32, u64, u128);
-
-			// Still in range.
-			cast_assert_same!(i64,   i, i64, i128, u32, u64, u128);
-			cast_assert_same!(i128,  i, i64, i128, u32, u64, u128);
-			cast_assert_same!(u32,   i, i64, i128, u32, u64, u128);
-			cast_assert_same!(u64,   i, i64, i128, u32, u64, u128);
-			cast_assert_same!(u128,  i, i64, i128, u32, u64, u128);
-		}
-	}
-
-	#[test]
-	fn t_saturating_rng_u32max_i64max() {
-		let mut rng = fastrand::Rng::new();
-		for i in std::iter::repeat_with(|| rng.i64((u32::MAX as i64 + 1)..=i64::MAX)).take(SAMPLE_SIZE) {
-			// Ceiling reached.
-			cast_assert_max!( i8,    i, i64, i128, u64, u128);
-			cast_assert_max!( u8,    i, i64, i128, u64, u128);
-			cast_assert_max!( i16,   i, i64, i128, u64, u128);
-			cast_assert_max!( u16,   i, i64, i128, u64, u128);
-			cast_assert_max!( i32,   i, i64, i128, u64, u128);
-			cast_assert_max!( u32,   i, i64, i128, u64, u128);
-
-			// Still in range.
-			cast_assert_same!(i64,   i, i64, i128, u64, u128);
-			cast_assert_same!(i128,  i, i64, i128, u64, u128);
-			cast_assert_same!(u64,   i, i64, i128, u64, u128);
-			cast_assert_same!(u128,  i, i64, i128, u64, u128);
-		}
-	}
-
-	#[test]
-	fn t_saturating_rng_i64max_u64max() {
-		let mut rng = fastrand::Rng::new();
-		for i in std::iter::repeat_with(|| rng.u64((i64::MAX as u64 + 1)..=u64::MAX)).take(SAMPLE_SIZE) {
-			// Ceiling reached.
-			cast_assert_max!( i8,    i, i128, u64, u128);
-			cast_assert_max!( u8,    i, i128, u64, u128);
-			cast_assert_max!( i16,   i, i128, u64, u128);
-			cast_assert_max!( u16,   i, i128, u64, u128);
-			cast_assert_max!( i32,   i, i128, u64, u128);
-			cast_assert_max!( u32,   i, i128, u64, u128);
-			cast_assert_max!( i64,   i, i128, u64, u128);
-
-			// Still in range.
-			cast_assert_same!(i128,  i, i128, u64, u128);
-			cast_assert_same!(u64,   i, i128, u64, u128);
-			cast_assert_same!(u128,  i, i128, u64, u128);
-		}
-	}
-
-	#[test]
-	fn t_saturating_rng_u64max_i128max() {
-		let mut rng = fastrand::Rng::new();
-		for i in std::iter::repeat_with(|| rng.i128((u64::MAX as i128 + 1)..=i128::MAX)).take(SAMPLE_SIZE) {
-			// Ceiling reached.
-			cast_assert_max!( i8,    i, i128, u128);
-			cast_assert_max!( u8,    i, i128, u128);
-			cast_assert_max!( i16,   i, i128, u128);
-			cast_assert_max!( u16,   i, i128, u128);
-			cast_assert_max!( i32,   i, i128, u128);
-			cast_assert_max!( u32,   i, i128, u128);
-			cast_assert_max!( i64,   i, i128, u128);
-			cast_assert_max!( u64,   i, i128, u128);
-
-			// Still in range.
-			cast_assert_same!(i128,  i, i128, u128);
-			cast_assert_same!(u128,  i, i128, u128);
-		}
-	}
-
-	#[test]
-	fn t_saturating_rng_i128max_u128max() {
-		let mut rng = fastrand::Rng::new();
-		for i in std::iter::repeat_with(|| rng.u128((i128::MAX as u128 + 1)..=u128::MAX)).take(SAMPLE_SIZE) {
-			// Ceiling reached.
-			cast_assert_max!( i8,    i, u128);
-			cast_assert_max!( u8,    i, u128);
-			cast_assert_max!( i16,   i, u128);
-			cast_assert_max!( u16,   i, u128);
-			cast_assert_max!( i32,   i, u128);
-			cast_assert_max!( u32,   i, u128);
-			cast_assert_max!( i64,   i, u128);
-			cast_assert_max!( u64,   i, u128);
-			cast_assert_max!( i128,  i, u128);
-
-			// Still in range.
-			cast_assert_same!(u128,  i, u128);
-		}
-	}
-
-	#[cfg(target_pointer_width = "16")]
-	#[test]
-	fn t_saturating_sized16() {
-		let mut rng = fastrand::Rng::new();
-
-		// Both should be floored below i16.
-		for i in std::iter::repeat_with(|| rng.i32(i32::MIN..i16::MIN as i32)).take(SAMPLE_SIZE) {
-			cast_assert_min!(isize, i, i32, i64, i128);
-			cast_assert_min!(usize, i, i32, i64, i128);
+				// Recurse form the next size.
+				test!($($src)+);
+			);
 		}
 
-		// isize should max out after i16::MAX.
-		for i in (i16::MAX as u16 + 1)..=u16::MAX {
-			cast_assert_max!(isize, i, i32, i64, i128, u16, u32, u64, u128, usize);
-		}
+		#[cfg(target_pointer_width = "16")]
+		test! { i8 u8 i16 isize u16 usize i32 u32 i64 u64 i128 u128 }
 
-		// usize should max out after u16::MAX.
-		for i in std::iter::repeat_with(|| rng.i32((u16::MAX as i32 + 1)..=i32::MAX)).take(SAMPLE_SIZE) {
-			cast_assert_max!(usize, i, i32, i64, i128, u32, u64, u128);
-		}
-	}
+		#[cfg(target_pointer_width = "32")]
+		test! { i8 u8 i16 u16 i32 isize u32 usize i64 u64 i128 u128 }
 
-	#[cfg(target_pointer_width = "32")]
-	#[test]
-	fn t_saturating_sized32() {
-		let mut rng = fastrand::Rng::new();
-
-		// isize should be fine down to i32::MIN, but usize will get floored.
-		for i in std::iter::repeat_with(|| rng.i32(i32::MIN..i16::MIN as i32)).take(SAMPLE_SIZE) {
-			cast_assert_same!(isize, i, i32, i64, i128, isize);
-			cast_assert_min!( usize, i, i32, i64, i128, isize);
-		}
-
-		// Below i32, isize should be floored too.
-		for i in std::iter::repeat_with(|| rng.i64(i64::MIN..i32::MIN as i64)).take(SAMPLE_SIZE) {
-			cast_assert_min!(isize, i, i64, i128);
-		}
-
-		// Both should be fine up to i32::MAX.
-		for i in std::iter::repeat_with(|| rng.i32((u16::MAX as i32 + 1)..=i32::MAX)).take(SAMPLE_SIZE) {
-			cast_assert_same!(isize, i, i32, i64, i128, isize, u32, u64, u128, usize);
-			cast_assert_same!(usize, i, i32, i64, i128, isize, u32, u64, u128, usize);
-		}
-
-		// isize should max out after i32::MAX, but usize should be fine.
-		for i in std::iter::repeat_with(|| rng.u32((i32::MAX as u32 + 1)..=u32::MAX)).take(SAMPLE_SIZE) {
-			cast_assert_max!( isize, i, i64, i128, u32, u64, u128, usize);
-			cast_assert_same!(usize, i, i64, i128, u32, u64, u128, usize);
-		}
-
-		// usize should max out after u32::MAX.
-		for i in std::iter::repeat_with(|| rng.i64((u32::MAX as i64 + 1)..=i64::MAX)).take(SAMPLE_SIZE) {
-			cast_assert_max!(usize, i, i64, i128, u64, u128);
-		}
-	}
-
-	#[cfg(target_pointer_width = "64")]
-	#[test]
-	fn t_saturating_sized64() {
-		let mut rng = fastrand::Rng::new();
-
-		// isize should be fine down to i64::MIN, but usize will get floored.
-		for i in std::iter::repeat_with(|| rng.i64(i64::MIN..i32::MIN as i64)).take(SAMPLE_SIZE) {
-			cast_assert_same!(isize, i, i64, i128, isize);
-			cast_assert_min!( usize, i, i64, i128, isize);
-		}
-
-		// Below i64, isize should be floored too.
-		for i in std::iter::repeat_with(|| rng.i128(i128::MIN..i64::MIN as i128)).take(SAMPLE_SIZE) {
-			cast_assert_min!(isize, i, i128);
-		}
-
-		// Both should be fine up to i64::MAX.
-		for i in std::iter::repeat_with(|| rng.i64((u32::MAX as i64 + 1)..=i64::MAX)).take(SAMPLE_SIZE) {
-			cast_assert_same!(isize, i, i64, i128, isize, u64, u128, usize);
-			cast_assert_same!(usize, i, i64, i128, isize, u64, u128, usize);
-		}
-
-		// isize should max out after i64::MAX, but usize should be fine.
-		for i in std::iter::repeat_with(|| rng.u64((i64::MAX as u64 + 1)..=u64::MAX)).take(SAMPLE_SIZE) {
-			cast_assert_max!( isize, i, i128, u64, u128, usize);
-			cast_assert_same!(usize, i, i128, u64, u128, usize);
-		}
-
-		// usize should max out after u64::MAX.
-		for i in std::iter::repeat_with(|| rng.i128((u64::MAX as i128 + 1)..=i128::MAX)).take(SAMPLE_SIZE) {
-			cast_assert_max!(usize, i, i128, u128);
-		}
+		#[cfg(target_pointer_width = "64")]
+		test! { i8 u8 i16 u16 i32 u32 i64 isize u64 usize i128 u128 }
 	}
 }

@@ -24,7 +24,7 @@ Each type has its own struct, each of which works exactly the same way:
 * [`NiceFloat`]
 * [`NiceClock`] (for durations)
 * [`NiceElapsed`] (also for durations)
-* [`NicePercent`] (for floats representing percentages)
+* [`NicePercent`] (for percentagelike floats)
 
 The intended use case is to simply call the appropriate `from()` for the type, then use either the `as_str()` or `as_bytes()` struct methods to retrieve the output in the desired format. Each struct also implements traits like `Display`, `AsRef<str>`, `AsRef<[u8]>`, etc., if you prefer those.
 
@@ -42,7 +42,6 @@ But the niceness doesn't stop there. Dactyl provides several other structs, meth
 * [`traits::BytesToUnsigned`]: unsigned integer parsing from byte slices
 * [`traits::HexToSigned`]: signed integer parsing from hex
 * [`traits::HexToUnsigned`]: unsigned integer parsing from hex
-
 */
 
 #![deny(
@@ -93,243 +92,173 @@ But the niceness doesn't stop there. Dactyl provides several other structs, meth
 	unused_import_braces,
 )]
 
-#![expect(clippy::redundant_pub_crate, reason = "Unresolvable.")]
 
 
-
-#[macro_use] mod macros;
 mod hash;
-mod nice_elapsed;
-mod nice_int;
+mod nice;
 pub mod traits;
 
 pub use hash::NoHash;
-pub use nice_elapsed::{
-	clock::NiceClock,
+pub use nice::{
+	NiceClock,
 	NiceElapsed,
-};
-pub use nice_int::{
-	nice_u8::NiceU8,
-	nice_u16::NiceU16,
-	nice_u32::NiceU32,
-	nice_u64::NiceU64,
-	nice_float::{
-		FloatKind,
-		NiceFloat,
-	},
-	nice_percent::NicePercent,
+	NiceFloat,
+	NicePercent,
+	NiceSeparator,
+	NiceU16,
+	NiceU32,
+	NiceU64,
+	NiceU8,
 };
 
-#[doc(hidden)]
-pub use nice_int::NiceWrapper;
+#[cfg(test)] use brunch as _;
 
 
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-/// # Popping Digiterator.
+#[cfg(target_pointer_width = "16")]
+/// # Helper: `isize`/`usize` Properties.
 ///
-/// This struct is used internally by the library's various `Nice*` structs to
-/// help stringify numbers.
-///
-/// It employs a naive divide-by-ten strategy to "pop" digits off the end one
-/// at a time, and an equally naive `n + b'0'` to convert them to ASCII for
-/// return.
-///
-/// (For our purposes, on-the-fly calculations are usually more performant
-/// than static lookup tables, and not too much worse the rest of the time.)
-///
-/// Depending on the situation, this either returns all digits last-to-first
-/// (via `Iterator`), or only the last 1-2 digits as a fixed, zero-padded
-/// `[u8;2]` (via `double`).
-pub(crate) struct Digiter<T>(pub(crate) T);
+/// TODO: merge with `minmax` if/when `#[cfg]` starts working _inside_ a macro.
+macro_rules! int_sized {
+	(@min isize) => ( -32768 );
+	(@min usize) => ( 0 );
 
-/// # Helper: Primitive Implementations.
-macro_rules! digiter {
-	($($ty:ty),+) => ($(
-		#[allow(
-			dead_code,
-			clippy::allow_attributes,
-			trivial_numeric_casts,
-			reason = "Macro made me do it.",
-		)]
-		impl Digiter<$ty> {
-			/// # New Instance.
-			///
-			/// Return a new [`Digiter`] for a given value, unless zero.
-			///
-			/// This is only necessary for iteration purposes; for one-off
-			/// crunching it can instantiated directly to service any number,
-			/// including zero.
-			pub(crate) const fn new(num: $ty) -> Option<Self> {
-				if num == 0 { None }
-				else { Some(Self(num)) }
-			}
+	(@max isize) => ( 32767 );
+	(@max usize) => ( 65535 );
 
-			#[must_use]
-			/// # Double.
-			///
-			/// Return the last two digits as ASCII bytes, zero-padded as
-			/// necessary.
-			///
-			/// Note this is independent of iteration and will always return
-			/// the same result for a given wrapped value.
-			pub(crate) const fn double(self) -> [u8; 2] {
-				let Self(mut num) = self;
-				let b = (num % 10) as u8 + b'0';
-				num /= 10;
-				let a = (num % 10) as u8 + b'0';
-				[a, b]
-			}
-		}
-
-		impl Iterator for Digiter<$ty> {
-			type Item = u8;
-
-			#[allow(
-				clippy::allow_attributes,
-				trivial_numeric_casts,
-				reason = "Macro made me do it.",
-			)]
-			#[inline]
-			/// # Digit Iteration.
-			///
-			/// Read and return each digit, right to left.
-			///
-			/// This will not work if the starting value is zero; `Digiter::new`
-			/// should be used for initialization to rule out that possibility.
-			fn next(&mut self) -> Option<Self::Item> {
-				if self.0 == 0 { None }
-				else {
-					let next = (self.0 % 10) as u8 + b'0';
-					self.0 = self.0.wrapping_div(10);
-					Some(next)
-				}
-			}
-
-			#[inline]
-			fn size_hint(&self) -> (usize, Option<usize>) {
-				let len = self.len();
-				(len, Some(len))
-			}
-		}
-
-		impl ExactSizeIterator for Digiter<$ty> {
-			#[inline]
-			fn len(&self) -> usize {
-				// Zero marks the end for the iterator.
-				if self.0 == 0 { 0 }
-				else { self.0.ilog10() as usize + 1 }
-			}
-		}
-	)+);
+	(@alias isize) => ( i16 );
+	(@alias usize) => ( u16 );
 }
 
-digiter!(u8, u16, u32, u64);
+#[cfg(target_pointer_width = "32")]
+/// # Helper: `isize`/`usize` Properties.
+macro_rules! int_sized {
+	(@min isize) => ( -2147483648 );
+	(@min usize) => ( 0 );
+
+	(@max isize) => ( 2147483647 );
+	(@max usize) => ( 4294967295 );
+
+	(@alias isize) => ( i32 );
+	(@alias usize) => ( u32 );
+}
+
+#[cfg(target_pointer_width = "64")]
+/// # Helper: `isize`/`usize` Properties.
+macro_rules! int_sized {
+	(@min isize) => ( -9223372036854775808 );
+	(@min usize) => ( 0 );
+
+	(@max isize) => ( 9223372036854775807 );
+	(@max usize) => ( 18446744073709551615 );
+
+	(@alias isize) => ( i64 );
+	(@alias usize) => ( u64 );
+}
+
+/// # Helper: Type Min and Max.
+macro_rules! int {
+	// Minimums.
+	(@min i8) =>   ( -128 );
+	(@min i16) =>  ( -32768 );
+	(@min i32) =>  ( -2147483648 );
+	(@min i64) =>  ( -9223372036854775808 );
+	(@min i128) => ( -170141183460469231731687303715884105728 );
+	(@min isize) =>( $crate::int_sized!(@min isize) );
+
+	(@min u8) =>   ( 0 );
+	(@min u16) =>  ( 0 );
+	(@min u32) =>  ( 0 );
+	(@min u64) =>  ( 0 );
+	(@min u128) => ( 0 );
+	(@min usize) =>( 0 );
+
+	// Maximums.
+	(@max i8) =>   ( 127 );
+	(@max i16) =>  ( 32767 );
+	(@max i32) =>  ( 2147483647 );
+	(@max i64) =>  ( 9223372036854775807 );
+	(@max i128) => ( 170141183460469231731687303715884105727 );
+	(@max isize) =>( $crate::int_sized!(@max isize) );
+
+	(@max u8) =>   ( 255 );
+	(@max u16) =>  ( 65535 );
+	(@max u32) =>  ( 4294967295 );
+	(@max u64) =>  ( 18446744073709551615 );
+	(@max u128) => ( 340282366920938463463374607431768211455 );
+	(@max usize) =>( $crate::int_sized!(@max usize) );
+
+	// Sign swap.
+	(@flip u8) => ( i8 );
+	(@flip u16) => ( i16 );
+	(@flip u32) => ( i32 );
+	(@flip u64) => ( i64 );
+	(@flip u128) => ( i128 );
+	(@flip usize) => ( isize );
+
+	(@flip i8) => ( u8 );
+	(@flip i16) => ( u16 );
+	(@flip i32) => ( u32 );
+	(@flip i64) => ( u64 );
+	(@flip i128) => ( u128 );
+	(@flip isize) => ( usize );
+
+	// Aliases.
+	(@alias NonZeroU8) => ( u8 );
+	(@alias NonZeroU16) => ( u16 );
+	(@alias NonZeroU32) => ( u32 );
+	(@alias NonZeroU64) => ( u64 );
+	(@alias NonZeroU128) => ( u128 );
+	(@alias NonZeroUsize) => ( usize );
+	(@alias NonZeroI8) => ( i8 );
+	(@alias NonZeroI16) => ( i16 );
+	(@alias NonZeroI32) => ( i32 );
+	(@alias NonZeroI64) => ( i64 );
+	(@alias NonZeroI128) => ( i128 );
+	(@alias NonZeroIsize) => ( isize );
+	(@alias isize) => ( $crate::int_sized!(@alias isize) );
+	(@alias usize) => ( $crate::int_sized!(@alias usize) );
+}
+
+// Keep these private to the crate.
+pub(crate) use int;
+pub(crate) use int_sized;
 
 
 
 #[cfg(test)]
-mod test {
+mod tests {
 	use super::*;
-	use brunch as _;
-
-	#[cfg(not(miri))]
-	const SAMPLE_SIZE: usize = 1_000_000;
-
-	#[cfg(miri)]
-	const SAMPLE_SIZE: usize = 1000; // Miri is way too slow for a million tests!
-
-	/// # Helper: Digiter test for one specific value.
-	macro_rules! t_digits {
-		($num:ident, $ty:ty) => (
-			// The expected number.
-			let expected = $num.to_string();
-
-			// Make sure we can digitize it.
-			let Some(iter) = Digiter::<$ty>::new($num) else {
-				panic!(
-					concat!("Digiter::new failed with {num}_", stringify!($ty)),
-					num=expected,
-				);
-			};
-
-			// Verify the iter's reported length matches.
-			assert_eq!(
-				iter.len(),
-				expected.len(),
-				concat!("Digiter::len invalid for {num}_", stringify!($ty)),
-				num=expected,
-			);
-
-			// Collect the results and reverse, then verify we got it right!
-			let mut digits = iter.collect::<Vec<u8>>();
-			digits.reverse();
-			assert_eq!(
-				String::from_utf8(digits).ok().as_deref(),
-				Some(expected.as_str()),
-			);
-		);
-	}
 
 	#[test]
-	fn t_digiter_u8() {
-		// Zero is a no.
-		assert!(Digiter::<u8>::new(0).is_none());
+	/// # Test `int!` macro.
+	///
+	/// Make sure the `MIN`/`MAX` constants agree with our hard-coded literals!
+	fn t_int() {
+		assert_eq!(i8::MIN,    int!(@min i8));
+		assert_eq!(i8::MAX,    int!(@max i8));
+		assert_eq!(i16::MIN,   int!(@min i16));
+		assert_eq!(i16::MAX,   int!(@max i16));
+		assert_eq!(i32::MIN,   int!(@min i32));
+		assert_eq!(i32::MAX,   int!(@max i32));
+		assert_eq!(i64::MIN,   int!(@min i64));
+		assert_eq!(i64::MAX,   int!(@max i64));
+		assert_eq!(i128::MIN,  int!(@min i128));
+		assert_eq!(i128::MAX,  int!(@max i128));
+		assert_eq!(isize::MIN, int!(@min isize));
+		assert_eq!(isize::MAX, int!(@max isize));
 
-		// Everything else should be happy!
-		for i in 1..=u8::MAX { t_digits!(i, u8); }
-	}
-
-	#[test]
-	fn t_digiter_u16() {
-		// Zero is a no.
-		assert!(Digiter::<u16>::new(0).is_none());
-
-		#[cfg(not(miri))]
-		for i in 1..=u16::MAX { t_digits!(i, u16); }
-
-		#[cfg(miri)]
-		{
-			let mut rng = fastrand::Rng::new();
-			for i in std::iter::repeat_with(|| rng.u16(..)).take(SAMPLE_SIZE) {
-				t_digits!(i, u16);
-			}
-
-			// Explicitly check the max works.
-			let i = u16::MAX;
-			t_digits!(i, u16);
-		}
-	}
-
-	#[test]
-	fn t_digiter_u32() {
-		// Zero is a no.
-		assert!(Digiter::<u32>::new(0).is_none());
-
-		// Testing the full range takes too long.
-		let mut rng = fastrand::Rng::new();
-		for i in std::iter::repeat_with(|| rng.u32(..)).take(SAMPLE_SIZE) {
-			t_digits!(i, u32);
-		}
-
-		// Explicitly check the max works.
-		let i = u32::MAX;
-		t_digits!(i, u32);
-	}
-
-	#[test]
-	fn t_digiter_u64() {
-		// Zero is a no.
-		assert!(Digiter::<u64>::new(0).is_none());
-
-		// Testing the full range takes too long.
-		let mut rng = fastrand::Rng::new();
-		for i in std::iter::repeat_with(|| rng.u64(..)).take(SAMPLE_SIZE) {
-			t_digits!(i, u64);
-		}
-
-		// Explicitly check the max works.
-		let i = u64::MAX;
-		t_digits!(i, u64);
+		assert_eq!(u8::MIN,    int!(@min u8));
+		assert_eq!(u8::MAX,    int!(@max u8));
+		assert_eq!(u16::MIN,   int!(@min u16));
+		assert_eq!(u16::MAX,   int!(@max u16));
+		assert_eq!(u32::MIN,   int!(@min u32));
+		assert_eq!(u32::MAX,   int!(@max u32));
+		assert_eq!(u64::MIN,   int!(@min u64));
+		assert_eq!(u64::MAX,   int!(@max u64));
+		assert_eq!(u128::MIN,  int!(@min u128));
+		assert_eq!(u128::MAX,  int!(@max u128));
+		assert_eq!(usize::MIN, int!(@min usize));
+		assert_eq!(usize::MAX, int!(@max usize));
 	}
 }

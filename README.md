@@ -23,7 +23,7 @@ Each type has its own struct, each of which works exactly the same way:
 * `NiceFloat`
 * `NiceClock` (for durations)
 * `NiceElapsed` (also for durations)
-* `NicePercent` (for floats representing percentages)
+* `NicePercent` (for percentage-like floats)
 
 The intended use case is to simply call the appropriate `from()` for the type, then use either the `as_str()` or `as_bytes()` struct methods to retrieve the output in the desired format. Each struct also implements traits like `Display`, `AsRef<str>`, `AsRef<[u8]>`, etc., if you prefer those.
 
@@ -50,5 +50,5 @@ Add `dactyl` to your `dependencies` in `Cargo.toml`, like:
 
 ```toml
 [dependencies]
-dactyl = "0.12.*"
+dactyl = "0.13.*"
 ```
