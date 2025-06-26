@@ -12,6 +12,7 @@
 
 ### Changed
 
+* Bump MSRV to `1.88`
 * Refactored `BytesToSigned`/`Unsigned`
 * Refactored `HexToSigned`/`Unsigned`
 * Refactored `SaturatingFrom`
