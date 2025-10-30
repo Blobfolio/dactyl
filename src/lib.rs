@@ -65,6 +65,7 @@ But the niceness doesn't stop there. Dactyl provides several other structs, meth
 	clippy::format_push_string,
 	clippy::get_unwrap,
 	clippy::impl_trait_in_params,
+	clippy::implicit_clone,
 	clippy::lossy_float_literal,
 	clippy::missing_assert_message,
 	clippy::missing_docs_in_private_items,
@@ -74,7 +75,6 @@ But the niceness doesn't stop there. Dactyl provides several other structs, meth
 	clippy::rest_pat_in_fully_bound_structs,
 	clippy::semicolon_inside_block,
 	clippy::str_to_string,
-	clippy::string_to_string,
 	clippy::todo,
 	clippy::undocumented_unsafe_blocks,
 	clippy::unneeded_field_pattern,
@@ -228,8 +228,6 @@ pub(crate) use int_sized;
 
 #[cfg(test)]
 mod tests {
-	use super::*;
-
 	#[test]
 	/// # Test `int!` macro.
 	///

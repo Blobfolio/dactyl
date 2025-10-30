@@ -899,10 +899,6 @@ impl FloatKind {
 		/// # Exponent Mask.
 		const EXP_MASK: u32 = (1 << 8) - 1;
 
-		const {
-			assert!(f32::MANTISSA_DIGITS - 1 == 23, "Bug: wrong f32 mantissa count.");
-		}
-
 		// Quick weirdness checks.
 		if num.is_nan() { return Ok(Self::NaN); }
 		if num.is_infinite() { return Ok(Self::Infinity); }
@@ -956,10 +952,6 @@ impl FloatKind {
 
 		/// # Exponent Mask.
 		const EXP_MASK: u64 = (1 << 11) - 1;
-
-		const {
-			assert!(f64::MANTISSA_DIGITS - 1 == 52, "Bug: wrong f64 mantissa count.");
-		}
 
 		// Quick weirdness checks.
 		if num.is_nan() { return Ok(Self::NaN); }
@@ -1265,6 +1257,13 @@ const fn round_tie_even(offset: u128, tmp: u128) -> u32 {
 #[cfg(test)]
 mod tests {
 	use super::*;
+
+	#[test]
+	fn t_mantissa() {
+		// Make sure we're using the right constants.
+		assert!(f32::MANTISSA_DIGITS - 1 == 23, "Bug: wrong f32 mantissa count.");
+		assert!(f64::MANTISSA_DIGITS - 1 == 52, "Bug: wrong f64 mantissa count.");
+	}
 
 	#[test]
 	fn t_nice() {
