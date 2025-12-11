@@ -2,6 +2,14 @@
 
 
 
+## [0.13.2](https://github.com/Blobfolio/dactyl/releases/tag/v0.13.2) - 2025-12-11
+
+### Changed
+
+* Miscellaneous code changes and lints
+
+
+
 ## [0.13.1](https://github.com/Blobfolio/dactyl/releases/tag/v0.13.1) - 2025-08-11
 
 ### Changed
