@@ -118,7 +118,7 @@ pub use nice::{
 #[cfg(target_pointer_width = "16")]
 /// # Helper: `isize`/`usize` Properties.
 ///
-/// TODO: merge with `minmax` if/when `#[cfg]` starts working _inside_ a macro.
+/// TODO: use cfg_select! once the MSRV is bumped to 1.95.
 macro_rules! int_sized {
 	(@min isize) => ( -32768 );
 	(@min usize) => ( 0 );
