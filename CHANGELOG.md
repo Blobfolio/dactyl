@@ -1,13 +1,19 @@
 # Changelog
 
 
+## [0.14.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.14.0) - 2026-10-01
+
+### Changed
+
+* Bump MSRV to `1.95`
+* Miscellaneous code cleanup and lints
+
 
 ## [0.13.2](https://github.com/Blobfolio/dactyl/releases/tag/v0.13.2) - 2025-12-11
 
 ### Changed
 
-* Miscellaneous code changes and lints
-
+* Msicellaneous code cleanup and lints
 
 
 ## [0.13.1](https://github.com/Blobfolio/dactyl/releases/tag/v0.13.1) - 2025-08-11
@@ -15,7 +21,6 @@
 ### Changed
 
 * Bump `brunch` to `0.11` (dev)
-
 
 
 ## [0.13.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.13.0) - 2025-06-26
@@ -33,7 +38,7 @@
 * Refactored `HexToSigned`/`Unsigned`
 * Refactored `SaturatingFrom`
 * Refactored all the `Nice*` structs
-* Miscellaneous code changes and lints
+* Msicellaneous code cleanup and lints
 * Miscellaneous doc/test/coverage fixes and improvements
 
 ### Breaking
@@ -44,7 +49,6 @@
 * Removed `traits::IntDivFloat` (use `NiceFloat::div_*` instead)
 * Removed `NiceElapsed::min` (use `NiceElapsed::MIN` instead)
 * The `Nice*::with_separator` methods now take a `NiceSeparator` instead of a byte
-
 
 
 ## [0.12.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.12.0) - 2025-06-01
@@ -64,13 +68,11 @@
 * Removed `Deref` impls for `Nice*` structs
 
 
-
 ## [0.11.1](https://github.com/Blobfolio/dactyl/releases/tag/v0.11.0) - 2025-05-30
 
 ### Changed
 
 * Minor code and documentation cleanup
-
 
 
 ## [0.11.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.11.0) - 2025-05-20
@@ -83,13 +85,11 @@
 * Refactor `Nice*` struct internals
 
 
-
 ## [0.10.2](https://github.com/Blobfolio/dactyl/releases/tag/v0.10.2) - 2025-05-15
 
 ### Changed
 
-* Miscellaneous code changes and lints
-
+* Msicellaneous code cleanup and lints
 
 
 ## [0.10.1](https://github.com/Blobfolio/dactyl/releases/tag/v0.10.1) - 2025-04-03
@@ -97,8 +97,7 @@
 ### Changed
 
 * Bump `brunch` to `0.9`
-* Miscellaneous code changes and lints
-
+* Msicellaneous code cleanup and lints
 
 
 ## [0.10.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.10.0) - 2025-02-25
@@ -109,15 +108,13 @@
 * Bump Rust edition to `2024`
 
 
-
 ## [0.9.1](https://github.com/Blobfolio/dactyl/releases/tag/v0.9.1) - 2025-01-09
 
 ### Changed
 
 * Bump `brunch` to `0.8`
 * Round non-normal `NicePercent` arguments to nearest of `MIN` and `MAX`
-* Miscellaneous code changes and lints
-
+* Msicellaneous code cleanup and lints
 
 
 ## [0.9.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.9.0) - 2024-12-07
@@ -152,7 +149,6 @@
 * `NicePercent::max` (use `NicePercent::MAX` instead)
 
 
-
 ## [0.8.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.8.0) - 2024-11-28
 
 ### Changed
@@ -162,13 +158,11 @@
 * `NiceInflection::nice_inflect` now returns a `Display`-friendly wrapper instead of a `String` to avoid intermediary allocations;
 
 
-
 ## [0.7.4](https://github.com/Blobfolio/dactyl/releases/tag/v0.7.4) - 2024-09-15
 
 ### New
 
 * Add explicit `len` and `is_empty` methods to `NiceWrapper` to avoid deref.
-
 
 
 ## [0.7.3](https://github.com/Blobfolio/dactyl/releases/tag/v0.7.3) - 2024-09-05
@@ -179,13 +173,11 @@
 * Bump `brunch` to `0.6`
 
 
-
 ## [0.7.2](https://github.com/Blobfolio/dactyl/releases/tag/v0.7.2) - 2024-07-25
 
 ### Changed
 
 * Miscellaneous code cleanup and lints
-
 
 
 ## [0.7.1](https://github.com/Blobfolio/dactyl/releases/tag/v0.7.1) - 2024-05-19
@@ -195,7 +187,6 @@
 * Add various `#[inline]` hints to improve downstream optimization passes.
 
 
-
 ## [0.7.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.7.0) - 2024-02-08
 
 ### Removed
@@ -203,7 +194,6 @@
 * `Borrow<[u8]>` for `Nice*` types
 * `dactyl::int_div_float`
 * `dactyl::div_mod`
-
 
 
 ## [0.6.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.6.0) - 2023-10-15
@@ -225,7 +215,6 @@
 * `int_div_float` (use `IntDivFloat::div_float` instead)
 
 
-
 ## [0.5.2](https://github.com/Blobfolio/dactyl/releases/tag/v0.5.2) - 2023-10-05
 
 ### Changed
@@ -233,13 +222,11 @@
 * Minor code lints and cleanup
 
 
-
 ## [0.5.1](https://github.com/Blobfolio/dactyl/releases/tag/v0.5.1) - 2023-07-13
 
 ### Changed
 
 * Update dev dependencies
-
 
 
 ## [0.5.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.5.0) - 2023-06-01
@@ -257,7 +244,6 @@
 * `NiceElapsed::max`
 
 
-
 ## [0.4.8](https://github.com/Blobfolio/dactyl/releases/tag/v0.4.8) - 2023-02-16
 
 ### New
@@ -270,7 +256,6 @@
 * Reduce sample sizes for miri tests (lower memory usage, etc)
 
 
-
 ## [0.4.7](https://github.com/Blobfolio/dactyl/releases/tag/v0.4.7) - 2023-01-26
 
 ### Changed
@@ -279,13 +264,11 @@
 * Fix ci badge (docs)
 
 
-
 ## [0.4.6](https://github.com/Blobfolio/dactyl/releases/tag/v0.4.6) - 2022-11-03
 
 ### Changed
 
 * Improved documentation.
-
 
 
 ## [0.4.5](https://github.com/Blobfolio/dactyl/releases/tag/v0.4.5) - 2022-09-09
@@ -299,7 +282,6 @@
 * `NiceFloat::precise_bytes`/`NiceFloat::precise_str` incorrectly truncated `NiceFloat::overflow`
 
 
-
 ## [0.4.4](https://github.com/Blobfolio/dactyl/releases/tag/v0.4.4) - 2022-09-06
 
 ### New
@@ -311,7 +293,6 @@
 ### Changed
 
 * `NicePercent` output is now closer to `format!("{:0.02}%", num * 100.0)`, but will occasionally vary ±0.01% due to differences in rounding (`NicePercent` rounds up on `x.xxxx5`).
-
 
 
 ## [0.4.3](https://github.com/Blobfolio/dactyl/releases/tag/v0.4.3) - 2022-09-02
@@ -329,7 +310,6 @@
 * `NiceElapsed::max` (moot now that days are supported)
 
 
-
 ## [0.4.2](https://github.com/Blobfolio/dactyl/releases/tag/v0.4.2) - 2022-08-13
 
 ### New
@@ -338,13 +318,11 @@
 * `traits::NiceInflection`
 
 
-
 ## [0.4.1](https://github.com/Blobfolio/dactyl/releases/tag/v0.4.1) - 2022-08-11
 
 ### Changed
 
 * Bump MSRV `1.63`
-
 
 
 ## [0.4.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.4.0) - 2022-06-18
@@ -383,7 +361,6 @@
 * `NiceU*::as_vec` (use `From<NiceU*>` instead)
 
 
-
 ## [0.3.4](https://github.com/Blobfolio/dactyl/releases/tag/v0.3.4) - 2022-04-14
 
 ### Changed
@@ -395,14 +372,12 @@
 * Enable `num-traits` crate feature `i128` (needed for some targets)
 
 
-
 ## [0.3.3](https://github.com/Blobfolio/dactyl/releases/tag/v0.3.3) - 2022-03-28
 
 ### Added
 
 * `dactyl::NoHash` (for `HashMap`, `HashSet`)
 * `dactyl::traits::BytesToSigned` (slice to signed integer parsing)
-
 
 
 ## [0.3.2](https://github.com/Blobfolio/dactyl/releases/tag/v0.3.2) - 2022-03-27
@@ -412,7 +387,6 @@
 * impl `BytesToUnsigned` for `NonZeroU*`
 
 
-
 ## [0.3.1](https://github.com/Blobfolio/dactyl/releases/tag/v0.3.1) - 2022-03-23
 
 ### Changed
@@ -420,7 +394,6 @@
 * Faster `NiceU*` parsing, particularly for `NiceU8` and `NiceU16`
 * Faster `NiceElapsed` parsing
 * `NiceElapsed::from(Duration)` and `NiceElapsed::from(Instant)` now render fractional seconds (hundredths), e.g. `5 minutes and 0.02 seconds`
-
 
 
 ## [0.3.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.3.0) - 2022-03-15
@@ -442,7 +415,6 @@
 * `GtZero`
 
 
-
 ## [0.2.4](https://github.com/Blobfolio/dactyl/releases/tag/v0.2.4) - 2022-01-29
 
 ### New
@@ -455,7 +427,6 @@
 * `GtZero`
 
 
-
 ## [0.2.3](https://github.com/Blobfolio/dactyl/releases/tag/v0.2.3) - 2022-01-20
 
 ### New
@@ -465,7 +436,6 @@
 * `NiceU*::as_vec`
 
 
-
 ## [0.2.2](https://github.com/Blobfolio/dactyl/releases/tag/v0.2.2) - 2021-12-29
 
 ### Changed
@@ -473,7 +443,6 @@
 * Implement `Ord`/`PartialOrd` for `NiceU*`;
 * Only `Hash` filled bytes;
 * Implement `Hash`, `Eq`, `PartialEq` for `NiceElapsed`;
-
 
 
 ## [0.2.1](https://github.com/Blobfolio/dactyl/releases/tag/v0.2.1) - 2021-12-02
@@ -486,7 +455,6 @@
 * `dactyl::div_u16`
 * `dactyl::div_u8`
 * `dactyl::div_usize`
-
 
 
 ## [0.2.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.2.0) - 2021-10-21
