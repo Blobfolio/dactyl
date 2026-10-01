@@ -115,47 +115,6 @@ pub use nice::{
 
 
 
-#[cfg(target_pointer_width = "16")]
-/// # Helper: `isize`/`usize` Properties.
-///
-/// TODO: use cfg_select! once the MSRV is bumped to 1.95.
-macro_rules! int_sized {
-	(@min isize) => ( -32768 );
-	(@min usize) => ( 0 );
-
-	(@max isize) => ( 32767 );
-	(@max usize) => ( 65535 );
-
-	(@alias isize) => ( i16 );
-	(@alias usize) => ( u16 );
-}
-
-#[cfg(target_pointer_width = "32")]
-/// # Helper: `isize`/`usize` Properties.
-macro_rules! int_sized {
-	(@min isize) => ( -2147483648 );
-	(@min usize) => ( 0 );
-
-	(@max isize) => ( 2147483647 );
-	(@max usize) => ( 4294967295 );
-
-	(@alias isize) => ( i32 );
-	(@alias usize) => ( u32 );
-}
-
-#[cfg(target_pointer_width = "64")]
-/// # Helper: `isize`/`usize` Properties.
-macro_rules! int_sized {
-	(@min isize) => ( -9223372036854775808 );
-	(@min usize) => ( 0 );
-
-	(@max isize) => ( 9223372036854775807 );
-	(@max usize) => ( 18446744073709551615 );
-
-	(@alias isize) => ( i64 );
-	(@alias usize) => ( u64 );
-}
-
 /// # Helper: Type Min and Max.
 macro_rules! int {
 	// Minimums.
@@ -164,7 +123,13 @@ macro_rules! int {
 	(@min i32) =>  ( -2147483648 );
 	(@min i64) =>  ( -9223372036854775808 );
 	(@min i128) => ( -170141183460469231731687303715884105728 );
-	(@min isize) =>( $crate::int_sized!(@min isize) );
+	(@min isize) =>(
+		cfg_select! {
+			target_pointer_width = "16" => -32768,
+			target_pointer_width = "32" => -2147483648,
+			target_pointer_width = "64" => -9223372036854775808,
+		}
+	);
 
 	(@min u8) =>   ( 0 );
 	(@min u16) =>  ( 0 );
@@ -179,14 +144,26 @@ macro_rules! int {
 	(@max i32) =>  ( 2147483647 );
 	(@max i64) =>  ( 9223372036854775807 );
 	(@max i128) => ( 170141183460469231731687303715884105727 );
-	(@max isize) =>( $crate::int_sized!(@max isize) );
+	(@max isize) =>(
+		cfg_select! {
+			target_pointer_width = "16" => 32767,
+			target_pointer_width = "32" => 2147483647,
+			target_pointer_width = "64" => 9223372036854775807,
+		}
+	);
 
 	(@max u8) =>   ( 255 );
 	(@max u16) =>  ( 65535 );
 	(@max u32) =>  ( 4294967295 );
 	(@max u64) =>  ( 18446744073709551615 );
 	(@max u128) => ( 340282366920938463463374607431768211455 );
-	(@max usize) =>( $crate::int_sized!(@max usize) );
+	(@max usize) =>(
+		cfg_select! {
+			target_pointer_width = "16" => 65535,
+			target_pointer_width = "32" => 4294967295,
+			target_pointer_width = "64" => 18446744073709551615,
+		}
+	);
 
 	// Sign swap.
 	(@flip u8) => ( i8 );
@@ -216,13 +193,24 @@ macro_rules! int {
 	(@alias NonZeroI64) => ( i64 );
 	(@alias NonZeroI128) => ( i128 );
 	(@alias NonZeroIsize) => ( isize );
-	(@alias isize) => ( $crate::int_sized!(@alias isize) );
-	(@alias usize) => ( $crate::int_sized!(@alias usize) );
+	(@alias isize) => (
+		cfg_select! {
+			target_pointer_width = "16" => i16,
+			target_pointer_width = "32" => i32,
+			target_pointer_width = "64" => i64,
+		}
+	);
+	(@alias usize) => (
+		cfg_select! {
+			target_pointer_width = "16" => u16,
+			target_pointer_width = "32" => u32,
+			target_pointer_width = "64" => u64,
+		}
+	);
 }
 
 // Keep these private to the crate.
 pub(crate) use int;
-pub(crate) use int_sized;
 
 
 
