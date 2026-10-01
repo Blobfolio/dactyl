@@ -1,6 +1,13 @@
 # Changelog
 
 
+## [0.14.1](https://github.com/Blobfolio/brunch/releases/tag/v0.14.1) - 2026-10-01
+
+### Changed
+
+* Bump `brunch` to `0.12` (dev)
+
+
 ## [0.14.0](https://github.com/Blobfolio/dactyl/releases/tag/v0.14.0) - 2026-10-01
 
 ### Changed
